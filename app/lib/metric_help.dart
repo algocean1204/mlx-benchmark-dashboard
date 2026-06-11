@@ -6,7 +6,7 @@ class MetricHelp {
 
   static const terms = <String, MetricEntry>{
     'TPS': MetricEntry(
-      label: 'TPS',
+      label: 'TPS(토큰속도)',
       tooltip: '초당 생성 토큰 수 — 클수록 빠름',
       shortHint: '초당 생성 토큰',
       detail:
@@ -18,7 +18,7 @@ class MetricHelp {
       tierTable: true,
     ),
     'TTFT': MetricEntry(
-      label: 'TTFT',
+      label: 'TTFT(첫 응답)',
       tooltip: '첫 토큰까지 걸린 시간 — 응답 체감 속도',
       shortHint: '첫 응답까지',
       detail:
@@ -28,7 +28,7 @@ class MetricHelp {
       example: '예: TTFT 180ms → 0.2초 안에 응답 시작',
     ),
     'Peak RAM': MetricEntry(
-      label: 'Peak RAM',
+      label: 'Peak RAM(최대 메모리)',
       tooltip: '측정 중 최대 메모리 사용량',
       shortHint: '최대 메모리',
       detail:
@@ -46,6 +46,16 @@ class MetricHelp {
           '1.0 미만이면 실시간보다 빠르게 처리한 것이고, 1.0이면 실시간과 '
           '동일한 속도입니다. 낮을수록 빠릅니다.',
       example: '예: 10초 오디오를 2초에 처리 → RTF 0.2',
+    ),
+    'ctx': MetricEntry(
+      label: 'ctx(컨텍스트)',
+      tooltip: '모델이 한 번에 기억하는 토큰 길이',
+      shortHint: '기억 토큰 길이',
+      detail:
+          '컨텍스트( context window )는 모델이 한 번의 요청에서 처리할 수 있는 '
+          '최대 토큰 수입니다. 프롬프트와 생성 응답을 합쳐 이 한도 안에 '
+          '들어야 합니다.',
+      example: '예: 4K ctx → 약 3000단어 분량 입력+출력',
     ),
     '컨텍스트': MetricEntry(
       label: '컨텍스트',

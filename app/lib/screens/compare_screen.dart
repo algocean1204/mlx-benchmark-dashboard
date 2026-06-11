@@ -208,7 +208,7 @@ class _CompareScreenState extends State<CompareScreen> {
           children: _contextOptions
               .map(
                 (c) => ChoiceChip(
-                  label: Text('$c'),
+                  label: Text(formatContext(c)),
                   selected: _context == c,
                   onSelected: _isContextCompareMode ? null : (_) => _setContext(c),
                 ),
@@ -484,9 +484,10 @@ class _ContextLabel extends StatelessWidget {
     if (row.contextSubstituted) {
       final requested = platformIntToInt(row.contextRequested);
       return Tooltip(
-        message: '요청 컨텍스트 $requested → 실제 $actual',
+        message:
+            '요청 컨텍스트 ${formatContext(requested)} → 실제 ${formatContext(actual)}',
         child: Text(
-          'ctx $actual*',
+          '컨텍스트 ${formatContext(actual)}*',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: AppTheme.inkMuted,
               ),
@@ -494,7 +495,7 @@ class _ContextLabel extends StatelessWidget {
       );
     }
     return Text(
-      'ctx $actual',
+      '컨텍스트 ${formatContext(actual)}',
       style: Theme.of(context).textTheme.labelSmall,
     );
   }
@@ -519,13 +520,32 @@ class _CompareChart extends StatelessWidget {
 
     return Stack(
       children: [
-        CustomPaint(
-          size: Size.infinite,
-          painter: _TierBandPainter(bands: bands, maxY: maxTps * 1.15),
+        ClipRect(
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: _TierBandPainter(bands: bands, maxY: maxTps * 1.15),
+          ),
         ),
         BarChart(
           BarChartData(
             maxY: maxTps * 1.15,
+            borderData: FlBorderData(
+              show: true,
+              border: Border.all(color: AppTheme.border, width: 1),
+            ),
+            barTouchData: BarTouchData(
+              enabled: true,
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipColor: (_) => AppTheme.surface,
+                tooltipBorder: const BorderSide(color: AppTheme.border),
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  return BarTooltipItem(
+                    rod.toY.toStringAsFixed(1),
+                    const TextStyle(color: AppTheme.ink, fontSize: 12),
+                  );
+                },
+              ),
+            ),
             gridData: FlGridData(
               show: true,
               drawVerticalLine: false,
@@ -613,7 +633,7 @@ class _ContextCompareTable extends StatelessWidget {
             .map(
               (r) => DataRow(
                 cells: [
-                  DataCell(Text('${r.contextSize}')),
+                  DataCell(Text(formatContext(r.contextSize))),
                   DataCell(Text(r.decodeTps?.toStringAsFixed(1) ?? '—')),
                   DataCell(Text('${r.ttftAvgMs.toStringAsFixed(0)} ms')),
                   DataCell(Text(formatBytesInt(r.peakRamBytes))),
@@ -641,8 +661,12 @@ class _TierBandPainter extends CustomPainter {
     final chartH = size.height - topPad - bottomPad;
 
     for (final band in bands) {
-      final yTop = topPad + chartH * (1 - band.max / maxY);
-      final yBot = topPad + chartH * (1 - band.min / maxY);
+      // 띠가 차트 영역을 벗어나지 않도록 클램프 (maxY보다 큰 등급 상한이 위로 탈출하던 버그)
+      final yTop = (topPad + chartH * (1 - band.max / maxY))
+          .clamp(topPad, topPad + chartH);
+      final yBot = (topPad + chartH * (1 - band.min / maxY))
+          .clamp(topPad, topPad + chartH);
+      if (yBot - yTop < 0.5) continue;
       final paint = Paint()..color = band.color;
       canvas.drawRect(
         Rect.fromLTRB(leftPad, yTop, size.width - 8, yBot),

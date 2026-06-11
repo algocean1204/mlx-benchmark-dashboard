@@ -60,7 +60,31 @@ abstract class AidashApi {
 
   Future<void> serveStop();
 
-  Stream<String> chatSend({
+  bool chatShouldCompress({
+    required int promptTokens,
+    required int contextSize,
+  });
+
+  List<FrbChatSessionRow> chatListSessions();
+
+  int chatCreateSession({required String profileId, required String title});
+
+  void chatDeleteSession({required int sessionId});
+
+  List<FrbChatMessageRow> chatLoadMessages({required int sessionId});
+
+  int chatAppendMessage({
+    required int sessionId,
+    required String role,
+    required String content,
+    int? tokenCount,
+  });
+
+  void chatUpdateSessionTitle({required int sessionId, required String title});
+
+  Future<String> chatSummarize({required List<FrbChatMessage> messages});
+
+  Stream<FrbChatStreamEvent> chatSend({
     required List<FrbChatMessage> messages,
     String? imagePath,
   });
@@ -114,6 +138,10 @@ class MockAidashApi implements AidashApi {
   final List<FrbProfileRow> profiles;
   final FrbDoctorReport report;
   final FrbAuthStatus auth;
+  final List<FrbChatSessionRow> chatSessions;
+  final Map<int, List<FrbChatMessageRow>> chatMessagesBySession;
+  int _nextSessionId = 1;
+  int _nextMessageId = 1;
 
   MockAidashApi({
     List<FrbOverviewRow>? overviewRows,
@@ -122,12 +150,16 @@ class MockAidashApi implements AidashApi {
     List<FrbProfileRow>? profiles,
     FrbDoctorReport? report,
     FrbAuthStatus? auth,
+    List<FrbChatSessionRow>? chatSessions,
+    Map<int, List<FrbChatMessageRow>>? chatMessagesBySession,
   })  : overviewRows = overviewRows ?? _defaultOverview(),
         modelStats = modelStats ?? _defaultModelStats(),
         runRows = runRows ?? _defaultRuns(),
         profiles = profiles ?? _defaultProfiles(),
         report = report ?? _defaultDoctor(),
-        auth = auth ?? _defaultAuth();
+        auth = auth ?? _defaultAuth(),
+        chatSessions = chatSessions ?? [],
+        chatMessagesBySession = chatMessagesBySession ?? {};
 
   static FrbTierInfo _tier(double tps) {
     if (tps < 10) {
@@ -415,12 +447,93 @@ class MockAidashApi implements AidashApi {
   Future<void> serveStop() async {}
 
   @override
-  Stream<String> chatSend({
+  bool chatShouldCompress({
+    required int promptTokens,
+    required int contextSize,
+  }) =>
+      contextSize > 0 && promptTokens > (contextSize * 0.7).round();
+
+  @override
+  List<FrbChatSessionRow> chatListSessions() => chatSessions;
+
+  @override
+  int chatCreateSession({required String profileId, required String title}) {
+    final id = _nextSessionId++;
+    chatSessions.insert(
+      0,
+      FrbChatSessionRow(
+        id: id,
+        profileId: profileId,
+        title: title,
+        createdAt: DateTime.now().millisecondsSinceEpoch.toString(),
+        updatedAt: DateTime.now().millisecondsSinceEpoch.toString(),
+      ),
+    );
+    chatMessagesBySession[id] = [];
+    return id;
+  }
+
+  @override
+  void chatDeleteSession({required int sessionId}) {
+    chatSessions.removeWhere((s) => s.id.toInt() == sessionId);
+    chatMessagesBySession.remove(sessionId);
+  }
+
+  @override
+  List<FrbChatMessageRow> chatLoadMessages({required int sessionId}) =>
+      chatMessagesBySession[sessionId] ?? [];
+
+  @override
+  int chatAppendMessage({
+    required int sessionId,
+    required String role,
+    required String content,
+    int? tokenCount,
+  }) {
+    final id = _nextMessageId++;
+    chatMessagesBySession.putIfAbsent(sessionId, () => []).add(
+          FrbChatMessageRow(
+            id: id,
+            sessionId: sessionId,
+            role: role,
+            content: content,
+            createdAt: DateTime.now().millisecondsSinceEpoch.toString(),
+            tokenCount: tokenCount,
+          ),
+        );
+    return id;
+  }
+
+  @override
+  void chatUpdateSessionTitle({required int sessionId, required String title}) {}
+
+  @override
+  Future<String> chatSummarize({required List<FrbChatMessage> messages}) async =>
+      '요약: ${messages.map((m) => m.content).join(' / ')}';
+
+  @override
+  Stream<FrbChatStreamEvent> chatSend({
     required List<FrbChatMessage> messages,
     String? imagePath,
   }) async* {
-    yield '안녕하세요! ';
-    yield '테스트 응답입니다.';
+    yield const FrbChatStreamEvent(
+      isDone: false,
+      text: '안녕하세요! ',
+      promptTokens: 0,
+      completionTokens: 0,
+    );
+    yield const FrbChatStreamEvent(
+      isDone: false,
+      text: '테스트 응답입니다.',
+      promptTokens: 0,
+      completionTokens: 0,
+    );
+    yield const FrbChatStreamEvent(
+      isDone: true,
+      text: '',
+      promptTokens: 120,
+      completionTokens: 24,
+    );
   }
 
   @override

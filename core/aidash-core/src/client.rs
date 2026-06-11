@@ -16,6 +16,12 @@ use tokio::sync::broadcast;
 use crate::events::CoreEvent;
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ChatMessage {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct StreamStats {
     pub ttft_ms: f64,
     pub prefill_tps: f64,
@@ -89,22 +95,38 @@ fn image_data_url(path: &Path) -> Result<String, String> {
     Ok(format!("data:{mime};base64,{}", BASE64.encode(bytes)))
 }
 
-fn chat_messages_json(prompt: &str, image_path: Option<&Path>) -> Result<serde_json::Value, String> {
-    if let Some(path) = image_path {
-        let data_url = image_data_url(path)?;
-        Ok(serde_json::json!({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": data_url}},
-            ],
-        }))
-    } else {
-        Ok(serde_json::json!({
-            "role": "user",
-            "content": prompt,
-        }))
+fn chat_message_json(msg: &ChatMessage, image_path: Option<&Path>) -> Result<serde_json::Value, String> {
+    if msg.role == "user" {
+        if let Some(path) = image_path {
+            let data_url = image_data_url(path)?;
+            return Ok(serde_json::json!({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": msg.content},
+                    {"type": "image_url", "image_url": {"url": data_url}},
+                ],
+            }));
+        }
     }
+    Ok(serde_json::json!({
+        "role": msg.role,
+        "content": msg.content,
+    }))
+}
+
+fn chat_messages_json(messages: &[ChatMessage], image_path: Option<&Path>) -> Result<Vec<serde_json::Value>, String> {
+    if messages.is_empty() {
+        return Err("empty messages".into());
+    }
+    let mut out = Vec::with_capacity(messages.len());
+    for (i, msg) in messages.iter().enumerate() {
+        let attach_image = image_path.is_some() && i + 1 == messages.len() && msg.role == "user";
+        out.push(chat_message_json(
+            msg,
+            if attach_image { image_path } else { None },
+        )?);
+    }
+    Ok(out)
 }
 
 pub async fn stream_chat_completion(
@@ -115,7 +137,19 @@ pub async fn stream_chat_completion(
     max_tokens: u32,
     event_tx: Option<broadcast::Sender<CoreEvent>>,
 ) -> Result<(String, StreamStats), String> {
-    stream_chat_completion_with_image(client, port, model, prompt, None, max_tokens, event_tx).await
+    stream_chat_completion_messages(
+        client,
+        port,
+        model,
+        &[ChatMessage {
+            role: "user".into(),
+            content: prompt.into(),
+        }],
+        None,
+        max_tokens,
+        event_tx,
+    )
+    .await
 }
 
 pub async fn stream_chat_completion_with_image(
@@ -127,11 +161,35 @@ pub async fn stream_chat_completion_with_image(
     max_tokens: u32,
     event_tx: Option<broadcast::Sender<CoreEvent>>,
 ) -> Result<(String, StreamStats), String> {
+    stream_chat_completion_messages(
+        client,
+        port,
+        model,
+        &[ChatMessage {
+            role: "user".into(),
+            content: prompt.into(),
+        }],
+        image_path,
+        max_tokens,
+        event_tx,
+    )
+    .await
+}
+
+pub async fn stream_chat_completion_messages(
+    client: &Client,
+    port: u16,
+    model: &str,
+    messages: &[ChatMessage],
+    image_path: Option<&Path>,
+    max_tokens: u32,
+    event_tx: Option<broadcast::Sender<CoreEvent>>,
+) -> Result<(String, StreamStats), String> {
     let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
-    let message = chat_messages_json(prompt, image_path)?;
+    let payload = chat_messages_json(messages, image_path)?;
     let body = serde_json::json!({
         "model": model,
-        "messages": [message],
+        "messages": payload,
         "stream": true,
         "max_tokens": max_tokens,
     });
@@ -421,10 +479,33 @@ pub async fn chat_completion(
     max_tokens: u32,
     temperature: f64,
 ) -> Result<String, String> {
+    chat_completion_messages(
+        client,
+        port,
+        model,
+        &[ChatMessage {
+            role: "user".into(),
+            content: prompt.into(),
+        }],
+        max_tokens,
+        temperature,
+    )
+    .await
+}
+
+pub async fn chat_completion_messages(
+    client: &Client,
+    port: u16,
+    model: &str,
+    messages: &[ChatMessage],
+    max_tokens: u32,
+    temperature: f64,
+) -> Result<String, String> {
     let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
+    let payload = chat_messages_json(messages, None)?;
     let body = serde_json::json!({
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": payload,
         "stream": false,
         "max_tokens": max_tokens,
         "temperature": temperature,

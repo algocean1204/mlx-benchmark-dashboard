@@ -354,7 +354,7 @@ class _RecentRunRow extends StatelessWidget {
           ),
           Text(
             run.contextSize != null
-                ? '${platformIntToInt(run.contextSize)} ctx'
+                ? '${formatContext(platformIntToInt(run.contextSize))} 컨텍스트'
                 : '',
             style: const TextStyle(color: AppTheme.inkMuted, fontSize: 12),
           ),

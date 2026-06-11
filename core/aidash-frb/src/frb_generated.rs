@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2030387005;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2097317494;
 
 // Section: executor
 
@@ -283,11 +283,114 @@ fn wire__crate__api__cache_scan_impl(port_: flutter_rust_bridge::for_generated::
         },
     )
 }
+fn wire__crate__api__chat_append_message_impl(
+    session_id: impl CstDecode<i64>,
+    role: impl CstDecode<String>,
+    content: impl CstDecode<String>,
+    token_count: impl CstDecode<Option<u32>>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_append_message",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_session_id = session_id.cst_decode();
+            let api_role = role.cst_decode();
+            let api_content = content.cst_decode();
+            let api_token_count = token_count.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_append_message(
+                    api_session_id,
+                    api_role,
+                    api_content,
+                    api_token_count,
+                )?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__chat_create_session_impl(
+    profile_id: impl CstDecode<String>,
+    title: impl CstDecode<String>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_create_session",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_profile_id = profile_id.cst_decode();
+            let api_title = title.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_create_session(api_profile_id, api_title)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__chat_delete_session_impl(
+    session_id: impl CstDecode<i64>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_delete_session",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_session_id = session_id.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_delete_session(api_session_id)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__chat_list_sessions_impl(
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_list_sessions",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_list_sessions()?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__chat_load_messages_impl(
+    session_id: impl CstDecode<i64>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_load_messages",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_session_id = session_id.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_load_messages(api_session_id)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__chat_send_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     messages: impl CstDecode<Vec<crate::api::FrbChatMessage>>,
     image_path: impl CstDecode<Option<String>>,
-    sink: impl CstDecode<StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec>>,
+    sink: impl CstDecode<
+        StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+    >,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
@@ -309,6 +412,73 @@ fn wire__crate__api__chat_send_impl(
                     .await,
                 )
             }
+        },
+    )
+}
+fn wire__crate__api__chat_should_compress_impl(
+    prompt_tokens: impl CstDecode<u32>,
+    context_size: impl CstDecode<u32>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_should_compress",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_prompt_tokens = prompt_tokens.cst_decode();
+            let api_context_size = context_size.cst_decode();
+            transform_result_dco::<_, _, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::chat_should_compress(
+                    api_prompt_tokens,
+                    api_context_size,
+                ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__chat_summarize_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    messages: impl CstDecode<Vec<crate::api::FrbChatMessage>>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_summarize",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_messages = messages.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::chat_summarize(api_messages).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__chat_update_session_title_impl(
+    session_id: impl CstDecode<i64>,
+    title: impl CstDecode<String>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "chat_update_session_title",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_session_id = session_id.cst_decode();
+            let api_title = title.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::chat_update_session_title(api_session_id, api_title)?;
+                Ok(output_ok)
+            })())
         },
     )
 }
@@ -943,14 +1113,6 @@ impl SseDecode for flutter_rust_bridge::for_generated::anyhow::Error {
     }
 }
 
-impl SseDecode for StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <String>::sse_decode(deserializer);
-        return StreamSink::deserialize(inner);
-    }
-}
-
 impl SseDecode
     for StreamSink<crate::api::FrbBenchEvent, flutter_rust_bridge::for_generated::DcoCodec>
 {
@@ -963,6 +1125,16 @@ impl SseDecode
 
 impl SseDecode
     for StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
+    for StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1213,6 +1385,60 @@ impl SseDecode for crate::api::FrbChatMessage {
         return crate::api::FrbChatMessage {
             role: var_role,
             content: var_content,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbChatMessageRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <i64>::sse_decode(deserializer);
+        let mut var_sessionId = <i64>::sse_decode(deserializer);
+        let mut var_role = <String>::sse_decode(deserializer);
+        let mut var_content = <String>::sse_decode(deserializer);
+        let mut var_createdAt = <String>::sse_decode(deserializer);
+        let mut var_tokenCount = <Option<i64>>::sse_decode(deserializer);
+        return crate::api::FrbChatMessageRow {
+            id: var_id,
+            session_id: var_sessionId,
+            role: var_role,
+            content: var_content,
+            created_at: var_createdAt,
+            token_count: var_tokenCount,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbChatSessionRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <i64>::sse_decode(deserializer);
+        let mut var_profileId = <String>::sse_decode(deserializer);
+        let mut var_title = <String>::sse_decode(deserializer);
+        let mut var_createdAt = <String>::sse_decode(deserializer);
+        let mut var_updatedAt = <String>::sse_decode(deserializer);
+        return crate::api::FrbChatSessionRow {
+            id: var_id,
+            profile_id: var_profileId,
+            title: var_title,
+            created_at: var_createdAt,
+            updated_at: var_updatedAt,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbChatStreamEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_isDone = <bool>::sse_decode(deserializer);
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_promptTokens = <u32>::sse_decode(deserializer);
+        let mut var_completionTokens = <u32>::sse_decode(deserializer);
+        return crate::api::FrbChatStreamEvent {
+            is_done: var_isDone,
+            text: var_text,
+            prompt_tokens: var_promptTokens,
+            completion_tokens: var_completionTokens,
         };
     }
 }
@@ -1611,6 +1837,30 @@ impl SseDecode for Vec<crate::api::FrbChatMessage> {
     }
 }
 
+impl SseDecode for Vec<crate::api::FrbChatMessageRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::FrbChatMessageRow>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::FrbChatSessionRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::FrbChatSessionRow>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::FrbCompareRow> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1802,6 +2052,17 @@ impl SseDecode for Option<i64> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<i64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u32>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -2111,6 +2372,72 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbChatMessage {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::FrbChatMessage {}
 impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbChatMessage> for crate::api::FrbChatMessage {
     fn into_into_dart(self) -> crate::api::FrbChatMessage {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbChatMessageRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.session_id.into_into_dart().into_dart(),
+            self.role.into_into_dart().into_dart(),
+            self.content.into_into_dart().into_dart(),
+            self.created_at.into_into_dart().into_dart(),
+            self.token_count.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::FrbChatMessageRow {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbChatMessageRow>
+    for crate::api::FrbChatMessageRow
+{
+    fn into_into_dart(self) -> crate::api::FrbChatMessageRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbChatSessionRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.profile_id.into_into_dart().into_dart(),
+            self.title.into_into_dart().into_dart(),
+            self.created_at.into_into_dart().into_dart(),
+            self.updated_at.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::FrbChatSessionRow {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbChatSessionRow>
+    for crate::api::FrbChatSessionRow
+{
+    fn into_into_dart(self) -> crate::api::FrbChatSessionRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbChatStreamEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.is_done.into_into_dart().into_dart(),
+            self.text.into_into_dart().into_dart(),
+            self.prompt_tokens.into_into_dart().into_dart(),
+            self.completion_tokens.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::FrbChatStreamEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbChatStreamEvent>
+    for crate::api::FrbChatStreamEvent
+{
+    fn into_into_dart(self) -> crate::api::FrbChatStreamEvent {
         self
     }
 }
@@ -2485,13 +2812,6 @@ impl SseEncode for flutter_rust_bridge::for_generated::anyhow::Error {
     }
 }
 
-impl SseEncode for StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec> {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        unimplemented!("")
-    }
-}
-
 impl SseEncode
     for StreamSink<crate::api::FrbBenchEvent, flutter_rust_bridge::for_generated::DcoCodec>
 {
@@ -2503,6 +2823,15 @@ impl SseEncode
 
 impl SseEncode
     for StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
+    for StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2695,6 +3024,39 @@ impl SseEncode for crate::api::FrbChatMessage {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.role, serializer);
         <String>::sse_encode(self.content, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbChatMessageRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i64>::sse_encode(self.id, serializer);
+        <i64>::sse_encode(self.session_id, serializer);
+        <String>::sse_encode(self.role, serializer);
+        <String>::sse_encode(self.content, serializer);
+        <String>::sse_encode(self.created_at, serializer);
+        <Option<i64>>::sse_encode(self.token_count, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbChatSessionRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i64>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.profile_id, serializer);
+        <String>::sse_encode(self.title, serializer);
+        <String>::sse_encode(self.created_at, serializer);
+        <String>::sse_encode(self.updated_at, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbChatStreamEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_done, serializer);
+        <String>::sse_encode(self.text, serializer);
+        <u32>::sse_encode(self.prompt_tokens, serializer);
+        <u32>::sse_encode(self.completion_tokens, serializer);
     }
 }
 
@@ -2949,6 +3311,26 @@ impl SseEncode for Vec<crate::api::FrbChatMessage> {
     }
 }
 
+impl SseEncode for Vec<crate::api::FrbChatMessageRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::FrbChatMessageRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::FrbChatSessionRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::FrbChatSessionRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::FrbCompareRow> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3119,6 +3501,16 @@ impl SseEncode for Option<i64> {
     }
 }
 
+impl SseEncode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u32>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<u64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3213,15 +3605,6 @@ mod io {
             unimplemented!()
         }
     }
-    impl CstDecode<StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec>>
-        for *mut wire_cst_list_prim_u_8_strict
-    {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec> {
-            let raw: String = self.cst_decode();
-            StreamSink::deserialize(raw)
-        }
-    }
     impl
         CstDecode<
             StreamSink<crate::api::FrbBenchEvent, flutter_rust_bridge::for_generated::DcoCodec>,
@@ -3245,6 +3628,23 @@ mod io {
         fn cst_decode(
             self,
         ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            let raw: String = self.cst_decode();
+            StreamSink::deserialize(raw)
+        }
+    }
+    impl
+        CstDecode<
+            StreamSink<
+                crate::api::FrbChatStreamEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for *mut wire_cst_list_prim_u_8_strict
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>
         {
             let raw: String = self.cst_decode();
             StreamSink::deserialize(raw)
@@ -3344,6 +3744,12 @@ mod io {
     impl CstDecode<i64> for *mut i64 {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> i64 {
+            unsafe { *flutter_rust_bridge::for_generated::box_from_leak_ptr(self) }
+        }
+    }
+    impl CstDecode<u32> for *mut u32 {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> u32 {
             unsafe { *flutter_rust_bridge::for_generated::box_from_leak_ptr(self) }
         }
     }
@@ -3480,6 +3886,42 @@ mod io {
             crate::api::FrbChatMessage {
                 role: self.role.cst_decode(),
                 content: self.content.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatMessageRow> for wire_cst_frb_chat_message_row {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatMessageRow {
+            crate::api::FrbChatMessageRow {
+                id: self.id.cst_decode(),
+                session_id: self.session_id.cst_decode(),
+                role: self.role.cst_decode(),
+                content: self.content.cst_decode(),
+                created_at: self.created_at.cst_decode(),
+                token_count: self.token_count.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatSessionRow> for wire_cst_frb_chat_session_row {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatSessionRow {
+            crate::api::FrbChatSessionRow {
+                id: self.id.cst_decode(),
+                profile_id: self.profile_id.cst_decode(),
+                title: self.title.cst_decode(),
+                created_at: self.created_at.cst_decode(),
+                updated_at: self.updated_at.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatStreamEvent> for wire_cst_frb_chat_stream_event {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatStreamEvent {
+            crate::api::FrbChatStreamEvent {
+                is_done: self.is_done.cst_decode(),
+                text: self.text.cst_decode(),
+                prompt_tokens: self.prompt_tokens.cst_decode(),
+                completion_tokens: self.completion_tokens.cst_decode(),
             }
         }
     }
@@ -3737,6 +4179,26 @@ mod io {
             vec.into_iter().map(CstDecode::cst_decode).collect()
         }
     }
+    impl CstDecode<Vec<crate::api::FrbChatMessageRow>> for *mut wire_cst_list_frb_chat_message_row {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbChatMessageRow> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbChatSessionRow>> for *mut wire_cst_list_frb_chat_session_row {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbChatSessionRow> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
     impl CstDecode<Vec<crate::api::FrbCompareRow>> for *mut wire_cst_list_frb_compare_row {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Vec<crate::api::FrbCompareRow> {
@@ -3966,6 +4428,54 @@ mod io {
         }
     }
     impl Default for wire_cst_frb_chat_message {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_chat_message_row {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                id: Default::default(),
+                session_id: Default::default(),
+                role: core::ptr::null_mut(),
+                content: core::ptr::null_mut(),
+                created_at: core::ptr::null_mut(),
+                token_count: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_chat_message_row {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_chat_session_row {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                id: Default::default(),
+                profile_id: core::ptr::null_mut(),
+                title: core::ptr::null_mut(),
+                created_at: core::ptr::null_mut(),
+                updated_at: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_chat_session_row {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_chat_stream_event {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                is_done: Default::default(),
+                text: core::ptr::null_mut(),
+                prompt_tokens: Default::default(),
+                completion_tokens: Default::default(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_chat_stream_event {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -4363,6 +4873,44 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_append_message(
+        session_id: i64,
+        role: *mut wire_cst_list_prim_u_8_strict,
+        content: *mut wire_cst_list_prim_u_8_strict,
+        token_count: *mut u32,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_append_message_impl(session_id, role, content, token_count)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_create_session(
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+        title: *mut wire_cst_list_prim_u_8_strict,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_create_session_impl(profile_id, title)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_delete_session(
+        session_id: i64,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_delete_session_impl(session_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_list_sessions(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_list_sessions_impl()
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_load_messages(
+        session_id: i64,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_load_messages_impl(session_id)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__chat_send(
         port_: i64,
         messages: *mut wire_cst_list_frb_chat_message,
@@ -4370,6 +4918,30 @@ mod io {
         sink: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__chat_send_impl(port_, messages, image_path, sink)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_should_compress(
+        prompt_tokens: u32,
+        context_size: u32,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_should_compress_impl(prompt_tokens, context_size)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_summarize(
+        port_: i64,
+        messages: *mut wire_cst_list_frb_chat_message,
+    ) {
+        wire__crate__api__chat_summarize_impl(port_, messages)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__chat_update_session_title(
+        session_id: i64,
+        title: *mut wire_cst_list_prim_u_8_strict,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_update_session_title_impl(session_id, title)
     }
 
     #[unsafe(no_mangle)]
@@ -4614,6 +5186,11 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_box_autoadd_u_32(value: u32) -> *mut u32 {
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(value)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_cst_new_box_autoadd_u_64(value: u64) -> *mut u64 {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(value)
     }
@@ -4651,6 +5228,34 @@ mod io {
         let wrap = wire_cst_list_frb_chat_message {
             ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
                 <wire_cst_frb_chat_message>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_list_frb_chat_message_row(
+        len: i32,
+    ) -> *mut wire_cst_list_frb_chat_message_row {
+        let wrap = wire_cst_list_frb_chat_message_row {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_frb_chat_message_row>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_list_frb_chat_session_row(
+        len: i32,
+    ) -> *mut wire_cst_list_frb_chat_session_row {
+        let wrap = wire_cst_list_frb_chat_session_row {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_frb_chat_session_row>::new_with_null_ptr(),
                 len,
             ),
             len,
@@ -4906,6 +5511,33 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_chat_message_row {
+        id: i64,
+        session_id: i64,
+        role: *mut wire_cst_list_prim_u_8_strict,
+        content: *mut wire_cst_list_prim_u_8_strict,
+        created_at: *mut wire_cst_list_prim_u_8_strict,
+        token_count: *mut i64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_chat_session_row {
+        id: i64,
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+        title: *mut wire_cst_list_prim_u_8_strict,
+        created_at: *mut wire_cst_list_prim_u_8_strict,
+        updated_at: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_chat_stream_event {
+        is_done: bool,
+        text: *mut wire_cst_list_prim_u_8_strict,
+        prompt_tokens: u32,
+        completion_tokens: u32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_frb_compare_row {
         profile_id: *mut wire_cst_list_prim_u_8_strict,
         display_name: *mut wire_cst_list_prim_u_8_strict,
@@ -5097,6 +5729,18 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_list_frb_chat_message_row {
+        ptr: *mut wire_cst_frb_chat_message_row,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_list_frb_chat_session_row {
+        ptr: *mut wire_cst_frb_chat_session_row,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_list_frb_compare_row {
         ptr: *mut wire_cst_frb_compare_row,
         len: i32,
@@ -5196,12 +5840,6 @@ mod web {
             unimplemented!()
         }
     }
-    impl CstDecode<StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec>> for String {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec> {
-            StreamSink::deserialize(self)
-        }
-    }
     impl
         CstDecode<
             StreamSink<crate::api::FrbBenchEvent, flutter_rust_bridge::for_generated::DcoCodec>,
@@ -5224,6 +5862,22 @@ mod web {
         fn cst_decode(
             self,
         ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            StreamSink::deserialize(self)
+        }
+    }
+    impl
+        CstDecode<
+            StreamSink<
+                crate::api::FrbChatStreamEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for String
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>
         {
             StreamSink::deserialize(self)
         }
@@ -5465,6 +6119,75 @@ mod web {
             crate::api::FrbChatMessage {
                 role: self_.get(0).cst_decode(),
                 content: self_.get(1).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatMessageRow>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatMessageRow {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                6,
+                "Expected 6 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbChatMessageRow {
+                id: self_.get(0).cst_decode(),
+                session_id: self_.get(1).cst_decode(),
+                role: self_.get(2).cst_decode(),
+                content: self_.get(3).cst_decode(),
+                created_at: self_.get(4).cst_decode(),
+                token_count: self_.get(5).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatSessionRow>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatSessionRow {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                5,
+                "Expected 5 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbChatSessionRow {
+                id: self_.get(0).cst_decode(),
+                profile_id: self_.get(1).cst_decode(),
+                title: self_.get(2).cst_decode(),
+                created_at: self_.get(3).cst_decode(),
+                updated_at: self_.get(4).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbChatStreamEvent>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbChatStreamEvent {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                4,
+                "Expected 4 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbChatStreamEvent {
+                is_done: self_.get(0).cst_decode(),
+                text: self_.get(1).cst_decode(),
+                prompt_tokens: self_.get(2).cst_decode(),
+                completion_tokens: self_.get(3).cst_decode(),
             }
         }
     }
@@ -5913,6 +6636,30 @@ mod web {
                 .collect()
         }
     }
+    impl CstDecode<Vec<crate::api::FrbChatMessageRow>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbChatMessageRow> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbChatSessionRow>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbChatSessionRow> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
     impl CstDecode<Vec<crate::api::FrbCompareRow>>
         for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
     {
@@ -6061,14 +6808,6 @@ mod web {
             unimplemented!()
         }
     }
-    impl CstDecode<StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec>>
-        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
-    {
-        // Codec=Cst (C-struct based), see doc to use other codecs
-        fn cst_decode(self) -> StreamSink<String, flutter_rust_bridge::for_generated::DcoCodec> {
-            StreamSink::deserialize(self.as_string().expect("should be a string"))
-        }
-    }
     impl
         CstDecode<
             StreamSink<crate::api::FrbBenchEvent, flutter_rust_bridge::for_generated::DcoCodec>,
@@ -6091,6 +6830,22 @@ mod web {
         fn cst_decode(
             self,
         ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            StreamSink::deserialize(self.as_string().expect("should be a string"))
+        }
+    }
+    impl
+        CstDecode<
+            StreamSink<
+                crate::api::FrbChatStreamEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbChatStreamEvent, flutter_rust_bridge::for_generated::DcoCodec>
         {
             StreamSink::deserialize(self.as_string().expect("should be a string"))
         }
@@ -6301,6 +7056,44 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__chat_append_message(
+        session_id: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+        role: String,
+        content: String,
+        token_count: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_append_message_impl(session_id, role, content, token_count)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_create_session(
+        profile_id: String,
+        title: String,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_create_session_impl(profile_id, title)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_delete_session(
+        session_id: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_delete_session_impl(session_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_list_sessions(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_list_sessions_impl()
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_load_messages(
+        session_id: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_load_messages_impl(session_id)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__chat_send(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         messages: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
@@ -6308,6 +7101,30 @@ mod web {
         sink: String,
     ) {
         wire__crate__api__chat_send_impl(port_, messages, image_path, sink)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_should_compress(
+        prompt_tokens: u32,
+        context_size: u32,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_should_compress_impl(prompt_tokens, context_size)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_summarize(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        messages: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) {
+        wire__crate__api__chat_summarize_impl(port_, messages)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__chat_update_session_title(
+        session_id: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+        title: String,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__chat_update_session_title_impl(session_id, title)
     }
 
     #[wasm_bindgen]

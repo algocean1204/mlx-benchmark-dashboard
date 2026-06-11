@@ -294,19 +294,25 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                     children: [
                       const MetricLabel(term: 'TPS'),
                       const SizedBox(height: 4),
-                      Text(
-                        stats.currentDecodeTps?.toStringAsFixed(1) ?? '—',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      Row(
+                        children: [
+                          Text(
+                            stats.currentDecodeTps?.toStringAsFixed(1) ?? '—',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          if (stats.currentDecodeTps != null) ...[
+                            const SizedBox(width: 8),
+                            TierBadge(
+                              decodeTps: stats.currentDecodeTps,
+                              tier: stats.currentTier,
+                              compact: true,
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
                 ),
-                if (stats.currentDecodeTps != null)
-                  TierBadge(
-                    decodeTps: stats.currentDecodeTps,
-                    tier: stats.currentTier,
-                    compact: true,
-                  ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +386,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                 .map(
                   (r) => DataRow(
                     cells: [
-                      DataCell(Text('${platformIntToInt(r.contextSize)}')),
+                      DataCell(Text(formatContext(platformIntToInt(r.contextSize)))),
                       DataCell(Text(r.decodeTpsMin.toStringAsFixed(1))),
                       DataCell(Text(r.decodeTpsAvg.toStringAsFixed(1))),
                       DataCell(Text(r.decodeTpsMax.toStringAsFixed(1))),
@@ -411,7 +417,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                       '#${platformIntToInt(run.runId)} · ${run.kind}',
                     ),
                     subtitle: Text(
-                      'ctx ${platformIntToInt(run.contextSize)} · ${run.status}',
+                      '컨텍스트 ${formatContext(platformIntToInt(run.contextSize))} · ${run.status}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -490,6 +496,11 @@ class _TpsChart extends StatelessWidget {
       LineChartData(
         minY: 0,
         maxY: maxY,
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: AppTheme.border, width: 1),
+        ),
+        lineTouchData: const LineTouchData(enabled: false),
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
@@ -505,7 +516,7 @@ class _TpsChart extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    '$ctx',
+                    formatContext(ctx),
                     style: const TextStyle(fontSize: 10, color: AppTheme.inkMuted),
                   ),
                 );
@@ -568,6 +579,23 @@ class _RamChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         maxY: maxY * 1.15,
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: AppTheme.border, width: 1),
+        ),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => AppTheme.surface,
+            tooltipBorder: const BorderSide(color: AppTheme.border),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                formatBytesInt(rod.toY.toInt()),
+                const TextStyle(color: AppTheme.ink, fontSize: 12),
+              );
+            },
+          ),
+        ),
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
@@ -579,7 +607,7 @@ class _RamChart extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    '${platformIntToInt(sorted[i].contextSize)}',
+                    formatContext(platformIntToInt(sorted[i].contextSize)),
                     style: const TextStyle(fontSize: 10, color: AppTheme.inkMuted),
                   ),
                 );

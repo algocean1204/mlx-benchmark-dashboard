@@ -2,6 +2,7 @@ pub mod api;
 pub mod auth;
 pub mod bench;
 pub mod bootstrap;
+pub mod chat;
 pub mod client;
 pub mod db;
 pub mod env_detect;

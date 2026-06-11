@@ -136,7 +136,7 @@ fn migration_sets_user_version_and_cascade_delete_run() {
     }
 
     let db = Database::open(Some(&path)).expect("open migrates");
-    assert_eq!(db.user_version().unwrap(), 2);
+    assert_eq!(db.user_version().unwrap(), 3);
 
     db.delete_run(1).expect("delete run");
     assert_eq!(db.count_samples_for_run(1).unwrap(), 0);

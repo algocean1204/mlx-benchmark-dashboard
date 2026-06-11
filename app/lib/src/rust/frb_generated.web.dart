@@ -24,9 +24,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   AnyhowException dco_decode_AnyhowException(dynamic raw);
 
   @protected
-  RustStreamSink<String> dco_decode_StreamSink_String_Dco(dynamic raw);
-
-  @protected
   RustStreamSink<FrbBenchEvent> dco_decode_StreamSink_frb_bench_event_Dco(
     dynamic raw,
   );
@@ -34,6 +31,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbBootstrapEvent>
   dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw);
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  dco_decode_StreamSink_frb_chat_stream_event_Dco(dynamic raw);
 
   @protected
   RustStreamSink<FrbDownloadProgress>
@@ -76,6 +77,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw);
 
   @protected
@@ -107,6 +111,15 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbChatMessage dco_decode_frb_chat_message(dynamic raw);
+
+  @protected
+  FrbChatMessageRow dco_decode_frb_chat_message_row(dynamic raw);
+
+  @protected
+  FrbChatSessionRow dco_decode_frb_chat_session_row(dynamic raw);
+
+  @protected
+  FrbChatStreamEvent dco_decode_frb_chat_stream_event(dynamic raw);
 
   @protected
   FrbCompareRow dco_decode_frb_compare_row(dynamic raw);
@@ -175,6 +188,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   List<FrbChatMessage> dco_decode_list_frb_chat_message(dynamic raw);
 
   @protected
+  List<FrbChatMessageRow> dco_decode_list_frb_chat_message_row(dynamic raw);
+
+  @protected
+  List<FrbChatSessionRow> dco_decode_list_frb_chat_session_row(dynamic raw);
+
+  @protected
   List<FrbCompareRow> dco_decode_list_frb_compare_row(dynamic raw);
 
   @protected
@@ -228,6 +247,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
 
   @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
@@ -257,11 +279,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
   @protected
-  RustStreamSink<String> sse_decode_StreamSink_String_Dco(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   RustStreamSink<FrbBenchEvent> sse_decode_StreamSink_frb_bench_event_Dco(
     SseDeserializer deserializer,
   );
@@ -269,6 +286,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbBootstrapEvent>
   sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  sse_decode_StreamSink_frb_chat_stream_event_Dco(SseDeserializer deserializer);
 
   @protected
   RustStreamSink<FrbDownloadProgress>
@@ -317,6 +338,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
@@ -356,6 +380,21 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbChatMessage sse_decode_frb_chat_message(SseDeserializer deserializer);
+
+  @protected
+  FrbChatMessageRow sse_decode_frb_chat_message_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbChatSessionRow sse_decode_frb_chat_session_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbChatStreamEvent sse_decode_frb_chat_stream_event(
+    SseDeserializer deserializer,
+  );
 
   @protected
   FrbCompareRow sse_decode_frb_compare_row(SseDeserializer deserializer);
@@ -438,6 +477,16 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  List<FrbChatMessageRow> sse_decode_list_frb_chat_message_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbChatSessionRow> sse_decode_list_frb_chat_session_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<FrbCompareRow> sse_decode_list_frb_compare_row(
     SseDeserializer deserializer,
   );
@@ -509,6 +558,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
@@ -543,19 +595,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
-  String cst_encode_StreamSink_String_Dco(RustStreamSink<String> raw) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    return cst_encode_String(
-      raw.setupAndSerialize(
-        codec: DcoCodec(
-          decodeSuccessData: dco_decode_String,
-          decodeErrorData: dco_decode_AnyhowException,
-        ),
-      ),
-    );
-  }
-
-  @protected
   String cst_encode_StreamSink_frb_bench_event_Dco(
     RustStreamSink<FrbBenchEvent> raw,
   ) {
@@ -579,6 +618,21 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       raw.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_bootstrap_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
+  String cst_encode_StreamSink_frb_chat_stream_event_Dco(
+    RustStreamSink<FrbChatStreamEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_chat_stream_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -676,6 +730,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   JSAny cst_encode_box_autoadd_i_64(PlatformInt64 raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return cst_encode_i_64(raw);
+  }
+
+  @protected
+  int cst_encode_box_autoadd_u_32(int raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_u_32(raw);
   }
 
   @protected
@@ -813,6 +873,42 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     return [
       cst_encode_String(raw.role),
       cst_encode_String(raw.content),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_chat_message_row(FrbChatMessageRow raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_i_64(raw.id),
+      cst_encode_i_64(raw.sessionId),
+      cst_encode_String(raw.role),
+      cst_encode_String(raw.content),
+      cst_encode_String(raw.createdAt),
+      cst_encode_opt_box_autoadd_i_64(raw.tokenCount),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_chat_session_row(FrbChatSessionRow raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_i_64(raw.id),
+      cst_encode_String(raw.profileId),
+      cst_encode_String(raw.title),
+      cst_encode_String(raw.createdAt),
+      cst_encode_String(raw.updatedAt),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_chat_stream_event(FrbChatStreamEvent raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_bool(raw.isDone),
+      cst_encode_String(raw.text),
+      cst_encode_u_32(raw.promptTokens),
+      cst_encode_u_32(raw.completionTokens),
     ].jsify()!;
   }
 
@@ -1063,6 +1159,18 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  JSAny cst_encode_list_frb_chat_message_row(List<FrbChatMessageRow> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw.map(cst_encode_frb_chat_message_row).toList().jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_list_frb_chat_session_row(List<FrbChatSessionRow> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw.map(cst_encode_frb_chat_session_row).toList().jsify()!;
+  }
+
+  @protected
   JSAny cst_encode_list_frb_compare_row(List<FrbCompareRow> raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw.map(cst_encode_frb_compare_row).toList().jsify()!;
@@ -1167,6 +1275,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  int? cst_encode_opt_box_autoadd_u_32(int? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? null : cst_encode_box_autoadd_u_32(raw);
+  }
+
+  @protected
   JSAny? cst_encode_opt_box_autoadd_u_64(BigInt? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? null : cst_encode_box_autoadd_u_64(raw);
@@ -1231,12 +1345,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
-  void sse_encode_StreamSink_String_Dco(
-    RustStreamSink<String> self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_StreamSink_frb_bench_event_Dco(
     RustStreamSink<FrbBenchEvent> self,
     SseSerializer serializer,
@@ -1245,6 +1353,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_StreamSink_frb_bootstrap_event_Dco(
     RustStreamSink<FrbBootstrapEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_frb_chat_stream_event_Dco(
+    RustStreamSink<FrbChatStreamEvent> self,
     SseSerializer serializer,
   );
 
@@ -1306,6 +1420,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
 
   @protected
@@ -1353,6 +1470,24 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_frb_chat_message(
     FrbChatMessage self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_message_row(
+    FrbChatMessageRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_session_row(
+    FrbChatSessionRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_stream_event(
+    FrbChatStreamEvent self,
     SseSerializer serializer,
   );
 
@@ -1462,6 +1597,18 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_list_frb_chat_message_row(
+    List<FrbChatMessageRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_chat_session_row(
+    List<FrbChatSessionRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_frb_compare_row(
     List<FrbCompareRow> self,
     SseSerializer serializer,
@@ -1552,6 +1699,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
@@ -1638,6 +1788,35 @@ class AidashFrbWire implements BaseWire {
   void wire__crate__api__cache_scan(NativePortType port_) =>
       wasmModule.wire__crate__api__cache_scan(port_);
 
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_append_message(
+    JSAny session_id,
+    String role,
+    String content,
+    int? token_count,
+  ) => wasmModule.wire__crate__api__chat_append_message(
+    session_id,
+    role,
+    content,
+    token_count,
+  );
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_create_session(String profile_id, String title) =>
+      wasmModule.wire__crate__api__chat_create_session(profile_id, title);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_delete_session(JSAny session_id) =>
+      wasmModule.wire__crate__api__chat_delete_session(session_id);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_list_sessions() =>
+      wasmModule.wire__crate__api__chat_list_sessions();
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_load_messages(JSAny session_id) =>
+      wasmModule.wire__crate__api__chat_load_messages(session_id);
+
   void wire__crate__api__chat_send(
     NativePortType port_,
     JSAny messages,
@@ -1645,6 +1824,20 @@ class AidashFrbWire implements BaseWire {
     String sink,
   ) =>
       wasmModule.wire__crate__api__chat_send(port_, messages, image_path, sink);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_should_compress(int prompt_tokens, int context_size) =>
+      wasmModule.wire__crate__api__chat_should_compress(
+        prompt_tokens,
+        context_size,
+      );
+
+  void wire__crate__api__chat_summarize(NativePortType port_, JSAny messages) =>
+      wasmModule.wire__crate__api__chat_summarize(port_, messages);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_update_session_title(JSAny session_id, String title) =>
+      wasmModule.wire__crate__api__chat_update_session_title(session_id, title);
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__compare(JSAny models, JSAny? ctx) =>
@@ -1812,12 +2005,43 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__cache_scan(NativePortType port_);
 
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_append_message(
+    JSAny session_id,
+    String role,
+    String content,
+    int? token_count,
+  );
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_create_session(String profile_id, String title);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_delete_session(JSAny session_id);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_list_sessions();
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_load_messages(JSAny session_id);
+
   external void wire__crate__api__chat_send(
     NativePortType port_,
     JSAny messages,
     String? image_path,
     String sink,
   );
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_should_compress(int prompt_tokens, int context_size);
+
+  external void wire__crate__api__chat_summarize(
+    NativePortType port_,
+    JSAny messages,
+  );
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__chat_update_session_title(JSAny session_id, String title);
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__compare(JSAny models, JSAny? ctx);

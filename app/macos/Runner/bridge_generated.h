@@ -81,6 +81,33 @@ typedef struct wire_cst_list_frb_cache_repo_entry {
   int32_t len;
 } wire_cst_list_frb_cache_repo_entry;
 
+typedef struct wire_cst_frb_chat_message_row {
+  int64_t id;
+  int64_t session_id;
+  struct wire_cst_list_prim_u_8_strict *role;
+  struct wire_cst_list_prim_u_8_strict *content;
+  struct wire_cst_list_prim_u_8_strict *created_at;
+  int64_t *token_count;
+} wire_cst_frb_chat_message_row;
+
+typedef struct wire_cst_list_frb_chat_message_row {
+  struct wire_cst_frb_chat_message_row *ptr;
+  int32_t len;
+} wire_cst_list_frb_chat_message_row;
+
+typedef struct wire_cst_frb_chat_session_row {
+  int64_t id;
+  struct wire_cst_list_prim_u_8_strict *profile_id;
+  struct wire_cst_list_prim_u_8_strict *title;
+  struct wire_cst_list_prim_u_8_strict *created_at;
+  struct wire_cst_list_prim_u_8_strict *updated_at;
+} wire_cst_frb_chat_session_row;
+
+typedef struct wire_cst_list_frb_chat_session_row {
+  struct wire_cst_frb_chat_session_row *ptr;
+  int32_t len;
+} wire_cst_list_frb_chat_session_row;
+
 typedef struct wire_cst_frb_compare_row {
   struct wire_cst_list_prim_u_8_strict *profile_id;
   struct wire_cst_list_prim_u_8_strict *display_name;
@@ -287,6 +314,13 @@ typedef struct wire_cst_frb_cache_scan_result {
   struct wire_cst_list_frb_cache_repo_entry *repos;
 } wire_cst_frb_cache_scan_result;
 
+typedef struct wire_cst_frb_chat_stream_event {
+  bool is_done;
+  struct wire_cst_list_prim_u_8_strict *text;
+  uint32_t prompt_tokens;
+  uint32_t completion_tokens;
+} wire_cst_frb_chat_stream_event;
+
 typedef struct wire_cst_frb_delete_summary {
   int64_t runs;
   int64_t samples;
@@ -370,10 +404,33 @@ void frbgen_app_wire__crate__api__cache_delete(int64_t port_,
 
 void frbgen_app_wire__crate__api__cache_scan(int64_t port_);
 
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_append_message(int64_t session_id,
+                                                                      struct wire_cst_list_prim_u_8_strict *role,
+                                                                      struct wire_cst_list_prim_u_8_strict *content,
+                                                                      uint32_t *token_count);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_create_session(struct wire_cst_list_prim_u_8_strict *profile_id,
+                                                                      struct wire_cst_list_prim_u_8_strict *title);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_delete_session(int64_t session_id);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_list_sessions(void);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_load_messages(int64_t session_id);
+
 void frbgen_app_wire__crate__api__chat_send(int64_t port_,
                                             struct wire_cst_list_frb_chat_message *messages,
                                             struct wire_cst_list_prim_u_8_strict *image_path,
                                             struct wire_cst_list_prim_u_8_strict *sink);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_should_compress(uint32_t prompt_tokens,
+                                                                       uint32_t context_size);
+
+void frbgen_app_wire__crate__api__chat_summarize(int64_t port_,
+                                                 struct wire_cst_list_frb_chat_message *messages);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__chat_update_session_title(int64_t session_id,
+                                                                            struct wire_cst_list_prim_u_8_strict *title);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__compare(struct wire_cst_list_String *models,
                                                           int64_t *ctx);
@@ -458,6 +515,8 @@ int32_t *frbgen_app_cst_new_box_autoadd_i_32(int32_t value);
 
 int64_t *frbgen_app_cst_new_box_autoadd_i_64(int64_t value);
 
+uint32_t *frbgen_app_cst_new_box_autoadd_u_32(uint32_t value);
+
 uint64_t *frbgen_app_cst_new_box_autoadd_u_64(uint64_t value);
 
 struct wire_cst_list_String *frbgen_app_cst_new_list_String(int32_t len);
@@ -465,6 +524,10 @@ struct wire_cst_list_String *frbgen_app_cst_new_list_String(int32_t len);
 struct wire_cst_list_frb_cache_repo_entry *frbgen_app_cst_new_list_frb_cache_repo_entry(int32_t len);
 
 struct wire_cst_list_frb_chat_message *frbgen_app_cst_new_list_frb_chat_message(int32_t len);
+
+struct wire_cst_list_frb_chat_message_row *frbgen_app_cst_new_list_frb_chat_message_row(int32_t len);
+
+struct wire_cst_list_frb_chat_session_row *frbgen_app_cst_new_list_frb_chat_session_row(int32_t len);
 
 struct wire_cst_list_frb_compare_row *frbgen_app_cst_new_list_frb_compare_row(int32_t len);
 
@@ -494,10 +557,13 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_box_autoadd_frb_tier_info);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_box_autoadd_i_32);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_box_autoadd_i_64);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_box_autoadd_u_32);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_box_autoadd_u_64);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_String);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_cache_repo_entry);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_chat_message);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_chat_message_row);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_chat_session_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_compare_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_context_stats_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_doctor_item);
@@ -518,7 +584,15 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__bench_start);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__cache_delete);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__cache_scan);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_append_message);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_create_session);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_delete_session);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_list_sessions);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_load_messages);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_send);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_should_compress);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_summarize);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__chat_update_session_title);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__compare);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__delete_model);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__delete_run);

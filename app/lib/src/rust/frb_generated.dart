@@ -65,7 +65,7 @@ class AidashFrb
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -2030387005;
+  int get rustContentHash => 2097317494;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -106,9 +106,43 @@ abstract class AidashFrbApi extends BaseApi {
 
   Future<FrbCacheScanResult> crateApiCacheScan();
 
-  Stream<String> crateApiChatSend({
+  PlatformInt64 crateApiChatAppendMessage({
+    required PlatformInt64 sessionId,
+    required String role,
+    required String content,
+    int? tokenCount,
+  });
+
+  PlatformInt64 crateApiChatCreateSession({
+    required String profileId,
+    required String title,
+  });
+
+  void crateApiChatDeleteSession({required PlatformInt64 sessionId});
+
+  List<FrbChatSessionRow> crateApiChatListSessions();
+
+  List<FrbChatMessageRow> crateApiChatLoadMessages({
+    required PlatformInt64 sessionId,
+  });
+
+  Stream<FrbChatStreamEvent> crateApiChatSend({
     required List<FrbChatMessage> messages,
     String? imagePath,
+  });
+
+  bool crateApiChatShouldCompress({
+    required int promptTokens,
+    required int contextSize,
+  });
+
+  Future<String> crateApiChatSummarize({
+    required List<FrbChatMessage> messages,
+  });
+
+  void crateApiChatUpdateSessionTitle({
+    required PlatformInt64 sessionId,
+    required String title,
   });
 
   List<FrbCompareRow> crateApiCompare({
@@ -453,18 +487,154 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       const TaskConstMeta(debugName: "cache_scan", argNames: []);
 
   @override
-  Stream<String> crateApiChatSend({
+  PlatformInt64 crateApiChatAppendMessage({
+    required PlatformInt64 sessionId,
+    required String role,
+    required String content,
+    int? tokenCount,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_i_64(sessionId);
+          var arg1 = cst_encode_String(role);
+          var arg2 = cst_encode_String(content);
+          var arg3 = cst_encode_opt_box_autoadd_u_32(tokenCount);
+          return wire.wire__crate__api__chat_append_message(
+            arg0,
+            arg1,
+            arg2,
+            arg3,
+          );
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_i_64,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatAppendMessageConstMeta,
+        argValues: [sessionId, role, content, tokenCount],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatAppendMessageConstMeta => const TaskConstMeta(
+    debugName: "chat_append_message",
+    argNames: ["sessionId", "role", "content", "tokenCount"],
+  );
+
+  @override
+  PlatformInt64 crateApiChatCreateSession({
+    required String profileId,
+    required String title,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_String(profileId);
+          var arg1 = cst_encode_String(title);
+          return wire.wire__crate__api__chat_create_session(arg0, arg1);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_i_64,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatCreateSessionConstMeta,
+        argValues: [profileId, title],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatCreateSessionConstMeta => const TaskConstMeta(
+    debugName: "chat_create_session",
+    argNames: ["profileId", "title"],
+  );
+
+  @override
+  void crateApiChatDeleteSession({required PlatformInt64 sessionId}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_i_64(sessionId);
+          return wire.wire__crate__api__chat_delete_session(arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_unit,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatDeleteSessionConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatDeleteSessionConstMeta => const TaskConstMeta(
+    debugName: "chat_delete_session",
+    argNames: ["sessionId"],
+  );
+
+  @override
+  List<FrbChatSessionRow> crateApiChatListSessions() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          return wire.wire__crate__api__chat_list_sessions();
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_frb_chat_session_row,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatListSessionsConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatListSessionsConstMeta =>
+      const TaskConstMeta(debugName: "chat_list_sessions", argNames: []);
+
+  @override
+  List<FrbChatMessageRow> crateApiChatLoadMessages({
+    required PlatformInt64 sessionId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_i_64(sessionId);
+          return wire.wire__crate__api__chat_load_messages(arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_frb_chat_message_row,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatLoadMessagesConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatLoadMessagesConstMeta => const TaskConstMeta(
+    debugName: "chat_load_messages",
+    argNames: ["sessionId"],
+  );
+
+  @override
+  Stream<FrbChatStreamEvent> crateApiChatSend({
     required List<FrbChatMessage> messages,
     String? imagePath,
   }) {
-    final sink = RustStreamSink<String>();
+    final sink = RustStreamSink<FrbChatStreamEvent>();
     unawaited(
       handler.executeNormal(
         NormalTask(
           callFfi: (port_) {
             var arg0 = cst_encode_list_frb_chat_message(messages);
             var arg1 = cst_encode_opt_String(imagePath);
-            var arg2 = cst_encode_StreamSink_String_Dco(sink);
+            var arg2 = cst_encode_StreamSink_frb_chat_stream_event_Dco(sink);
             return wire.wire__crate__api__chat_send(port_, arg0, arg1, arg2);
           },
           codec: DcoCodec(
@@ -484,6 +654,87 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     debugName: "chat_send",
     argNames: ["messages", "imagePath", "sink"],
   );
+
+  @override
+  bool crateApiChatShouldCompress({
+    required int promptTokens,
+    required int contextSize,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_u_32(promptTokens);
+          var arg1 = cst_encode_u_32(contextSize);
+          return wire.wire__crate__api__chat_should_compress(arg0, arg1);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiChatShouldCompressConstMeta,
+        argValues: [promptTokens, contextSize],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatShouldCompressConstMeta => const TaskConstMeta(
+    debugName: "chat_should_compress",
+    argNames: ["promptTokens", "contextSize"],
+  );
+
+  @override
+  Future<String> crateApiChatSummarize({
+    required List<FrbChatMessage> messages,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          var arg0 = cst_encode_list_frb_chat_message(messages);
+          return wire.wire__crate__api__chat_summarize(port_, arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_String,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatSummarizeConstMeta,
+        argValues: [messages],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatSummarizeConstMeta =>
+      const TaskConstMeta(debugName: "chat_summarize", argNames: ["messages"]);
+
+  @override
+  void crateApiChatUpdateSessionTitle({
+    required PlatformInt64 sessionId,
+    required String title,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_i_64(sessionId);
+          var arg1 = cst_encode_String(title);
+          return wire.wire__crate__api__chat_update_session_title(arg0, arg1);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_unit,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiChatUpdateSessionTitleConstMeta,
+        argValues: [sessionId, title],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiChatUpdateSessionTitleConstMeta =>
+      const TaskConstMeta(
+        debugName: "chat_update_session_title",
+        argNames: ["sessionId", "title"],
+      );
 
   @override
   List<FrbCompareRow> crateApiCompare({
@@ -1141,12 +1392,6 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
-  RustStreamSink<String> dco_decode_StreamSink_String_Dco(dynamic raw) {
-    // Codec=Dco (DartCObject based), see doc to use other codecs
-    throw UnimplementedError();
-  }
-
-  @protected
   RustStreamSink<FrbBenchEvent> dco_decode_StreamSink_frb_bench_event_Dco(
     dynamic raw,
   ) {
@@ -1157,6 +1402,13 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   @protected
   RustStreamSink<FrbBootstrapEvent>
   dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  dco_decode_StreamSink_frb_chat_stream_event_Dco(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
   }
@@ -1235,6 +1487,12 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_i_64(raw);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -1394,6 +1652,51 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     return FrbChatMessage(
       role: dco_decode_String(arr[0]),
       content: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  FrbChatMessageRow dco_decode_frb_chat_message_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return FrbChatMessageRow(
+      id: dco_decode_i_64(arr[0]),
+      sessionId: dco_decode_i_64(arr[1]),
+      role: dco_decode_String(arr[2]),
+      content: dco_decode_String(arr[3]),
+      createdAt: dco_decode_String(arr[4]),
+      tokenCount: dco_decode_opt_box_autoadd_i_64(arr[5]),
+    );
+  }
+
+  @protected
+  FrbChatSessionRow dco_decode_frb_chat_session_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return FrbChatSessionRow(
+      id: dco_decode_i_64(arr[0]),
+      profileId: dco_decode_String(arr[1]),
+      title: dco_decode_String(arr[2]),
+      createdAt: dco_decode_String(arr[3]),
+      updatedAt: dco_decode_String(arr[4]),
+    );
+  }
+
+  @protected
+  FrbChatStreamEvent dco_decode_frb_chat_stream_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return FrbChatStreamEvent(
+      isDone: dco_decode_bool(arr[0]),
+      text: dco_decode_String(arr[1]),
+      promptTokens: dco_decode_u_32(arr[2]),
+      completionTokens: dco_decode_u_32(arr[3]),
     );
   }
 
@@ -1701,6 +2004,18 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  List<FrbChatMessageRow> dco_decode_list_frb_chat_message_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_frb_chat_message_row).toList();
+  }
+
+  @protected
+  List<FrbChatSessionRow> dco_decode_list_frb_chat_session_row(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_frb_chat_session_row).toList();
+  }
+
+  @protected
   List<FrbCompareRow> dco_decode_list_frb_compare_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_frb_compare_row).toList();
@@ -1809,6 +2124,12 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_u_32(raw);
+  }
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_u_64(raw);
@@ -1875,14 +2196,6 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
-  RustStreamSink<String> sse_decode_StreamSink_String_Dco(
-    SseDeserializer deserializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    throw UnimplementedError('Unreachable ()');
-  }
-
-  @protected
   RustStreamSink<FrbBenchEvent> sse_decode_StreamSink_frb_bench_event_Dco(
     SseDeserializer deserializer,
   ) {
@@ -1893,6 +2206,15 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   @protected
   RustStreamSink<FrbBootstrapEvent>
   sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  sse_decode_StreamSink_frb_chat_stream_event_Dco(
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     throw UnimplementedError('Unreachable ()');
   }
@@ -1980,6 +2302,12 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_u_32(deserializer));
   }
 
   @protected
@@ -2163,6 +2491,63 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_role = sse_decode_String(deserializer);
     var var_content = sse_decode_String(deserializer);
     return FrbChatMessage(role: var_role, content: var_content);
+  }
+
+  @protected
+  FrbChatMessageRow sse_decode_frb_chat_message_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_sessionId = sse_decode_i_64(deserializer);
+    var var_role = sse_decode_String(deserializer);
+    var var_content = sse_decode_String(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    var var_tokenCount = sse_decode_opt_box_autoadd_i_64(deserializer);
+    return FrbChatMessageRow(
+      id: var_id,
+      sessionId: var_sessionId,
+      role: var_role,
+      content: var_content,
+      createdAt: var_createdAt,
+      tokenCount: var_tokenCount,
+    );
+  }
+
+  @protected
+  FrbChatSessionRow sse_decode_frb_chat_session_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_profileId = sse_decode_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    var var_updatedAt = sse_decode_String(deserializer);
+    return FrbChatSessionRow(
+      id: var_id,
+      profileId: var_profileId,
+      title: var_title,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
+  }
+
+  @protected
+  FrbChatStreamEvent sse_decode_frb_chat_stream_event(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_isDone = sse_decode_bool(deserializer);
+    var var_text = sse_decode_String(deserializer);
+    var var_promptTokens = sse_decode_u_32(deserializer);
+    var var_completionTokens = sse_decode_u_32(deserializer);
+    return FrbChatStreamEvent(
+      isDone: var_isDone,
+      text: var_text,
+      promptTokens: var_promptTokens,
+      completionTokens: var_completionTokens,
+    );
   }
 
   @protected
@@ -2557,6 +2942,34 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  List<FrbChatMessageRow> sse_decode_list_frb_chat_message_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FrbChatMessageRow>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_frb_chat_message_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<FrbChatSessionRow> sse_decode_list_frb_chat_session_row(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FrbChatSessionRow>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_frb_chat_session_row(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<FrbCompareRow> sse_decode_list_frb_compare_row(
     SseDeserializer deserializer,
   ) {
@@ -2764,6 +3177,17 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_u_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2880,23 +3304,6 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
-  void sse_encode_StreamSink_String_Dco(
-    RustStreamSink<String> self,
-    SseSerializer serializer,
-  ) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_String(
-      self.setupAndSerialize(
-        codec: DcoCodec(
-          decodeSuccessData: dco_decode_String,
-          decodeErrorData: dco_decode_AnyhowException,
-        ),
-      ),
-      serializer,
-    );
-  }
-
-  @protected
   void sse_encode_StreamSink_frb_bench_event_Dco(
     RustStreamSink<FrbBenchEvent> self,
     SseSerializer serializer,
@@ -2923,6 +3330,23 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       self.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_bootstrap_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_frb_chat_stream_event_Dco(
+    RustStreamSink<FrbChatStreamEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_chat_stream_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -3045,6 +3469,12 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self, serializer);
   }
 
   @protected
@@ -3192,6 +3622,45 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.role, serializer);
     sse_encode_String(self.content, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_chat_message_row(
+    FrbChatMessageRow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_i_64(self.sessionId, serializer);
+    sse_encode_String(self.role, serializer);
+    sse_encode_String(self.content, serializer);
+    sse_encode_String(self.createdAt, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.tokenCount, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_chat_session_row(
+    FrbChatSessionRow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.profileId, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.createdAt, serializer);
+    sse_encode_String(self.updatedAt, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_chat_stream_event(
+    FrbChatStreamEvent self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.isDone, serializer);
+    sse_encode_String(self.text, serializer);
+    sse_encode_u_32(self.promptTokens, serializer);
+    sse_encode_u_32(self.completionTokens, serializer);
   }
 
   @protected
@@ -3475,6 +3944,30 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_frb_chat_message_row(
+    List<FrbChatMessageRow> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_frb_chat_message_row(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_frb_chat_session_row(
+    List<FrbChatSessionRow> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_frb_chat_session_row(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_frb_compare_row(
     List<FrbCompareRow> self,
     SseSerializer serializer,
@@ -3666,6 +4159,16 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_i_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_u_32(self, serializer);
     }
   }
 

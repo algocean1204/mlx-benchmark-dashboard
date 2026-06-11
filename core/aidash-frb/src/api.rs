@@ -225,6 +225,39 @@ pub struct FrbChatMessage {
 }
 
 #[derive(Debug, Clone)]
+pub struct FrbChatSessionRow {
+    pub id: i64,
+    pub profile_id: String,
+    pub title: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbChatMessageRow {
+    pub id: i64,
+    pub session_id: i64,
+    pub role: String,
+    pub content: String,
+    pub created_at: String,
+    pub token_count: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbChatSendResult {
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbChatStreamEvent {
+    pub is_done: bool,
+    pub text: String,
+    pub prompt_tokens: u32,
+    pub completion_tokens: u32,
+}
+
+#[derive(Debug, Clone)]
 pub struct FrbFixProgress {
     pub line: String,
     pub done: bool,
@@ -959,12 +992,160 @@ pub async fn serve_stop() -> Result<(), String> {
     })
 }
 
+fn frb_messages_to_client(messages: &[FrbChatMessage]) -> Vec<client::ChatMessage> {
+    messages
+        .iter()
+        .map(|m| client::ChatMessage {
+            role: m.role.clone(),
+            content: m.content.clone(),
+        })
+        .collect()
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_should_compress(prompt_tokens: u32, context_size: u32) -> bool {
+    aidash_core::chat::should_compress(prompt_tokens, context_size)
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_list_sessions() -> Result<Vec<FrbChatSessionRow>, String> {
+    with_state(|s| {
+        let rows = s.db.list_chat_sessions().map_err(|e| e.to_string())?;
+        Ok(rows
+            .into_iter()
+            .map(|r| FrbChatSessionRow {
+                id: r.id,
+                profile_id: r.profile_id,
+                title: r.title,
+                created_at: r.created_at,
+                updated_at: r.updated_at,
+            })
+            .collect())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_create_session(profile_id: String, title: String) -> Result<i64, String> {
+    with_state(|s| {
+        s.db
+            .create_chat_session(&profile_id, &title)
+            .map_err(|e| e.to_string())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_delete_session(session_id: i64) -> Result<(), String> {
+    with_state(|s| {
+        s.db
+            .delete_chat_session(session_id)
+            .map_err(|e| e.to_string())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_load_messages(session_id: i64) -> Result<Vec<FrbChatMessageRow>, String> {
+    with_state(|s| {
+        let rows = s
+            .db
+            .load_chat_messages(session_id)
+            .map_err(|e| e.to_string())?;
+        Ok(rows
+            .into_iter()
+            .map(|r| FrbChatMessageRow {
+                id: r.id,
+                session_id: r.session_id,
+                role: r.role,
+                content: r.content,
+                created_at: r.created_at,
+                token_count: r.token_count,
+            })
+            .collect())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_append_message(
+    session_id: i64,
+    role: String,
+    content: String,
+    token_count: Option<u32>,
+) -> Result<i64, String> {
+    with_state(|s| {
+        s.db
+            .append_chat_message(session_id, &role, &content, token_count)
+            .map_err(|e| e.to_string())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn chat_update_session_title(session_id: i64, title: String) -> Result<(), String> {
+    with_state(|s| {
+        s.db
+            .update_chat_session_title(session_id, &title)
+            .map_err(|e| e.to_string())
+    })
+}
+
+#[flutter_rust_bridge::frb]
+pub async fn chat_summarize(messages: Vec<FrbChatMessage>) -> Result<String, String> {
+    let (cmd_tx, port, profile_id) = with_state(|s| {
+        let handle = s
+            .serve_handle
+            .as_ref()
+            .ok_or_else(|| "server not running — call serve_start first".to_string())?;
+        let port = (*handle.port_rx.borrow())
+            .ok_or_else(|| "server port not ready".to_string())?;
+        let profile_id = s
+            .serve_profile_id
+            .clone()
+            .ok_or_else(|| "serve profile not set".to_string())?;
+        Ok((handle.command_tx.clone(), port, profile_id))
+    })?;
+
+    let turns: Vec<aidash_core::chat::ChatTurn> = messages
+        .iter()
+        .map(|m| aidash_core::chat::ChatTurn {
+            role: m.role.clone(),
+            content: m.content.clone(),
+        })
+        .collect();
+    let prompt = aidash_core::chat::build_summary_prompt(&turns);
+    let payload = vec![client::ChatMessage {
+        role: "user".into(),
+        content: prompt,
+    }];
+
+    let _ = cmd_tx.send(Command::BeginWork).await;
+    let http = reqwest::Client::builder()
+        .timeout(Duration::from_secs(300))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let summary = client::chat_completion_messages(
+        &http,
+        port,
+        &profile_id,
+        &payload,
+        512,
+        0.0,
+    )
+    .await;
+    let _ = cmd_tx.send(Command::EndWork).await;
+    summary
+}
+
 #[flutter_rust_bridge::frb]
 pub async fn chat_send(
     messages: Vec<FrbChatMessage>,
     image_path: Option<String>,
-    sink: StreamSink<String>,
+    sink: StreamSink<FrbChatStreamEvent>,
 ) -> Result<(), String> {
+    if messages.is_empty() {
+        return Err("empty messages".into());
+    }
+    if messages.iter().all(|m| m.role != "user") {
+        return Err("no user message".into());
+    }
+
     let (root, cmd_tx, events_tx, port, profile_id, max_tokens) = with_state(|s| {
         let handle = s
             .serve_handle
@@ -989,13 +1170,6 @@ pub async fn chat_send(
         ))
     })?;
 
-    let last_user = messages
-        .iter()
-        .rev()
-        .find(|m| m.role == "user")
-        .map(|m| m.content.clone())
-        .ok_or_else(|| "no user message".to_string())?;
-
     let image = if let Some(path) = image_path {
         Some(resolve_file_path(&path, &root)?)
     } else {
@@ -1004,11 +1178,16 @@ pub async fn chat_send(
 
     if let Some(tx) = events_tx {
         let mut rx = tx.subscribe();
-        let token_sink = sink;
+        let token_sink = sink.clone();
         tokio::spawn(async move {
             while let Ok(ev) = rx.recv().await {
                 if let CoreEvent::Token { text, .. } = ev {
-                    token_sink.add(text);
+                    token_sink.add(FrbChatStreamEvent {
+                        is_done: false,
+                        text,
+                        prompt_tokens: 0,
+                        completion_tokens: 0,
+                    });
                 }
             }
         });
@@ -1021,35 +1200,34 @@ pub async fn chat_send(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let event_tx = with_state(|s| {
-        Ok(s.serve_events_tx.clone())
-    })?;
+    let event_tx = with_state(|s| Ok(s.serve_events_tx.clone()))?;
+    let client_messages = frb_messages_to_client(&messages);
 
-    let result = if let Some(img) = image {
-        client::stream_chat_completion_with_image(
-            &http,
-            port,
-            &profile_id,
-            &last_user,
-            Some(img.as_path()),
-            max_tokens,
-            event_tx,
-        )
-        .await
-    } else {
-        client::stream_chat_completion(
-            &http,
-            port,
-            &profile_id,
-            &last_user,
-            max_tokens,
-            event_tx,
-        )
-        .await
-    };
+    let result = client::stream_chat_completion_messages(
+        &http,
+        port,
+        &profile_id,
+        &client_messages,
+        image.as_ref().map(|p| p.as_path()),
+        max_tokens,
+        event_tx,
+    )
+    .await;
 
     let _ = cmd_tx.send(Command::EndWork).await;
-    result.map(|_| ()).map_err(|e| e.to_string())
+
+    match result {
+        Ok((_text, stats)) => {
+            sink.add(FrbChatStreamEvent {
+                is_done: true,
+                text: String::new(),
+                prompt_tokens: stats.tokens_in,
+                completion_tokens: stats.tokens_out,
+            });
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
 }
 
 #[flutter_rust_bridge::frb]

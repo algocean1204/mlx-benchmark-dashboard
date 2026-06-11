@@ -14,7 +14,7 @@ use crate::client::StreamStats;
 use crate::monitor::ResourceSample;
 use crate::profile::ModelProfile;
 
-const SCHEMA_VERSION: i32 = 2;
+const SCHEMA_VERSION: i32 = 3;
 
 const SCHEMA_SQL: &str = r#"
 CREATE TABLE IF NOT EXISTS models (
@@ -160,6 +160,28 @@ const MIGRATION_V2_SQL: &str = r#"
 ALTER TABLE runs ADD COLUMN error_message TEXT;
 "#;
 
+const MIGRATION_V3_SQL: &str = r#"
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id INTEGER PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY,
+  session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  token_count INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, id);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated ON chat_sessions(updated_at DESC);
+"#;
+
 #[derive(Debug)]
 pub struct Database {
     pub(crate) conn: Mutex<Connection>,
@@ -243,6 +265,25 @@ pub struct CompareRow {
     pub tokens_out: Option<i64>,
     pub measured_at: Option<String>,
     pub hf_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatSessionRow {
+    pub id: i64,
+    pub profile_id: String,
+    pub title: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessageRow {
+    pub id: i64,
+    pub session_id: i64,
+    pub role: String,
+    pub content: String,
+    pub created_at: String,
+    pub token_count: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -864,6 +905,120 @@ impl Database {
         )?)
     }
 
+    pub fn create_chat_session(&self, profile_id: &str, title: &str) -> Result<i64, DbError> {
+        let now = iso_timestamp();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO chat_sessions (profile_id, title, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![profile_id, title, now, now],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    pub fn list_chat_sessions(&self) -> Result<Vec<ChatSessionRow>, DbError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, profile_id, title, created_at, updated_at
+             FROM chat_sessions ORDER BY updated_at DESC, id DESC",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(ChatSessionRow {
+                id: row.get(0)?,
+                profile_id: row.get(1)?,
+                title: row.get(2)?,
+                created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
+    pub fn delete_chat_session(&self, session_id: i64) -> Result<(), DbError> {
+        let conn = self.conn.lock().unwrap();
+        let deleted = conn.execute(
+            "DELETE FROM chat_sessions WHERE id = ?1",
+            params![session_id],
+        )?;
+        if deleted == 0 {
+            return Err(DbError::NotFound(session_id));
+        }
+        Ok(())
+    }
+
+    pub fn touch_chat_session(&self, session_id: i64) -> Result<(), DbError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
+            params![iso_timestamp(), session_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn update_chat_session_title(&self, session_id: i64, title: &str) -> Result<(), DbError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE chat_sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
+            params![title, iso_timestamp(), session_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn load_chat_messages(&self, session_id: i64) -> Result<Vec<ChatMessageRow>, DbError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, session_id, role, content, created_at, token_count
+             FROM chat_messages WHERE session_id = ?1 ORDER BY id ASC",
+        )?;
+        let rows = stmt.query_map(params![session_id], |row| {
+            Ok(ChatMessageRow {
+                id: row.get(0)?,
+                session_id: row.get(1)?,
+                role: row.get(2)?,
+                content: row.get(3)?,
+                created_at: row.get(4)?,
+                token_count: row.get(5)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
+    pub fn append_chat_message(
+        &self,
+        session_id: i64,
+        role: &str,
+        content: &str,
+        token_count: Option<u32>,
+    ) -> Result<i64, DbError> {
+        let now = iso_timestamp();
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO chat_messages (session_id, role, content, created_at, token_count)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                session_id,
+                role,
+                content,
+                now,
+                token_count.map(|v| v as i64),
+            ],
+        )?;
+        let id = conn.last_insert_rowid();
+        conn.execute(
+            "UPDATE chat_sessions SET updated_at = ?1 WHERE id = ?2",
+            params![now, session_id],
+        )?;
+        Ok(id)
+    }
+
     pub fn export_run_csv(&self, run_id: i64) -> Result<String, DbError> {
         let export = self.export_run(run_id)?;
         let mut out = String::new();
@@ -957,6 +1112,12 @@ fn migrate_schema(conn: &Connection) -> Result<(), DbError> {
             conn.execute_batch(MIGRATION_V2_SQL)?;
         }
         conn.execute_batch("PRAGMA user_version=2;")?;
+        version = 2;
+    }
+
+    if version < 3 {
+        conn.execute_batch(MIGRATION_V3_SQL)?;
+        conn.execute_batch("PRAGMA user_version=3;")?;
     }
 
     Ok(())
@@ -1042,6 +1203,29 @@ fn map_run_list_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RunListRow> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn chat_session_crud() {
+        let dir = std::env::temp_dir().join(format!("aidash_chat_test_{}", std::process::id()));
+        let path = dir.join("test.db");
+        let db = Database::open(Some(&path)).expect("open");
+        let sid = db
+            .create_chat_session("test/model", "첫 대화")
+            .expect("create session");
+        let msg_id = db
+            .append_chat_message(sid, "user", "안녕", None)
+            .expect("append");
+        assert!(msg_id > 0);
+        let sessions = db.list_chat_sessions().expect("list");
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].title, "첫 대화");
+        let messages = db.load_chat_messages(sid).expect("load");
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].role, "user");
+        db.delete_chat_session(sid).expect("delete");
+        assert!(db.list_chat_sessions().unwrap().is_empty());
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn schema_roundtrip() {

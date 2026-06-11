@@ -139,8 +139,8 @@ void main() {
       find.text('같은 모델의 컨텍스트별 측정 비교입니다.'),
       findsOneWidget,
     );
-    expect(find.text('4096'), findsWidgets);
-    expect(find.text('8192'), findsWidgets);
+    expect(find.text('4K'), findsWidgets);
+    expect(find.text('8K'), findsWidgets);
   });
 
   testWidgets('비교 화면에서 모델 2개 선택 시 자동으로 비교 결과가 표시된다', (tester) async {
@@ -158,7 +158,7 @@ void main() {
     await tester.tap(find.text('Llama 3.1 8B 4bit'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TPS'), findsWidgets);
+    expect(find.textContaining('TPS(토큰속도)'), findsWidgets);
   });
 
   testWidgets('모델 관리 화면이 디스크 카드와 설치 목록을 렌더한다', (tester) async {
@@ -211,7 +211,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('스윕 단계'), findsOneWidget);
-    expect(find.text('65536'), findsWidgets);
+    expect(find.text('64K'), findsWidgets);
     expect(
       find.textContaining('대형 컨텍스트'),
       findsOneWidget,
@@ -277,6 +277,34 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('채팅 불가 모델'), findsOneWidget);
+  });
+
+  testWidgets('채팅 세션 패널과 컨텍스트 게이지가 표시된다', (tester) async {
+    await tester.pumpWidget(_wrap(const ChatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('새 대화'), findsOneWidget);
+    expect(find.textContaining('컨텍스트 사용'), findsOneWidget);
+    expect(find.text('4K'), findsWidgets);
+  });
+
+  testWidgets('압축 안내 칩이 대화에 표시된다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const Center(
+          child: Chip(
+            avatar: Icon(Icons.compress, size: 16),
+            label: Text('이전 대화가 요약·압축되었습니다 — 토큰 절약'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('이전 대화가 요약·압축되었습니다 — 토큰 절약'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('DoctorBadge가 3가지 상태를 올바르게 표시한다', (tester) async {

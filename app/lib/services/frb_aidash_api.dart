@@ -111,7 +111,64 @@ class FrbAidashApi implements AidashApi {
   Future<void> serveStop() => frb.serveStop();
 
   @override
-  Stream<String> chatSend({
+  bool chatShouldCompress({
+    required int promptTokens,
+    required int contextSize,
+  }) =>
+      frb.chatShouldCompress(
+        promptTokens: promptTokens,
+        contextSize: contextSize,
+      );
+
+  @override
+  List<frb.FrbChatSessionRow> chatListSessions() => frb.chatListSessions();
+
+  @override
+  int chatCreateSession({required String profileId, required String title}) =>
+      frb
+          .chatCreateSession(profileId: profileId, title: title)
+          .toInt();
+
+  @override
+  void chatDeleteSession({required int sessionId}) =>
+      frb.chatDeleteSession(sessionId: toPlatformInt64(sessionId));
+
+  @override
+  List<frb.FrbChatMessageRow> chatLoadMessages({required int sessionId}) =>
+      frb.chatLoadMessages(sessionId: toPlatformInt64(sessionId));
+
+  @override
+  int chatAppendMessage({
+    required int sessionId,
+    required String role,
+    required String content,
+    int? tokenCount,
+  }) =>
+      frb
+          .chatAppendMessage(
+            sessionId: toPlatformInt64(sessionId),
+            role: role,
+            content: content,
+            tokenCount: tokenCount,
+          )
+          .toInt();
+
+  @override
+  void chatUpdateSessionTitle({
+    required int sessionId,
+    required String title,
+  }) =>
+      frb.chatUpdateSessionTitle(
+        sessionId: toPlatformInt64(sessionId),
+        title: title,
+      );
+
+  @override
+  Future<String> chatSummarize({required List<frb.FrbChatMessage> messages}) =>
+      frb.chatSummarize(messages: messages);
+
+  @override
+  Stream<frb.FrbChatStreamEvent> chatSend({
     required List<frb.FrbChatMessage> messages,
     String? imagePath,
   }) =>

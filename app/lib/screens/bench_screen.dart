@@ -429,7 +429,7 @@ class _BenchScreenState extends State<BenchScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('ctx ${result.contextSize} · ${result.status}'),
+            Text('컨텍스트 ${formatContext(result.contextSize)} · ${result.status}'),
             const SizedBox(height: 12),
             if (isTokenTask) ...[
               _ResultMetric(
@@ -556,7 +556,7 @@ class _BenchScreenState extends State<BenchScreen> {
                     children: _ctxOptions
                         .map(
                           (c) => ChoiceChip(
-                            label: Text('$c'),
+                            label: Text(formatContext(c)),
                             selected: _ctx == c,
                             onSelected: _running
                                 ? null
@@ -599,7 +599,7 @@ class _BenchScreenState extends State<BenchScreen> {
                       runSpacing: 0,
                       children: _ctxOptions.map((step) {
                         return FilterChip(
-                          label: Text('$step'),
+                          label: Text(formatContext(step)),
                           selected: _selectedSweepSteps.contains(step),
                           onSelected: _running
                               ? null
@@ -692,7 +692,8 @@ class _BenchScreenState extends State<BenchScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              '${profile.backend} · ${TaskLabels.label(profile.modelType)} · ctx ${profile.contextMin}–${profile.contextMax}',
+              '${profile.backend} · ${TaskLabels.label(profile.modelType)} · '
+              '컨텍스트 ${formatContext(profile.contextMin)}–${formatContext(profile.contextMax)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.inkMuted,
                   ),

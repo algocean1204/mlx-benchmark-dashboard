@@ -8,8 +8,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `lifecycle_state_str`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `frb_messages_to_client`, `lifecycle_state_str`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `FrbChatSendResult`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 void init({required String rootPath}) =>
     AidashFrb.instance.api.crateApiInit(rootPath: rootPath);
@@ -89,7 +90,55 @@ Future<void> serveStart({required String profileId, required int ctx}) =>
 
 Future<void> serveStop() => AidashFrb.instance.api.crateApiServeStop();
 
-Stream<String> chatSend({
+bool chatShouldCompress({
+  required int promptTokens,
+  required int contextSize,
+}) => AidashFrb.instance.api.crateApiChatShouldCompress(
+  promptTokens: promptTokens,
+  contextSize: contextSize,
+);
+
+List<FrbChatSessionRow> chatListSessions() =>
+    AidashFrb.instance.api.crateApiChatListSessions();
+
+PlatformInt64 chatCreateSession({
+  required String profileId,
+  required String title,
+}) => AidashFrb.instance.api.crateApiChatCreateSession(
+  profileId: profileId,
+  title: title,
+);
+
+void chatDeleteSession({required PlatformInt64 sessionId}) =>
+    AidashFrb.instance.api.crateApiChatDeleteSession(sessionId: sessionId);
+
+List<FrbChatMessageRow> chatLoadMessages({required PlatformInt64 sessionId}) =>
+    AidashFrb.instance.api.crateApiChatLoadMessages(sessionId: sessionId);
+
+PlatformInt64 chatAppendMessage({
+  required PlatformInt64 sessionId,
+  required String role,
+  required String content,
+  int? tokenCount,
+}) => AidashFrb.instance.api.crateApiChatAppendMessage(
+  sessionId: sessionId,
+  role: role,
+  content: content,
+  tokenCount: tokenCount,
+);
+
+void chatUpdateSessionTitle({
+  required PlatformInt64 sessionId,
+  required String title,
+}) => AidashFrb.instance.api.crateApiChatUpdateSessionTitle(
+  sessionId: sessionId,
+  title: title,
+);
+
+Future<String> chatSummarize({required List<FrbChatMessage> messages}) =>
+    AidashFrb.instance.api.crateApiChatSummarize(messages: messages);
+
+Stream<FrbChatStreamEvent> chatSend({
   required List<FrbChatMessage> messages,
   String? imagePath,
 }) => AidashFrb.instance.api.crateApiChatSend(
@@ -402,6 +451,111 @@ class FrbChatMessage {
           runtimeType == other.runtimeType &&
           role == other.role &&
           content == other.content;
+}
+
+class FrbChatMessageRow {
+  final PlatformInt64 id;
+  final PlatformInt64 sessionId;
+  final String role;
+  final String content;
+  final String createdAt;
+  final PlatformInt64? tokenCount;
+
+  const FrbChatMessageRow({
+    required this.id,
+    required this.sessionId,
+    required this.role,
+    required this.content,
+    required this.createdAt,
+    this.tokenCount,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      sessionId.hashCode ^
+      role.hashCode ^
+      content.hashCode ^
+      createdAt.hashCode ^
+      tokenCount.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbChatMessageRow &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          sessionId == other.sessionId &&
+          role == other.role &&
+          content == other.content &&
+          createdAt == other.createdAt &&
+          tokenCount == other.tokenCount;
+}
+
+class FrbChatSessionRow {
+  final PlatformInt64 id;
+  final String profileId;
+  final String title;
+  final String createdAt;
+  final String updatedAt;
+
+  const FrbChatSessionRow({
+    required this.id,
+    required this.profileId,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      profileId.hashCode ^
+      title.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbChatSessionRow &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          profileId == other.profileId &&
+          title == other.title &&
+          createdAt == other.createdAt &&
+          updatedAt == other.updatedAt;
+}
+
+class FrbChatStreamEvent {
+  final bool isDone;
+  final String text;
+  final int promptTokens;
+  final int completionTokens;
+
+  const FrbChatStreamEvent({
+    required this.isDone,
+    required this.text,
+    required this.promptTokens,
+    required this.completionTokens,
+  });
+
+  @override
+  int get hashCode =>
+      isDone.hashCode ^
+      text.hashCode ^
+      promptTokens.hashCode ^
+      completionTokens.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbChatStreamEvent &&
+          runtimeType == other.runtimeType &&
+          isDone == other.isDone &&
+          text == other.text &&
+          promptTokens == other.promptTokens &&
+          completionTokens == other.completionTokens;
 }
 
 class FrbCompareRow {

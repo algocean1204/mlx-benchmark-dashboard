@@ -22,9 +22,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   AnyhowException dco_decode_AnyhowException(dynamic raw);
 
   @protected
-  RustStreamSink<String> dco_decode_StreamSink_String_Dco(dynamic raw);
-
-  @protected
   RustStreamSink<FrbBenchEvent> dco_decode_StreamSink_frb_bench_event_Dco(
     dynamic raw,
   );
@@ -32,6 +29,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbBootstrapEvent>
   dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw);
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  dco_decode_StreamSink_frb_chat_stream_event_Dco(dynamic raw);
 
   @protected
   RustStreamSink<FrbDownloadProgress>
@@ -74,6 +75,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
   BigInt dco_decode_box_autoadd_u_64(dynamic raw);
 
   @protected
@@ -105,6 +109,15 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbChatMessage dco_decode_frb_chat_message(dynamic raw);
+
+  @protected
+  FrbChatMessageRow dco_decode_frb_chat_message_row(dynamic raw);
+
+  @protected
+  FrbChatSessionRow dco_decode_frb_chat_session_row(dynamic raw);
+
+  @protected
+  FrbChatStreamEvent dco_decode_frb_chat_stream_event(dynamic raw);
 
   @protected
   FrbCompareRow dco_decode_frb_compare_row(dynamic raw);
@@ -173,6 +186,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   List<FrbChatMessage> dco_decode_list_frb_chat_message(dynamic raw);
 
   @protected
+  List<FrbChatMessageRow> dco_decode_list_frb_chat_message_row(dynamic raw);
+
+  @protected
+  List<FrbChatSessionRow> dco_decode_list_frb_chat_session_row(dynamic raw);
+
+  @protected
   List<FrbCompareRow> dco_decode_list_frb_compare_row(dynamic raw);
 
   @protected
@@ -226,6 +245,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
 
   @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
+
+  @protected
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
@@ -255,11 +277,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
   @protected
-  RustStreamSink<String> sse_decode_StreamSink_String_Dco(
-    SseDeserializer deserializer,
-  );
-
-  @protected
   RustStreamSink<FrbBenchEvent> sse_decode_StreamSink_frb_bench_event_Dco(
     SseDeserializer deserializer,
   );
@@ -267,6 +284,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbBootstrapEvent>
   sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<FrbChatStreamEvent>
+  sse_decode_StreamSink_frb_chat_stream_event_Dco(SseDeserializer deserializer);
 
   @protected
   RustStreamSink<FrbDownloadProgress>
@@ -315,6 +336,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
   BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
@@ -354,6 +378,21 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbChatMessage sse_decode_frb_chat_message(SseDeserializer deserializer);
+
+  @protected
+  FrbChatMessageRow sse_decode_frb_chat_message_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbChatSessionRow sse_decode_frb_chat_session_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbChatStreamEvent sse_decode_frb_chat_stream_event(
+    SseDeserializer deserializer,
+  );
 
   @protected
   FrbCompareRow sse_decode_frb_compare_row(SseDeserializer deserializer);
@@ -436,6 +475,16 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  List<FrbChatMessageRow> sse_decode_list_frb_chat_message_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbChatSessionRow> sse_decode_list_frb_chat_session_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<FrbCompareRow> sse_decode_list_frb_compare_row(
     SseDeserializer deserializer,
   );
@@ -507,6 +556,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
 
   @protected
@@ -543,21 +595,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
-  ffi.Pointer<wire_cst_list_prim_u_8_strict> cst_encode_StreamSink_String_Dco(
-    RustStreamSink<String> raw,
-  ) {
-    // Codec=Cst (C-struct based), see doc to use other codecs
-    return cst_encode_String(
-      raw.setupAndSerialize(
-        codec: DcoCodec(
-          decodeSuccessData: dco_decode_String,
-          decodeErrorData: dco_decode_AnyhowException,
-        ),
-      ),
-    );
-  }
-
-  @protected
   ffi.Pointer<wire_cst_list_prim_u_8_strict>
   cst_encode_StreamSink_frb_bench_event_Dco(RustStreamSink<FrbBenchEvent> raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
@@ -581,6 +618,22 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       raw.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_bootstrap_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_prim_u_8_strict>
+  cst_encode_StreamSink_frb_chat_stream_event_Dco(
+    RustStreamSink<FrbChatStreamEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_chat_stream_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -694,6 +747,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  ffi.Pointer<ffi.Uint32> cst_encode_box_autoadd_u_32(int raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return wire.cst_new_box_autoadd_u_32(cst_encode_u_32(raw));
+  }
+
+  @protected
   ffi.Pointer<ffi.Uint64> cst_encode_box_autoadd_u_64(BigInt raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return wire.cst_new_box_autoadd_u_64(cst_encode_u_64(raw));
@@ -734,6 +793,28 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     final ans = wire.cst_new_list_frb_chat_message(raw.length);
     for (var i = 0; i < raw.length; ++i) {
       cst_api_fill_to_wire_frb_chat_message(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_frb_chat_message_row>
+  cst_encode_list_frb_chat_message_row(List<FrbChatMessageRow> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_frb_chat_message_row(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_frb_chat_message_row(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_frb_chat_session_row>
+  cst_encode_list_frb_chat_session_row(List<FrbChatSessionRow> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_frb_chat_session_row(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_frb_chat_session_row(raw[i], ans.ref.ptr[i]);
     }
     return ans;
   }
@@ -900,6 +981,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   ffi.Pointer<ffi.Int64> cst_encode_opt_box_autoadd_i_64(PlatformInt64? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? ffi.nullptr : cst_encode_box_autoadd_i_64(raw);
+  }
+
+  @protected
+  ffi.Pointer<ffi.Uint32> cst_encode_opt_box_autoadd_u_32(int? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? ffi.nullptr : cst_encode_box_autoadd_u_32(raw);
   }
 
   @protected
@@ -1097,6 +1184,42 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   ) {
     wireObj.role = cst_encode_String(apiObj.role);
     wireObj.content = cst_encode_String(apiObj.content);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_chat_message_row(
+    FrbChatMessageRow apiObj,
+    wire_cst_frb_chat_message_row wireObj,
+  ) {
+    wireObj.id = cst_encode_i_64(apiObj.id);
+    wireObj.session_id = cst_encode_i_64(apiObj.sessionId);
+    wireObj.role = cst_encode_String(apiObj.role);
+    wireObj.content = cst_encode_String(apiObj.content);
+    wireObj.created_at = cst_encode_String(apiObj.createdAt);
+    wireObj.token_count = cst_encode_opt_box_autoadd_i_64(apiObj.tokenCount);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_chat_session_row(
+    FrbChatSessionRow apiObj,
+    wire_cst_frb_chat_session_row wireObj,
+  ) {
+    wireObj.id = cst_encode_i_64(apiObj.id);
+    wireObj.profile_id = cst_encode_String(apiObj.profileId);
+    wireObj.title = cst_encode_String(apiObj.title);
+    wireObj.created_at = cst_encode_String(apiObj.createdAt);
+    wireObj.updated_at = cst_encode_String(apiObj.updatedAt);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_chat_stream_event(
+    FrbChatStreamEvent apiObj,
+    wire_cst_frb_chat_stream_event wireObj,
+  ) {
+    wireObj.is_done = cst_encode_bool(apiObj.isDone);
+    wireObj.text = cst_encode_String(apiObj.text);
+    wireObj.prompt_tokens = cst_encode_u_32(apiObj.promptTokens);
+    wireObj.completion_tokens = cst_encode_u_32(apiObj.completionTokens);
   }
 
   @protected
@@ -1380,12 +1503,6 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
-  void sse_encode_StreamSink_String_Dco(
-    RustStreamSink<String> self,
-    SseSerializer serializer,
-  );
-
-  @protected
   void sse_encode_StreamSink_frb_bench_event_Dco(
     RustStreamSink<FrbBenchEvent> self,
     SseSerializer serializer,
@@ -1394,6 +1511,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_StreamSink_frb_bootstrap_event_Dco(
     RustStreamSink<FrbBootstrapEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_frb_chat_stream_event_Dco(
+    RustStreamSink<FrbChatStreamEvent> self,
     SseSerializer serializer,
   );
 
@@ -1455,6 +1578,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
 
   @protected
@@ -1502,6 +1628,24 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_frb_chat_message(
     FrbChatMessage self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_message_row(
+    FrbChatMessageRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_session_row(
+    FrbChatSessionRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_chat_stream_event(
+    FrbChatStreamEvent self,
     SseSerializer serializer,
   );
 
@@ -1611,6 +1755,18 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_list_frb_chat_message_row(
+    List<FrbChatMessageRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_chat_session_row(
+    List<FrbChatSessionRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_frb_compare_row(
     List<FrbCompareRow> self,
     SseSerializer serializer,
@@ -1699,6 +1855,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     PlatformInt64? self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
@@ -1965,6 +2124,103 @@ class AidashFrbWire implements BaseWire {
   late final _wire__crate__api__cache_scan = _wire__crate__api__cache_scanPtr
       .asFunction<void Function(int)>();
 
+  WireSyncRust2DartDco wire__crate__api__chat_append_message(
+    int session_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> role,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
+    ffi.Pointer<ffi.Uint32> token_count,
+  ) {
+    return _wire__crate__api__chat_append_message(
+      session_id,
+      role,
+      content,
+      token_count,
+    );
+  }
+
+  late final _wire__crate__api__chat_append_messagePtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Int64,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__chat_append_message');
+  late final _wire__crate__api__chat_append_message =
+      _wire__crate__api__chat_append_messagePtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<ffi.Uint32>,
+            )
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__chat_create_session(
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
+  ) {
+    return _wire__crate__api__chat_create_session(profile_id, title);
+  }
+
+  late final _wire__crate__api__chat_create_sessionPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__chat_create_session');
+  late final _wire__crate__api__chat_create_session =
+      _wire__crate__api__chat_create_sessionPtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__chat_delete_session(int session_id) {
+    return _wire__crate__api__chat_delete_session(session_id);
+  }
+
+  late final _wire__crate__api__chat_delete_sessionPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function(ffi.Int64)>>(
+        'frbgen_app_wire__crate__api__chat_delete_session',
+      );
+  late final _wire__crate__api__chat_delete_session =
+      _wire__crate__api__chat_delete_sessionPtr
+          .asFunction<WireSyncRust2DartDco Function(int)>();
+
+  WireSyncRust2DartDco wire__crate__api__chat_list_sessions() {
+    return _wire__crate__api__chat_list_sessions();
+  }
+
+  late final _wire__crate__api__chat_list_sessionsPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function()>>(
+        'frbgen_app_wire__crate__api__chat_list_sessions',
+      );
+  late final _wire__crate__api__chat_list_sessions =
+      _wire__crate__api__chat_list_sessionsPtr
+          .asFunction<WireSyncRust2DartDco Function()>();
+
+  WireSyncRust2DartDco wire__crate__api__chat_load_messages(int session_id) {
+    return _wire__crate__api__chat_load_messages(session_id);
+  }
+
+  late final _wire__crate__api__chat_load_messagesPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function(ffi.Int64)>>(
+        'frbgen_app_wire__crate__api__chat_load_messages',
+      );
+  late final _wire__crate__api__chat_load_messages =
+      _wire__crate__api__chat_load_messagesPtr
+          .asFunction<WireSyncRust2DartDco Function(int)>();
+
   void wire__crate__api__chat_send(
     int port_,
     ffi.Pointer<wire_cst_list_frb_chat_message> messages,
@@ -1994,6 +2250,70 @@ class AidashFrbWire implements BaseWire {
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
         )
       >();
+
+  WireSyncRust2DartDco wire__crate__api__chat_should_compress(
+    int prompt_tokens,
+    int context_size,
+  ) {
+    return _wire__crate__api__chat_should_compress(prompt_tokens, context_size);
+  }
+
+  late final _wire__crate__api__chat_should_compressPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(ffi.Uint32, ffi.Uint32)
+        >
+      >('frbgen_app_wire__crate__api__chat_should_compress');
+  late final _wire__crate__api__chat_should_compress =
+      _wire__crate__api__chat_should_compressPtr
+          .asFunction<WireSyncRust2DartDco Function(int, int)>();
+
+  void wire__crate__api__chat_summarize(
+    int port_,
+    ffi.Pointer<wire_cst_list_frb_chat_message> messages,
+  ) {
+    return _wire__crate__api__chat_summarize(port_, messages);
+  }
+
+  late final _wire__crate__api__chat_summarizePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(
+            ffi.Int64,
+            ffi.Pointer<wire_cst_list_frb_chat_message>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__chat_summarize');
+  late final _wire__crate__api__chat_summarize =
+      _wire__crate__api__chat_summarizePtr
+          .asFunction<
+            void Function(int, ffi.Pointer<wire_cst_list_frb_chat_message>)
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__chat_update_session_title(
+    int session_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
+  ) {
+    return _wire__crate__api__chat_update_session_title(session_id, title);
+  }
+
+  late final _wire__crate__api__chat_update_session_titlePtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Int64,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__chat_update_session_title');
+  late final _wire__crate__api__chat_update_session_title =
+      _wire__crate__api__chat_update_session_titlePtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
 
   WireSyncRust2DartDco wire__crate__api__compare(
     ffi.Pointer<wire_cst_list_String> models,
@@ -2593,6 +2913,17 @@ class AidashFrbWire implements BaseWire {
   late final _cst_new_box_autoadd_i_64 = _cst_new_box_autoadd_i_64Ptr
       .asFunction<ffi.Pointer<ffi.Int64> Function(int)>();
 
+  ffi.Pointer<ffi.Uint32> cst_new_box_autoadd_u_32(int value) {
+    return _cst_new_box_autoadd_u_32(value);
+  }
+
+  late final _cst_new_box_autoadd_u_32Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Uint32> Function(ffi.Uint32)>>(
+        'frbgen_app_cst_new_box_autoadd_u_32',
+      );
+  late final _cst_new_box_autoadd_u_32 = _cst_new_box_autoadd_u_32Ptr
+      .asFunction<ffi.Pointer<ffi.Uint32> Function(int)>();
+
   ffi.Pointer<ffi.Uint64> cst_new_box_autoadd_u_64(int value) {
     return _cst_new_box_autoadd_u_64(value);
   }
@@ -2648,6 +2979,40 @@ class AidashFrbWire implements BaseWire {
       >('frbgen_app_cst_new_list_frb_chat_message');
   late final _cst_new_list_frb_chat_message = _cst_new_list_frb_chat_messagePtr
       .asFunction<ffi.Pointer<wire_cst_list_frb_chat_message> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_frb_chat_message_row>
+  cst_new_list_frb_chat_message_row(int len) {
+    return _cst_new_list_frb_chat_message_row(len);
+  }
+
+  late final _cst_new_list_frb_chat_message_rowPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_frb_chat_message_row> Function(ffi.Int32)
+        >
+      >('frbgen_app_cst_new_list_frb_chat_message_row');
+  late final _cst_new_list_frb_chat_message_row =
+      _cst_new_list_frb_chat_message_rowPtr
+          .asFunction<
+            ffi.Pointer<wire_cst_list_frb_chat_message_row> Function(int)
+          >();
+
+  ffi.Pointer<wire_cst_list_frb_chat_session_row>
+  cst_new_list_frb_chat_session_row(int len) {
+    return _cst_new_list_frb_chat_session_row(len);
+  }
+
+  late final _cst_new_list_frb_chat_session_rowPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_frb_chat_session_row> Function(ffi.Int32)
+        >
+      >('frbgen_app_cst_new_list_frb_chat_session_row');
+  late final _cst_new_list_frb_chat_session_row =
+      _cst_new_list_frb_chat_session_rowPtr
+          .asFunction<
+            ffi.Pointer<wire_cst_list_frb_chat_session_row> Function(int)
+          >();
 
   ffi.Pointer<wire_cst_list_frb_compare_row> cst_new_list_frb_compare_row(
     int len,
@@ -2931,6 +3296,49 @@ final class wire_cst_frb_cache_repo_entry extends ffi.Struct {
 
 final class wire_cst_list_frb_cache_repo_entry extends ffi.Struct {
   external ffi.Pointer<wire_cst_frb_cache_repo_entry> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_frb_chat_message_row extends ffi.Struct {
+  @ffi.Int64()
+  external int id;
+
+  @ffi.Int64()
+  external int session_id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> role;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> content;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> created_at;
+
+  external ffi.Pointer<ffi.Int64> token_count;
+}
+
+final class wire_cst_list_frb_chat_message_row extends ffi.Struct {
+  external ffi.Pointer<wire_cst_frb_chat_message_row> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_frb_chat_session_row extends ffi.Struct {
+  @ffi.Int64()
+  external int id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> title;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> created_at;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> updated_at;
+}
+
+final class wire_cst_list_frb_chat_session_row extends ffi.Struct {
+  external ffi.Pointer<wire_cst_frb_chat_session_row> ptr;
 
   @ffi.Int32()
   external int len;
@@ -3269,6 +3677,19 @@ final class wire_cst_frb_cache_scan_result extends ffi.Struct {
   external int repo_count;
 
   external ffi.Pointer<wire_cst_list_frb_cache_repo_entry> repos;
+}
+
+final class wire_cst_frb_chat_stream_event extends ffi.Struct {
+  @ffi.Bool()
+  external bool is_done;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> text;
+
+  @ffi.Uint32()
+  external int prompt_tokens;
+
+  @ffi.Uint32()
+  external int completion_tokens;
 }
 
 final class wire_cst_frb_delete_summary extends ffi.Struct {
