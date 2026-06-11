@@ -72,6 +72,7 @@ pub struct FrbOverviewRow {
     pub profile_id: String,
     pub display_name: String,
     pub model_type: String,
+    pub generation_kind: String,
     pub decode_tps: Option<f64>,
     pub tier: Option<FrbTierInfo>,
     pub ttft_ms: Option<f64>,
@@ -96,6 +97,7 @@ pub struct FrbContextStatsRow {
 pub struct FrbModelStats {
     pub profile_id: String,
     pub display_name: String,
+    pub generation_kind: String,
     pub total_runs: i64,
     pub latest_measured_at: Option<String>,
     pub current_tier: Option<FrbTierInfo>,
@@ -111,6 +113,7 @@ pub struct FrbRunListRow {
     pub run_id: i64,
     pub profile_id: String,
     pub display_name: String,
+    pub generation_kind: String,
     pub kind: String,
     pub context_size: Option<i64>,
     pub status: String,
@@ -126,6 +129,7 @@ pub struct FrbCompareRow {
     pub profile_id: String,
     pub display_name: String,
     pub model_type: String,
+    pub generation_kind: String,
     pub context_requested: i64,
     pub context_actual: i64,
     pub context_substituted: bool,
@@ -153,6 +157,7 @@ pub struct FrbProfileRow {
     pub id: String,
     pub backend: String,
     pub model_type: String,
+    pub generation_kind: String,
     pub context_default: u32,
     pub context_min: u32,
     pub context_max: u32,
@@ -219,6 +224,7 @@ pub struct FrbBenchResult {
     pub run_id: i64,
     pub status: String,
     pub context_size: u32,
+    pub generation_kind: String,
     pub decode_tps: Option<f64>,
     pub tier: Option<FrbTierInfo>,
     pub ttft_ms: Option<f64>,
@@ -424,12 +430,20 @@ fn sample_to_frb(s: &ResourceSample) -> FrbResourceSample {
 }
 
 fn bench_result_to_frb(r: &RunResult) -> FrbBenchResult {
+    let display_tps = r.stats.as_ref().and_then(|s| {
+        tps_tier::effective_display_tps(
+            &r.generation_kind,
+            s.decode_tps,
+            Some(s.total_tps),
+        )
+    });
     FrbBenchResult {
         run_id: r.run_id,
         status: r.status.clone(),
         context_size: r.context_size,
-        decode_tps: r.stats.as_ref().and_then(|s| s.decode_tps),
-        tier: r.stats.as_ref().and_then(|s| s.decode_tps.map(tps_tier::tps_tier).map(tier_info)),
+        generation_kind: r.generation_kind.clone(),
+        decode_tps: display_tps,
+        tier: display_tps.map(tps_tier::tps_tier).map(tier_info),
         ttft_ms: r.stats.as_ref().map(|s| s.ttft_ms),
         peak_phys_footprint_bytes: r.peak_phys_footprint_bytes,
         peak_mlx_active_bytes: r.peak_mlx_active_bytes,
@@ -586,6 +600,7 @@ fn map_overview_row(r: OverviewRow) -> FrbOverviewRow {
         profile_id: r.profile_id,
         display_name: r.display_name,
         model_type: r.model_type,
+        generation_kind: r.generation_kind,
         decode_tps: r.decode_tps,
         tier: r.tier.map(tier_info),
         ttft_ms: r.ttft_ms,
@@ -607,6 +622,7 @@ fn map_model_stats(s: ModelStats) -> FrbModelStats {
     FrbModelStats {
         profile_id: s.profile_id,
         display_name: s.display_name,
+        generation_kind: s.generation_kind,
         total_runs: s.total_runs,
         latest_measured_at: s.latest_measured_at,
         current_tier: s.current_tier.map(tier_info),
@@ -718,6 +734,7 @@ fn map_run_row(r: RunListRow) -> FrbRunListRow {
         run_id: r.run_id,
         profile_id: r.profile_id,
         display_name: r.display_name,
+        generation_kind: r.generation_kind.clone(),
         kind: r.kind,
         context_size: r.context_size,
         status: r.status,
@@ -778,6 +795,7 @@ fn map_compare_row(r: CompareRow) -> FrbCompareRow {
         profile_id: r.profile_id,
         display_name: r.display_name,
         model_type: r.model_type,
+        generation_kind: r.generation_kind,
         context_requested: r.context_requested,
         context_actual: r.context_actual,
         context_substituted: r.context_substituted,
@@ -814,6 +832,7 @@ fn map_profile_row(row: ProfileListRow, full: &ModelProfile) -> FrbProfileRow {
         id: row.id,
         backend: row.backend,
         model_type: row.model_type,
+        generation_kind: full.generation_kind.clone(),
         context_default: row.context_default,
         context_min: full.context.min,
         context_max: full.context.max,

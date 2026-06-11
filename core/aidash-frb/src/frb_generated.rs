@@ -1451,6 +1451,7 @@ impl SseDecode for crate::api::FrbBenchResult {
         let mut var_runId = <i64>::sse_decode(deserializer);
         let mut var_status = <String>::sse_decode(deserializer);
         let mut var_contextSize = <u32>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_decodeTps = <Option<f64>>::sse_decode(deserializer);
         let mut var_tier = <Option<crate::api::FrbTierInfo>>::sse_decode(deserializer);
         let mut var_ttftMs = <Option<f64>>::sse_decode(deserializer);
@@ -1461,6 +1462,7 @@ impl SseDecode for crate::api::FrbBenchResult {
             run_id: var_runId,
             status: var_status,
             context_size: var_contextSize,
+            generation_kind: var_generationKind,
             decode_tps: var_decodeTps,
             tier: var_tier,
             ttft_ms: var_ttftMs,
@@ -1607,6 +1609,7 @@ impl SseDecode for crate::api::FrbCompareRow {
         let mut var_profileId = <String>::sse_decode(deserializer);
         let mut var_displayName = <String>::sse_decode(deserializer);
         let mut var_modelType = <String>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_contextRequested = <i64>::sse_decode(deserializer);
         let mut var_contextActual = <i64>::sse_decode(deserializer);
         let mut var_contextSubstituted = <bool>::sse_decode(deserializer);
@@ -1624,6 +1627,7 @@ impl SseDecode for crate::api::FrbCompareRow {
             profile_id: var_profileId,
             display_name: var_displayName,
             model_type: var_modelType,
+            generation_kind: var_generationKind,
             context_requested: var_contextRequested,
             context_actual: var_contextActual,
             context_substituted: var_contextSubstituted,
@@ -1887,6 +1891,7 @@ impl SseDecode for crate::api::FrbModelStats {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_profileId = <String>::sse_decode(deserializer);
         let mut var_displayName = <String>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_totalRuns = <i64>::sse_decode(deserializer);
         let mut var_latestMeasuredAt = <Option<String>>::sse_decode(deserializer);
         let mut var_currentTier = <Option<crate::api::FrbTierInfo>>::sse_decode(deserializer);
@@ -1898,6 +1903,7 @@ impl SseDecode for crate::api::FrbModelStats {
         return crate::api::FrbModelStats {
             profile_id: var_profileId,
             display_name: var_displayName,
+            generation_kind: var_generationKind,
             total_runs: var_totalRuns,
             latest_measured_at: var_latestMeasuredAt,
             current_tier: var_currentTier,
@@ -1916,6 +1922,7 @@ impl SseDecode for crate::api::FrbOverviewRow {
         let mut var_profileId = <String>::sse_decode(deserializer);
         let mut var_displayName = <String>::sse_decode(deserializer);
         let mut var_modelType = <String>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_decodeTps = <Option<f64>>::sse_decode(deserializer);
         let mut var_tier = <Option<crate::api::FrbTierInfo>>::sse_decode(deserializer);
         let mut var_ttftMs = <Option<f64>>::sse_decode(deserializer);
@@ -1926,6 +1933,7 @@ impl SseDecode for crate::api::FrbOverviewRow {
             profile_id: var_profileId,
             display_name: var_displayName,
             model_type: var_modelType,
+            generation_kind: var_generationKind,
             decode_tps: var_decodeTps,
             tier: var_tier,
             ttft_ms: var_ttftMs,
@@ -1942,6 +1950,7 @@ impl SseDecode for crate::api::FrbProfileRow {
         let mut var_id = <String>::sse_decode(deserializer);
         let mut var_backend = <String>::sse_decode(deserializer);
         let mut var_modelType = <String>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_contextDefault = <u32>::sse_decode(deserializer);
         let mut var_contextMin = <u32>::sse_decode(deserializer);
         let mut var_contextMax = <u32>::sse_decode(deserializer);
@@ -1954,6 +1963,7 @@ impl SseDecode for crate::api::FrbProfileRow {
             id: var_id,
             backend: var_backend,
             model_type: var_modelType,
+            generation_kind: var_generationKind,
             context_default: var_contextDefault,
             context_min: var_contextMin,
             context_max: var_contextMax,
@@ -1998,6 +2008,7 @@ impl SseDecode for crate::api::FrbRunListRow {
         let mut var_runId = <i64>::sse_decode(deserializer);
         let mut var_profileId = <String>::sse_decode(deserializer);
         let mut var_displayName = <String>::sse_decode(deserializer);
+        let mut var_generationKind = <String>::sse_decode(deserializer);
         let mut var_kind = <String>::sse_decode(deserializer);
         let mut var_contextSize = <Option<i64>>::sse_decode(deserializer);
         let mut var_status = <String>::sse_decode(deserializer);
@@ -2010,6 +2021,7 @@ impl SseDecode for crate::api::FrbRunListRow {
             run_id: var_runId,
             profile_id: var_profileId,
             display_name: var_displayName,
+            generation_kind: var_generationKind,
             kind: var_kind,
             context_size: var_contextSize,
             status: var_status,
@@ -2560,6 +2572,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbBenchResult {
             self.run_id.into_into_dart().into_dart(),
             self.status.into_into_dart().into_dart(),
             self.context_size.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.decode_tps.into_into_dart().into_dart(),
             self.tier.into_into_dart().into_dart(),
             self.ttft_ms.into_into_dart().into_dart(),
@@ -2751,6 +2764,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbCompareRow {
             self.profile_id.into_into_dart().into_dart(),
             self.display_name.into_into_dart().into_dart(),
             self.model_type.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.context_requested.into_into_dart().into_dart(),
             self.context_actual.into_into_dart().into_dart(),
             self.context_substituted.into_into_dart().into_dart(),
@@ -3078,6 +3092,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbModelStats {
         [
             self.profile_id.into_into_dart().into_dart(),
             self.display_name.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.total_runs.into_into_dart().into_dart(),
             self.latest_measured_at.into_into_dart().into_dart(),
             self.current_tier.into_into_dart().into_dart(),
@@ -3103,6 +3118,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbOverviewRow {
             self.profile_id.into_into_dart().into_dart(),
             self.display_name.into_into_dart().into_dart(),
             self.model_type.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.decode_tps.into_into_dart().into_dart(),
             self.tier.into_into_dart().into_dart(),
             self.ttft_ms.into_into_dart().into_dart(),
@@ -3126,6 +3142,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbProfileRow {
             self.id.into_into_dart().into_dart(),
             self.backend.into_into_dart().into_dart(),
             self.model_type.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.context_default.into_into_dart().into_dart(),
             self.context_min.into_into_dart().into_dart(),
             self.context_max.into_into_dart().into_dart(),
@@ -3176,6 +3193,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbRunListRow {
             self.run_id.into_into_dart().into_dart(),
             self.profile_id.into_into_dart().into_dart(),
             self.display_name.into_into_dart().into_dart(),
+            self.generation_kind.into_into_dart().into_dart(),
             self.kind.into_into_dart().into_dart(),
             self.context_size.into_into_dart().into_dart(),
             self.status.into_into_dart().into_dart(),
@@ -3408,6 +3426,7 @@ impl SseEncode for crate::api::FrbBenchResult {
         <i64>::sse_encode(self.run_id, serializer);
         <String>::sse_encode(self.status, serializer);
         <u32>::sse_encode(self.context_size, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <Option<f64>>::sse_encode(self.decode_tps, serializer);
         <Option<crate::api::FrbTierInfo>>::sse_encode(self.tier, serializer);
         <Option<f64>>::sse_encode(self.ttft_ms, serializer);
@@ -3504,6 +3523,7 @@ impl SseEncode for crate::api::FrbCompareRow {
         <String>::sse_encode(self.profile_id, serializer);
         <String>::sse_encode(self.display_name, serializer);
         <String>::sse_encode(self.model_type, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <i64>::sse_encode(self.context_requested, serializer);
         <i64>::sse_encode(self.context_actual, serializer);
         <bool>::sse_encode(self.context_substituted, serializer);
@@ -3687,6 +3707,7 @@ impl SseEncode for crate::api::FrbModelStats {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.profile_id, serializer);
         <String>::sse_encode(self.display_name, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <i64>::sse_encode(self.total_runs, serializer);
         <Option<String>>::sse_encode(self.latest_measured_at, serializer);
         <Option<crate::api::FrbTierInfo>>::sse_encode(self.current_tier, serializer);
@@ -3704,6 +3725,7 @@ impl SseEncode for crate::api::FrbOverviewRow {
         <String>::sse_encode(self.profile_id, serializer);
         <String>::sse_encode(self.display_name, serializer);
         <String>::sse_encode(self.model_type, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <Option<f64>>::sse_encode(self.decode_tps, serializer);
         <Option<crate::api::FrbTierInfo>>::sse_encode(self.tier, serializer);
         <Option<f64>>::sse_encode(self.ttft_ms, serializer);
@@ -3719,6 +3741,7 @@ impl SseEncode for crate::api::FrbProfileRow {
         <String>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.backend, serializer);
         <String>::sse_encode(self.model_type, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <u32>::sse_encode(self.context_default, serializer);
         <u32>::sse_encode(self.context_min, serializer);
         <u32>::sse_encode(self.context_max, serializer);
@@ -3751,6 +3774,7 @@ impl SseEncode for crate::api::FrbRunListRow {
         <i64>::sse_encode(self.run_id, serializer);
         <String>::sse_encode(self.profile_id, serializer);
         <String>::sse_encode(self.display_name, serializer);
+        <String>::sse_encode(self.generation_kind, serializer);
         <String>::sse_encode(self.kind, serializer);
         <Option<i64>>::sse_encode(self.context_size, serializer);
         <String>::sse_encode(self.status, serializer);
@@ -4389,6 +4413,7 @@ mod io {
                 run_id: self.run_id.cst_decode(),
                 status: self.status.cst_decode(),
                 context_size: self.context_size.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 decode_tps: self.decode_tps.cst_decode(),
                 tier: self.tier.cst_decode(),
                 ttft_ms: self.ttft_ms.cst_decode(),
@@ -4494,6 +4519,7 @@ mod io {
                 profile_id: self.profile_id.cst_decode(),
                 display_name: self.display_name.cst_decode(),
                 model_type: self.model_type.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 context_requested: self.context_requested.cst_decode(),
                 context_actual: self.context_actual.cst_decode(),
                 context_substituted: self.context_substituted.cst_decode(),
@@ -4689,6 +4715,7 @@ mod io {
             crate::api::FrbModelStats {
                 profile_id: self.profile_id.cst_decode(),
                 display_name: self.display_name.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 total_runs: self.total_runs.cst_decode(),
                 latest_measured_at: self.latest_measured_at.cst_decode(),
                 current_tier: self.current_tier.cst_decode(),
@@ -4707,6 +4734,7 @@ mod io {
                 profile_id: self.profile_id.cst_decode(),
                 display_name: self.display_name.cst_decode(),
                 model_type: self.model_type.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 decode_tps: self.decode_tps.cst_decode(),
                 tier: self.tier.cst_decode(),
                 ttft_ms: self.ttft_ms.cst_decode(),
@@ -4723,6 +4751,7 @@ mod io {
                 id: self.id.cst_decode(),
                 backend: self.backend.cst_decode(),
                 model_type: self.model_type.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 context_default: self.context_default.cst_decode(),
                 context_min: self.context_min.cst_decode(),
                 context_max: self.context_max.cst_decode(),
@@ -4757,6 +4786,7 @@ mod io {
                 run_id: self.run_id.cst_decode(),
                 profile_id: self.profile_id.cst_decode(),
                 display_name: self.display_name.cst_decode(),
+                generation_kind: self.generation_kind.cst_decode(),
                 kind: self.kind.cst_decode(),
                 context_size: self.context_size.cst_decode(),
                 status: self.status.cst_decode(),
@@ -5018,6 +5048,7 @@ mod io {
                 run_id: Default::default(),
                 status: core::ptr::null_mut(),
                 context_size: Default::default(),
+                generation_kind: core::ptr::null_mut(),
                 decode_tps: core::ptr::null_mut(),
                 tier: core::ptr::null_mut(),
                 ttft_ms: core::ptr::null_mut(),
@@ -5159,6 +5190,7 @@ mod io {
                 profile_id: core::ptr::null_mut(),
                 display_name: core::ptr::null_mut(),
                 model_type: core::ptr::null_mut(),
+                generation_kind: core::ptr::null_mut(),
                 context_requested: Default::default(),
                 context_actual: Default::default(),
                 context_substituted: Default::default(),
@@ -5380,6 +5412,7 @@ mod io {
             Self {
                 profile_id: core::ptr::null_mut(),
                 display_name: core::ptr::null_mut(),
+                generation_kind: core::ptr::null_mut(),
                 total_runs: Default::default(),
                 latest_measured_at: core::ptr::null_mut(),
                 current_tier: core::ptr::null_mut(),
@@ -5402,6 +5435,7 @@ mod io {
                 profile_id: core::ptr::null_mut(),
                 display_name: core::ptr::null_mut(),
                 model_type: core::ptr::null_mut(),
+                generation_kind: core::ptr::null_mut(),
                 decode_tps: core::ptr::null_mut(),
                 tier: core::ptr::null_mut(),
                 ttft_ms: core::ptr::null_mut(),
@@ -5422,6 +5456,7 @@ mod io {
                 id: core::ptr::null_mut(),
                 backend: core::ptr::null_mut(),
                 model_type: core::ptr::null_mut(),
+                generation_kind: core::ptr::null_mut(),
                 context_default: Default::default(),
                 context_min: Default::default(),
                 context_max: Default::default(),
@@ -5464,6 +5499,7 @@ mod io {
                 run_id: Default::default(),
                 profile_id: core::ptr::null_mut(),
                 display_name: core::ptr::null_mut(),
+                generation_kind: core::ptr::null_mut(),
                 kind: core::ptr::null_mut(),
                 context_size: core::ptr::null_mut(),
                 status: core::ptr::null_mut(),
@@ -6296,6 +6332,7 @@ mod io {
         run_id: i64,
         status: *mut wire_cst_list_prim_u_8_strict,
         context_size: u32,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         decode_tps: *mut f64,
         tier: *mut wire_cst_frb_tier_info,
         ttft_ms: *mut f64,
@@ -6374,6 +6411,7 @@ mod io {
         profile_id: *mut wire_cst_list_prim_u_8_strict,
         display_name: *mut wire_cst_list_prim_u_8_strict,
         model_type: *mut wire_cst_list_prim_u_8_strict,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         context_requested: i64,
         context_actual: i64,
         context_substituted: bool,
@@ -6531,6 +6569,7 @@ mod io {
     pub struct wire_cst_frb_model_stats {
         profile_id: *mut wire_cst_list_prim_u_8_strict,
         display_name: *mut wire_cst_list_prim_u_8_strict,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         total_runs: i64,
         latest_measured_at: *mut wire_cst_list_prim_u_8_strict,
         current_tier: *mut wire_cst_frb_tier_info,
@@ -6546,6 +6585,7 @@ mod io {
         profile_id: *mut wire_cst_list_prim_u_8_strict,
         display_name: *mut wire_cst_list_prim_u_8_strict,
         model_type: *mut wire_cst_list_prim_u_8_strict,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         decode_tps: *mut f64,
         tier: *mut wire_cst_frb_tier_info,
         ttft_ms: *mut f64,
@@ -6559,6 +6599,7 @@ mod io {
         id: *mut wire_cst_list_prim_u_8_strict,
         backend: *mut wire_cst_list_prim_u_8_strict,
         model_type: *mut wire_cst_list_prim_u_8_strict,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         context_default: u32,
         context_min: u32,
         context_max: u32,
@@ -6587,6 +6628,7 @@ mod io {
         run_id: i64,
         profile_id: *mut wire_cst_list_prim_u_8_strict,
         display_name: *mut wire_cst_list_prim_u_8_strict,
+        generation_kind: *mut wire_cst_list_prim_u_8_strict,
         kind: *mut wire_cst_list_prim_u_8_strict,
         context_size: *mut i64,
         status: *mut wire_cst_list_prim_u_8_strict,
@@ -6934,20 +6976,21 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                9,
-                "Expected 9 elements, got {}",
+                10,
+                "Expected 10 elements, got {}",
                 self_.length()
             );
             crate::api::FrbBenchResult {
                 run_id: self_.get(0).cst_decode(),
                 status: self_.get(1).cst_decode(),
                 context_size: self_.get(2).cst_decode(),
-                decode_tps: self_.get(3).cst_decode(),
-                tier: self_.get(4).cst_decode(),
-                ttft_ms: self_.get(5).cst_decode(),
-                peak_phys_footprint_bytes: self_.get(6).cst_decode(),
-                peak_mlx_active_bytes: self_.get(7).cst_decode(),
-                error_message: self_.get(8).cst_decode(),
+                generation_kind: self_.get(3).cst_decode(),
+                decode_tps: self_.get(4).cst_decode(),
+                tier: self_.get(5).cst_decode(),
+                ttft_ms: self_.get(6).cst_decode(),
+                peak_phys_footprint_bytes: self_.get(7).cst_decode(),
+                peak_mlx_active_bytes: self_.get(8).cst_decode(),
+                error_message: self_.get(9).cst_decode(),
             }
         }
     }
@@ -7138,27 +7181,28 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                16,
-                "Expected 16 elements, got {}",
+                17,
+                "Expected 17 elements, got {}",
                 self_.length()
             );
             crate::api::FrbCompareRow {
                 profile_id: self_.get(0).cst_decode(),
                 display_name: self_.get(1).cst_decode(),
                 model_type: self_.get(2).cst_decode(),
-                context_requested: self_.get(3).cst_decode(),
-                context_actual: self_.get(4).cst_decode(),
-                context_substituted: self_.get(5).cst_decode(),
-                decode_tps: self_.get(6).cst_decode(),
-                tier: self_.get(7).cst_decode(),
-                ttft_ms: self_.get(8).cst_decode(),
-                peak_phys_footprint_bytes: self_.get(9).cst_decode(),
-                peak_mlx_active_bytes: self_.get(10).cst_decode(),
-                tokens_in: self_.get(11).cst_decode(),
-                tokens_out: self_.get(12).cst_decode(),
-                measured_at: self_.get(13).cst_decode(),
-                hf_url: self_.get(14).cst_decode(),
-                use_draft: self_.get(15).cst_decode(),
+                generation_kind: self_.get(3).cst_decode(),
+                context_requested: self_.get(4).cst_decode(),
+                context_actual: self_.get(5).cst_decode(),
+                context_substituted: self_.get(6).cst_decode(),
+                decode_tps: self_.get(7).cst_decode(),
+                tier: self_.get(8).cst_decode(),
+                ttft_ms: self_.get(9).cst_decode(),
+                peak_phys_footprint_bytes: self_.get(10).cst_decode(),
+                peak_mlx_active_bytes: self_.get(11).cst_decode(),
+                tokens_in: self_.get(12).cst_decode(),
+                tokens_out: self_.get(13).cst_decode(),
+                measured_at: self_.get(14).cst_decode(),
+                hf_url: self_.get(15).cst_decode(),
+                use_draft: self_.get(16).cst_decode(),
             }
         }
     }
@@ -7466,21 +7510,22 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                10,
-                "Expected 10 elements, got {}",
+                11,
+                "Expected 11 elements, got {}",
                 self_.length()
             );
             crate::api::FrbModelStats {
                 profile_id: self_.get(0).cst_decode(),
                 display_name: self_.get(1).cst_decode(),
-                total_runs: self_.get(2).cst_decode(),
-                latest_measured_at: self_.get(3).cst_decode(),
-                current_tier: self_.get(4).cst_decode(),
-                current_decode_tps: self_.get(5).cst_decode(),
-                peak_phys_footprint_bytes: self_.get(6).cst_decode(),
-                peak_mlx_active_bytes: self_.get(7).cst_decode(),
-                hf_url: self_.get(8).cst_decode(),
-                by_context: self_.get(9).cst_decode(),
+                generation_kind: self_.get(2).cst_decode(),
+                total_runs: self_.get(3).cst_decode(),
+                latest_measured_at: self_.get(4).cst_decode(),
+                current_tier: self_.get(5).cst_decode(),
+                current_decode_tps: self_.get(6).cst_decode(),
+                peak_phys_footprint_bytes: self_.get(7).cst_decode(),
+                peak_mlx_active_bytes: self_.get(8).cst_decode(),
+                hf_url: self_.get(9).cst_decode(),
+                by_context: self_.get(10).cst_decode(),
             }
         }
     }
@@ -7494,20 +7539,21 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                9,
-                "Expected 9 elements, got {}",
+                10,
+                "Expected 10 elements, got {}",
                 self_.length()
             );
             crate::api::FrbOverviewRow {
                 profile_id: self_.get(0).cst_decode(),
                 display_name: self_.get(1).cst_decode(),
                 model_type: self_.get(2).cst_decode(),
-                decode_tps: self_.get(3).cst_decode(),
-                tier: self_.get(4).cst_decode(),
-                ttft_ms: self_.get(5).cst_decode(),
-                context: self_.get(6).cst_decode(),
-                hf_url: self_.get(7).cst_decode(),
-                measured_at: self_.get(8).cst_decode(),
+                generation_kind: self_.get(3).cst_decode(),
+                decode_tps: self_.get(4).cst_decode(),
+                tier: self_.get(5).cst_decode(),
+                ttft_ms: self_.get(6).cst_decode(),
+                context: self_.get(7).cst_decode(),
+                hf_url: self_.get(8).cst_decode(),
+                measured_at: self_.get(9).cst_decode(),
             }
         }
     }
@@ -7521,22 +7567,23 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                11,
-                "Expected 11 elements, got {}",
+                12,
+                "Expected 12 elements, got {}",
                 self_.length()
             );
             crate::api::FrbProfileRow {
                 id: self_.get(0).cst_decode(),
                 backend: self_.get(1).cst_decode(),
                 model_type: self_.get(2).cst_decode(),
-                context_default: self_.get(3).cst_decode(),
-                context_min: self_.get(4).cst_decode(),
-                context_max: self_.get(5).cst_decode(),
-                sweep_steps: self_.get(6).cst_decode(),
-                filename: self_.get(7).cst_decode(),
-                is_multimodal: self_.get(8).cst_decode(),
-                draft_model: self_.get(9).cst_decode(),
-                is_drafter: self_.get(10).cst_decode(),
+                generation_kind: self_.get(3).cst_decode(),
+                context_default: self_.get(4).cst_decode(),
+                context_min: self_.get(5).cst_decode(),
+                context_max: self_.get(6).cst_decode(),
+                sweep_steps: self_.get(7).cst_decode(),
+                filename: self_.get(8).cst_decode(),
+                is_multimodal: self_.get(9).cst_decode(),
+                draft_model: self_.get(10).cst_decode(),
+                is_drafter: self_.get(11).cst_decode(),
             }
         }
     }
@@ -7577,22 +7624,23 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                11,
-                "Expected 11 elements, got {}",
+                12,
+                "Expected 12 elements, got {}",
                 self_.length()
             );
             crate::api::FrbRunListRow {
                 run_id: self_.get(0).cst_decode(),
                 profile_id: self_.get(1).cst_decode(),
                 display_name: self_.get(2).cst_decode(),
-                kind: self_.get(3).cst_decode(),
-                context_size: self_.get(4).cst_decode(),
-                status: self_.get(5).cst_decode(),
-                decode_tps: self_.get(6).cst_decode(),
-                peak_phys_footprint_bytes: self_.get(7).cst_decode(),
-                tier: self_.get(8).cst_decode(),
-                ended_at: self_.get(9).cst_decode(),
-                use_draft: self_.get(10).cst_decode(),
+                generation_kind: self_.get(3).cst_decode(),
+                kind: self_.get(4).cst_decode(),
+                context_size: self_.get(5).cst_decode(),
+                status: self_.get(6).cst_decode(),
+                decode_tps: self_.get(7).cst_decode(),
+                peak_phys_footprint_bytes: self_.get(8).cst_decode(),
+                tier: self_.get(9).cst_decode(),
+                ended_at: self_.get(10).cst_decode(),
+                use_draft: self_.get(11).cst_decode(),
             }
         }
     }

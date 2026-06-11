@@ -1,3 +1,4 @@
+import 'package:app/metric_help.dart';
 import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart';
 import 'package:app/task_labels.dart';
@@ -456,7 +457,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const MetricLabel(term: 'TPS'),
+                      MetricLabel(term: MetricHelp.tpsTerm(stats.generationKind)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -469,6 +470,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                             TierBadge(
                               decodeTps: stats.currentDecodeTps,
                               tier: stats.currentTier,
+                              generationKind: stats.generationKind,
                               compact: true,
                             ),
                           ],
@@ -517,7 +519,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
         const SizedBox(height: 16),
         Row(
           children: [
-            const MetricLabel(term: 'TPS'),
+            MetricLabel(term: MetricHelp.tpsTerm(stats.generationKind)),
             const SizedBox(width: 8),
             Text('컨텍스트별', style: Theme.of(context).textTheme.titleMedium),
           ],
@@ -611,6 +613,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                         TierBadge(
                           decodeTps: run.decodeTps,
                           tier: run.tier,
+                          generationKind: run.generationKind,
                           compact: true,
                         ),
                         IconButton(

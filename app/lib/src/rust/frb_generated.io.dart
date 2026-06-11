@@ -1254,6 +1254,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.run_id = cst_encode_i_64(apiObj.runId);
     wireObj.status = cst_encode_String(apiObj.status);
     wireObj.context_size = cst_encode_u_32(apiObj.contextSize);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.decode_tps = cst_encode_opt_box_autoadd_f_64(apiObj.decodeTps);
     wireObj.tier = cst_encode_opt_box_autoadd_frb_tier_info(apiObj.tier);
     wireObj.ttft_ms = cst_encode_opt_box_autoadd_f_64(apiObj.ttftMs);
@@ -1361,6 +1362,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.profile_id = cst_encode_String(apiObj.profileId);
     wireObj.display_name = cst_encode_String(apiObj.displayName);
     wireObj.model_type = cst_encode_String(apiObj.modelType);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.context_requested = cst_encode_i_64(apiObj.contextRequested);
     wireObj.context_actual = cst_encode_i_64(apiObj.contextActual);
     wireObj.context_substituted = cst_encode_bool(apiObj.contextSubstituted);
@@ -1566,6 +1568,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   ) {
     wireObj.profile_id = cst_encode_String(apiObj.profileId);
     wireObj.display_name = cst_encode_String(apiObj.displayName);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.total_runs = cst_encode_i_64(apiObj.totalRuns);
     wireObj.latest_measured_at = cst_encode_opt_String(apiObj.latestMeasuredAt);
     wireObj.current_tier = cst_encode_opt_box_autoadd_frb_tier_info(
@@ -1592,6 +1595,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.profile_id = cst_encode_String(apiObj.profileId);
     wireObj.display_name = cst_encode_String(apiObj.displayName);
     wireObj.model_type = cst_encode_String(apiObj.modelType);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.decode_tps = cst_encode_opt_box_autoadd_f_64(apiObj.decodeTps);
     wireObj.tier = cst_encode_opt_box_autoadd_frb_tier_info(apiObj.tier);
     wireObj.ttft_ms = cst_encode_opt_box_autoadd_f_64(apiObj.ttftMs);
@@ -1608,6 +1612,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.id = cst_encode_String(apiObj.id);
     wireObj.backend = cst_encode_String(apiObj.backend);
     wireObj.model_type = cst_encode_String(apiObj.modelType);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.context_default = cst_encode_u_32(apiObj.contextDefault);
     wireObj.context_min = cst_encode_u_32(apiObj.contextMin);
     wireObj.context_max = cst_encode_u_32(apiObj.contextMax);
@@ -1644,6 +1649,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.run_id = cst_encode_i_64(apiObj.runId);
     wireObj.profile_id = cst_encode_String(apiObj.profileId);
     wireObj.display_name = cst_encode_String(apiObj.displayName);
+    wireObj.generation_kind = cst_encode_String(apiObj.generationKind);
     wireObj.kind = cst_encode_String(apiObj.kind);
     wireObj.context_size = cst_encode_opt_box_autoadd_i_64(apiObj.contextSize);
     wireObj.status = cst_encode_String(apiObj.status);
@@ -3719,6 +3725,8 @@ final class wire_cst_frb_bench_result extends ffi.Struct {
   @ffi.Uint32()
   external int context_size;
 
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
+
   external ffi.Pointer<ffi.Double> decode_tps;
 
   external ffi.Pointer<wire_cst_frb_tier_info> tier;
@@ -3827,6 +3835,8 @@ final class wire_cst_frb_compare_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> display_name;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> model_type;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
 
   @ffi.Int64()
   external int context_requested;
@@ -4015,6 +4025,8 @@ final class wire_cst_frb_overview_row extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> model_type;
 
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
+
   external ffi.Pointer<ffi.Double> decode_tps;
 
   external ffi.Pointer<wire_cst_frb_tier_info> tier;
@@ -4041,6 +4053,8 @@ final class wire_cst_frb_profile_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> backend;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> model_type;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
 
   @ffi.Uint32()
   external int context_default;
@@ -4078,6 +4092,8 @@ final class wire_cst_frb_run_list_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> display_name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> kind;
 
@@ -4340,6 +4356,8 @@ final class wire_cst_frb_model_stats extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> display_name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> generation_kind;
 
   @ffi.Int64()
   external int total_runs;

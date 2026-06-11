@@ -12,6 +12,7 @@ class TierBadge extends StatelessWidget {
   final FrbTierInfo? tier;
   final bool compact;
   final bool large;
+  final String? generationKind;
 
   const TierBadge({
     super.key,
@@ -19,6 +20,7 @@ class TierBadge extends StatelessWidget {
     this.tier,
     this.compact = false,
     this.large = false,
+    this.generationKind,
   });
 
   @override
@@ -34,6 +36,9 @@ class TierBadge extends StatelessWidget {
     final api = context.read<AidashApi>();
     final info = tier ?? api.tpsTier(decodeTps: decodeTps!);
     final color = tierColor(info.key);
+    final diffusionSuffix = generationKind == 'diffusion'
+        ? ' (디퓨전: 전체 처리율 기준)'
+        : '';
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -52,8 +57,8 @@ class TierBadge extends StatelessWidget {
           if (!compact || large) const SizedBox(width: 6),
           Text(
             compact && !large
-                ? info.label
-                : '${decodeTps!.toStringAsFixed(1)} TPS · ${info.label}',
+                ? '${info.label}$diffusionSuffix'
+                : '${decodeTps!.toStringAsFixed(1)} TPS · ${info.label}$diffusionSuffix',
             style: TextStyle(
               color: color,
               fontSize: large ? 14 : (compact ? 11 : 12),

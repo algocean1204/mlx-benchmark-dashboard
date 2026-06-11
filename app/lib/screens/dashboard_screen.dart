@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app/metric_help.dart';
 import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart';
 import 'package:app/utils/formatters.dart';
@@ -308,9 +309,10 @@ class _LeaderboardRow extends StatelessWidget {
                   TierBadge(
                     decodeTps: row.decodeTps,
                     tier: row.tier,
+                    generationKind: row.generationKind,
                     compact: true,
                   ),
-                  const MetricHint(term: 'TPS'),
+                  MetricHint(term: MetricHelp.tpsTerm(row.generationKind)),
                 ],
               )
             else if (row.ttftMs != null)
@@ -359,7 +361,12 @@ class _RecentRunRow extends StatelessWidget {
             style: const TextStyle(color: AppTheme.inkMuted, fontSize: 12),
           ),
           const SizedBox(width: 12),
-          TierBadge(decodeTps: run.decodeTps, tier: run.tier, compact: true),
+          TierBadge(
+            decodeTps: run.decodeTps,
+            tier: run.tier,
+            generationKind: run.generationKind,
+            compact: true,
+          ),
           const SizedBox(width: 8),
           Text(
             run.status,

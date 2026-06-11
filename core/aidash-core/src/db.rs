@@ -209,6 +209,7 @@ pub struct RunListRow {
     pub run_id: i64,
     pub profile_id: String,
     pub display_name: String,
+    pub generation_kind: String,
     pub kind: String,
     pub context_size: Option<i64>,
     pub status: String,
@@ -271,6 +272,7 @@ pub struct CompareRow {
     pub profile_id: String,
     pub display_name: String,
     pub model_type: String,
+    pub generation_kind: String,
     pub context_requested: i64,
     pub context_actual: i64,
     pub context_substituted: bool,
@@ -647,16 +649,18 @@ impl Database {
     pub fn list_runs(&self, model_profile_id: Option<&str>) -> Result<Vec<RunListRow>, DbError> {
         let conn = self.conn.lock().unwrap();
         let sql = if model_profile_id.is_some() {
-            "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at, r.params_json
+            "SELECT r.id, m.profile_id, m.display_name, m.profile_json, r.kind, r.context_size,
+                    r.status, res.decode_tps, res.total_tps, res.peak_phys_footprint_bytes,
+                    r.ended_at, r.params_json
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
              WHERE m.profile_id = ?1
              ORDER BY r.id DESC"
         } else {
-            "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at, r.params_json
+            "SELECT r.id, m.profile_id, m.display_name, m.profile_json, r.kind, r.context_size,
+                    r.status, res.decode_tps, res.total_tps, res.peak_phys_footprint_bytes,
+                    r.ended_at, r.params_json
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
@@ -773,8 +777,12 @@ impl Database {
         profile_ids: &[String],
         target_context: i64,
     ) -> Result<Vec<CompareRow>, DbError> {
-        use crate::profile::{hf_url, model_type_from_profile_json, source_kind_from_profile_json};
+        use crate::profile::{
+            generation_kind_from_profile_json, hf_url, model_type_from_profile_json,
+            source_kind_from_profile_json,
+        };
         use crate::stats::{pick_representative_run, DEFAULT_OVERVIEW_CONTEXT};
+        use crate::tps_tier;
 
         let context = if target_context > 0 {
             target_context
@@ -793,16 +801,22 @@ impl Database {
             let url = hf_url(profile_id, kind.as_deref());
             let model_type = model_type_from_profile_json(&model.profile_json)
                 .unwrap_or_else(|| "llm".into());
+            let generation_kind = generation_kind_from_profile_json(&model.profile_json);
 
             if let Some((run, pick)) = pick_representative_run(&model.runs, context) {
                 rows.push(CompareRow {
                     profile_id: profile_id.clone(),
                     display_name: model.display_name,
                     model_type: model_type.clone(),
+                    generation_kind: generation_kind.clone(),
                     context_requested: pick.requested,
                     context_actual: pick.actual,
                     context_substituted: pick.substituted,
-                    decode_tps: run.decode_tps,
+                    decode_tps: tps_tier::effective_display_tps(
+                        &generation_kind,
+                        run.decode_tps,
+                        run.total_tps,
+                    ),
                     ttft_ms: Some(run.ttft_ms),
                     peak_phys_footprint_bytes: Some(run.peak_phys),
                     peak_mlx_active_bytes: Some(run.peak_mlx),
@@ -817,6 +831,7 @@ impl Database {
                     profile_id: profile_id.clone(),
                     display_name: model.display_name,
                     model_type: model_type.clone(),
+                    generation_kind: generation_kind.clone(),
                     context_requested: context,
                     context_actual: context,
                     context_substituted: false,
@@ -1250,7 +1265,7 @@ impl Database {
 
         let mut stmt = conn.prepare(
             "SELECT r.id, r.context_size, r.ended_at, r.started_at,
-                    res.decode_tps, res.ttft_ms,
+                    res.decode_tps, res.total_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
                     res.tokens_in, res.tokens_out, r.params_json
              FROM runs r
@@ -1266,12 +1281,13 @@ impl Database {
                 ended_at: row.get(2)?,
                 started_at: row.get(3)?,
                 decode_tps: row.get(4)?,
-                ttft_ms: row.get(5)?,
-                peak_phys: row.get(6)?,
-                peak_mlx: row.get(7)?,
-                tokens_in: row.get(8)?,
-                tokens_out: row.get(9)?,
-                use_draft: crate::bench::parse_use_draft(&row.get::<_, String>(10)?),
+                total_tps: row.get(5)?,
+                ttft_ms: row.get(6)?,
+                peak_phys: row.get(7)?,
+                peak_mlx: row.get(8)?,
+                tokens_in: row.get(9)?,
+                tokens_out: row.get(10)?,
+                use_draft: crate::bench::parse_use_draft(&row.get::<_, String>(11)?),
             })
         })?;
         let mut runs = Vec::new();
@@ -1301,17 +1317,28 @@ fn map_eval_template_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<EvalTempla
 }
 
 fn map_run_list_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RunListRow> {
-    let params_json: String = row.get(9)?;
+    use crate::profile::generation_kind_from_profile_json;
+
+    let profile_json: String = row.get(3)?;
+    let params_json: String = row.get(11)?;
+    let generation_kind = generation_kind_from_profile_json(&profile_json);
+    let decode_tps: Option<f64> = row.get(7)?;
+    let total_tps: Option<f64> = row.get(8)?;
     Ok(RunListRow {
         run_id: row.get(0)?,
         profile_id: row.get(1)?,
         display_name: row.get(2)?,
-        kind: row.get(3)?,
-        context_size: row.get(4)?,
-        status: row.get(5)?,
-        decode_tps: row.get(6)?,
-        peak_phys_footprint_bytes: row.get(7)?,
-        ended_at: row.get(8)?,
+        generation_kind: generation_kind.clone(),
+        kind: row.get(4)?,
+        context_size: row.get(5)?,
+        status: row.get(6)?,
+        decode_tps: crate::tps_tier::effective_display_tps(
+            generation_kind.as_str(),
+            decode_tps,
+            total_tps,
+        ),
+        peak_phys_footprint_bytes: row.get(9)?,
+        ended_at: row.get(10)?,
         use_draft: crate::bench::parse_use_draft(&params_json),
     })
 }
@@ -1403,6 +1430,7 @@ mod tests {
             load_timeout_sec: 60,
             notes: String::new(),
             draft_model: None,
+            generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
         };
         let model_id = db.upsert_model(&profile).expect("upsert");
         let run_id = db

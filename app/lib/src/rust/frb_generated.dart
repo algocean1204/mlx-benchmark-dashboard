@@ -1800,18 +1800,19 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbBenchResult dco_decode_frb_bench_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return FrbBenchResult(
       runId: dco_decode_i_64(arr[0]),
       status: dco_decode_String(arr[1]),
       contextSize: dco_decode_u_32(arr[2]),
-      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[3]),
-      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[4]),
-      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[5]),
-      peakPhysFootprintBytes: dco_decode_u_64(arr[6]),
-      peakMlxActiveBytes: dco_decode_u_64(arr[7]),
-      errorMessage: dco_decode_opt_String(arr[8]),
+      generationKind: dco_decode_String(arr[3]),
+      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[4]),
+      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[5]),
+      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[6]),
+      peakPhysFootprintBytes: dco_decode_u_64(arr[7]),
+      peakMlxActiveBytes: dco_decode_u_64(arr[8]),
+      errorMessage: dco_decode_opt_String(arr[9]),
     );
   }
 
@@ -1932,25 +1933,26 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbCompareRow dco_decode_frb_compare_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 16)
-      throw Exception('unexpected arr length: expect 16 but see ${arr.length}');
+    if (arr.length != 17)
+      throw Exception('unexpected arr length: expect 17 but see ${arr.length}');
     return FrbCompareRow(
       profileId: dco_decode_String(arr[0]),
       displayName: dco_decode_String(arr[1]),
       modelType: dco_decode_String(arr[2]),
-      contextRequested: dco_decode_i_64(arr[3]),
-      contextActual: dco_decode_i_64(arr[4]),
-      contextSubstituted: dco_decode_bool(arr[5]),
-      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[6]),
-      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[7]),
-      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[8]),
-      peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[9]),
-      peakMlxActiveBytes: dco_decode_opt_box_autoadd_i_64(arr[10]),
-      tokensIn: dco_decode_opt_box_autoadd_i_64(arr[11]),
-      tokensOut: dco_decode_opt_box_autoadd_i_64(arr[12]),
-      measuredAt: dco_decode_opt_String(arr[13]),
-      hfUrl: dco_decode_opt_String(arr[14]),
-      useDraft: dco_decode_opt_box_autoadd_bool(arr[15]),
+      generationKind: dco_decode_String(arr[3]),
+      contextRequested: dco_decode_i_64(arr[4]),
+      contextActual: dco_decode_i_64(arr[5]),
+      contextSubstituted: dco_decode_bool(arr[6]),
+      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[7]),
+      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[8]),
+      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[9]),
+      peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[10]),
+      peakMlxActiveBytes: dco_decode_opt_box_autoadd_i_64(arr[11]),
+      tokensIn: dco_decode_opt_box_autoadd_i_64(arr[12]),
+      tokensOut: dco_decode_opt_box_autoadd_i_64(arr[13]),
+      measuredAt: dco_decode_opt_String(arr[14]),
+      hfUrl: dco_decode_opt_String(arr[15]),
+      useDraft: dco_decode_opt_box_autoadd_bool(arr[16]),
     );
   }
 
@@ -2158,19 +2160,20 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbModelStats dco_decode_frb_model_stats(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 10)
-      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return FrbModelStats(
       profileId: dco_decode_String(arr[0]),
       displayName: dco_decode_String(arr[1]),
-      totalRuns: dco_decode_i_64(arr[2]),
-      latestMeasuredAt: dco_decode_opt_String(arr[3]),
-      currentTier: dco_decode_opt_box_autoadd_frb_tier_info(arr[4]),
-      currentDecodeTps: dco_decode_opt_box_autoadd_f_64(arr[5]),
-      peakPhysFootprintBytes: dco_decode_i_64(arr[6]),
-      peakMlxActiveBytes: dco_decode_i_64(arr[7]),
-      hfUrl: dco_decode_opt_String(arr[8]),
-      byContext: dco_decode_list_frb_context_stats_row(arr[9]),
+      generationKind: dco_decode_String(arr[2]),
+      totalRuns: dco_decode_i_64(arr[3]),
+      latestMeasuredAt: dco_decode_opt_String(arr[4]),
+      currentTier: dco_decode_opt_box_autoadd_frb_tier_info(arr[5]),
+      currentDecodeTps: dco_decode_opt_box_autoadd_f_64(arr[6]),
+      peakPhysFootprintBytes: dco_decode_i_64(arr[7]),
+      peakMlxActiveBytes: dco_decode_i_64(arr[8]),
+      hfUrl: dco_decode_opt_String(arr[9]),
+      byContext: dco_decode_list_frb_context_stats_row(arr[10]),
     );
   }
 
@@ -2178,18 +2181,19 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbOverviewRow dco_decode_frb_overview_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return FrbOverviewRow(
       profileId: dco_decode_String(arr[0]),
       displayName: dco_decode_String(arr[1]),
       modelType: dco_decode_String(arr[2]),
-      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[3]),
-      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[4]),
-      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[5]),
-      context: dco_decode_frb_context_pick(arr[6]),
-      hfUrl: dco_decode_opt_String(arr[7]),
-      measuredAt: dco_decode_opt_String(arr[8]),
+      generationKind: dco_decode_String(arr[3]),
+      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[4]),
+      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[5]),
+      ttftMs: dco_decode_opt_box_autoadd_f_64(arr[6]),
+      context: dco_decode_frb_context_pick(arr[7]),
+      hfUrl: dco_decode_opt_String(arr[8]),
+      measuredAt: dco_decode_opt_String(arr[9]),
     );
   }
 
@@ -2197,20 +2201,21 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbProfileRow dco_decode_frb_profile_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 11)
-      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    if (arr.length != 12)
+      throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
     return FrbProfileRow(
       id: dco_decode_String(arr[0]),
       backend: dco_decode_String(arr[1]),
       modelType: dco_decode_String(arr[2]),
-      contextDefault: dco_decode_u_32(arr[3]),
-      contextMin: dco_decode_u_32(arr[4]),
-      contextMax: dco_decode_u_32(arr[5]),
-      sweepSteps: dco_decode_list_prim_u_32_strict(arr[6]),
-      filename: dco_decode_String(arr[7]),
-      isMultimodal: dco_decode_bool(arr[8]),
-      draftModel: dco_decode_opt_String(arr[9]),
-      isDrafter: dco_decode_bool(arr[10]),
+      generationKind: dco_decode_String(arr[3]),
+      contextDefault: dco_decode_u_32(arr[4]),
+      contextMin: dco_decode_u_32(arr[5]),
+      contextMax: dco_decode_u_32(arr[6]),
+      sweepSteps: dco_decode_list_prim_u_32_strict(arr[7]),
+      filename: dco_decode_String(arr[8]),
+      isMultimodal: dco_decode_bool(arr[9]),
+      draftModel: dco_decode_opt_String(arr[10]),
+      isDrafter: dco_decode_bool(arr[11]),
     );
   }
 
@@ -2237,20 +2242,21 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbRunListRow dco_decode_frb_run_list_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 11)
-      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    if (arr.length != 12)
+      throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
     return FrbRunListRow(
       runId: dco_decode_i_64(arr[0]),
       profileId: dco_decode_String(arr[1]),
       displayName: dco_decode_String(arr[2]),
-      kind: dco_decode_String(arr[3]),
-      contextSize: dco_decode_opt_box_autoadd_i_64(arr[4]),
-      status: dco_decode_String(arr[5]),
-      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[6]),
-      peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[7]),
-      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[8]),
-      endedAt: dco_decode_opt_String(arr[9]),
-      useDraft: dco_decode_opt_box_autoadd_bool(arr[10]),
+      generationKind: dco_decode_String(arr[3]),
+      kind: dco_decode_String(arr[4]),
+      contextSize: dco_decode_opt_box_autoadd_i_64(arr[5]),
+      status: dco_decode_String(arr[6]),
+      decodeTps: dco_decode_opt_box_autoadd_f_64(arr[7]),
+      peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[8]),
+      tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[9]),
+      endedAt: dco_decode_opt_String(arr[10]),
+      useDraft: dco_decode_opt_box_autoadd_bool(arr[11]),
     );
   }
 
@@ -2743,6 +2749,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_runId = sse_decode_i_64(deserializer);
     var var_status = sse_decode_String(deserializer);
     var var_contextSize = sse_decode_u_32(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_decodeTps = sse_decode_opt_box_autoadd_f_64(deserializer);
     var var_tier = sse_decode_opt_box_autoadd_frb_tier_info(deserializer);
     var var_ttftMs = sse_decode_opt_box_autoadd_f_64(deserializer);
@@ -2753,6 +2760,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       runId: var_runId,
       status: var_status,
       contextSize: var_contextSize,
+      generationKind: var_generationKind,
       decodeTps: var_decodeTps,
       tier: var_tier,
       ttftMs: var_ttftMs,
@@ -2901,6 +2909,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_profileId = sse_decode_String(deserializer);
     var var_displayName = sse_decode_String(deserializer);
     var var_modelType = sse_decode_String(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_contextRequested = sse_decode_i_64(deserializer);
     var var_contextActual = sse_decode_i_64(deserializer);
     var var_contextSubstituted = sse_decode_bool(deserializer);
@@ -2920,6 +2929,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       profileId: var_profileId,
       displayName: var_displayName,
       modelType: var_modelType,
+      generationKind: var_generationKind,
       contextRequested: var_contextRequested,
       contextActual: var_contextActual,
       contextSubstituted: var_contextSubstituted,
@@ -3178,6 +3188,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_profileId = sse_decode_String(deserializer);
     var var_displayName = sse_decode_String(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_totalRuns = sse_decode_i_64(deserializer);
     var var_latestMeasuredAt = sse_decode_opt_String(deserializer);
     var var_currentTier = sse_decode_opt_box_autoadd_frb_tier_info(
@@ -3191,6 +3202,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     return FrbModelStats(
       profileId: var_profileId,
       displayName: var_displayName,
+      generationKind: var_generationKind,
       totalRuns: var_totalRuns,
       latestMeasuredAt: var_latestMeasuredAt,
       currentTier: var_currentTier,
@@ -3208,6 +3220,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_profileId = sse_decode_String(deserializer);
     var var_displayName = sse_decode_String(deserializer);
     var var_modelType = sse_decode_String(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_decodeTps = sse_decode_opt_box_autoadd_f_64(deserializer);
     var var_tier = sse_decode_opt_box_autoadd_frb_tier_info(deserializer);
     var var_ttftMs = sse_decode_opt_box_autoadd_f_64(deserializer);
@@ -3218,6 +3231,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       profileId: var_profileId,
       displayName: var_displayName,
       modelType: var_modelType,
+      generationKind: var_generationKind,
       decodeTps: var_decodeTps,
       tier: var_tier,
       ttftMs: var_ttftMs,
@@ -3233,6 +3247,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_id = sse_decode_String(deserializer);
     var var_backend = sse_decode_String(deserializer);
     var var_modelType = sse_decode_String(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_contextDefault = sse_decode_u_32(deserializer);
     var var_contextMin = sse_decode_u_32(deserializer);
     var var_contextMax = sse_decode_u_32(deserializer);
@@ -3245,6 +3260,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       id: var_id,
       backend: var_backend,
       modelType: var_modelType,
+      generationKind: var_generationKind,
       contextDefault: var_contextDefault,
       contextMin: var_contextMin,
       contextMax: var_contextMax,
@@ -3289,6 +3305,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_runId = sse_decode_i_64(deserializer);
     var var_profileId = sse_decode_String(deserializer);
     var var_displayName = sse_decode_String(deserializer);
+    var var_generationKind = sse_decode_String(deserializer);
     var var_kind = sse_decode_String(deserializer);
     var var_contextSize = sse_decode_opt_box_autoadd_i_64(deserializer);
     var var_status = sse_decode_String(deserializer);
@@ -3303,6 +3320,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       runId: var_runId,
       profileId: var_profileId,
       displayName: var_displayName,
+      generationKind: var_generationKind,
       kind: var_kind,
       contextSize: var_contextSize,
       status: var_status,
@@ -4067,6 +4085,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_i_64(self.runId, serializer);
     sse_encode_String(self.status, serializer);
     sse_encode_u_32(self.contextSize, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_opt_box_autoadd_f_64(self.decodeTps, serializer);
     sse_encode_opt_box_autoadd_frb_tier_info(self.tier, serializer);
     sse_encode_opt_box_autoadd_f_64(self.ttftMs, serializer);
@@ -4181,6 +4200,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_String(self.profileId, serializer);
     sse_encode_String(self.displayName, serializer);
     sse_encode_String(self.modelType, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_i_64(self.contextRequested, serializer);
     sse_encode_i_64(self.contextActual, serializer);
     sse_encode_bool(self.contextSubstituted, serializer);
@@ -4385,6 +4405,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.profileId, serializer);
     sse_encode_String(self.displayName, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_i_64(self.totalRuns, serializer);
     sse_encode_opt_String(self.latestMeasuredAt, serializer);
     sse_encode_opt_box_autoadd_frb_tier_info(self.currentTier, serializer);
@@ -4404,6 +4425,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_String(self.profileId, serializer);
     sse_encode_String(self.displayName, serializer);
     sse_encode_String(self.modelType, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_opt_box_autoadd_f_64(self.decodeTps, serializer);
     sse_encode_opt_box_autoadd_frb_tier_info(self.tier, serializer);
     sse_encode_opt_box_autoadd_f_64(self.ttftMs, serializer);
@@ -4421,6 +4443,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_String(self.id, serializer);
     sse_encode_String(self.backend, serializer);
     sse_encode_String(self.modelType, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_u_32(self.contextDefault, serializer);
     sse_encode_u_32(self.contextMin, serializer);
     sse_encode_u_32(self.contextMax, serializer);
@@ -4457,6 +4480,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_i_64(self.runId, serializer);
     sse_encode_String(self.profileId, serializer);
     sse_encode_String(self.displayName, serializer);
+    sse_encode_String(self.generationKind, serializer);
     sse_encode_String(self.kind, serializer);
     sse_encode_opt_box_autoadd_i_64(self.contextSize, serializer);
     sse_encode_String(self.status, serializer);

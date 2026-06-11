@@ -310,6 +310,7 @@ class FrbBenchResult {
   final PlatformInt64 runId;
   final String status;
   final int contextSize;
+  final String generationKind;
   final double? decodeTps;
   final FrbTierInfo? tier;
   final double? ttftMs;
@@ -321,6 +322,7 @@ class FrbBenchResult {
     required this.runId,
     required this.status,
     required this.contextSize,
+    required this.generationKind,
     this.decodeTps,
     this.tier,
     this.ttftMs,
@@ -334,6 +336,7 @@ class FrbBenchResult {
       runId.hashCode ^
       status.hashCode ^
       contextSize.hashCode ^
+      generationKind.hashCode ^
       decodeTps.hashCode ^
       tier.hashCode ^
       ttftMs.hashCode ^
@@ -349,6 +352,7 @@ class FrbBenchResult {
           runId == other.runId &&
           status == other.status &&
           contextSize == other.contextSize &&
+          generationKind == other.generationKind &&
           decodeTps == other.decodeTps &&
           tier == other.tier &&
           ttftMs == other.ttftMs &&
@@ -602,6 +606,7 @@ class FrbCompareRow {
   final String profileId;
   final String displayName;
   final String modelType;
+  final String generationKind;
   final PlatformInt64 contextRequested;
   final PlatformInt64 contextActual;
   final bool contextSubstituted;
@@ -620,6 +625,7 @@ class FrbCompareRow {
     required this.profileId,
     required this.displayName,
     required this.modelType,
+    required this.generationKind,
     required this.contextRequested,
     required this.contextActual,
     required this.contextSubstituted,
@@ -640,6 +646,7 @@ class FrbCompareRow {
       profileId.hashCode ^
       displayName.hashCode ^
       modelType.hashCode ^
+      generationKind.hashCode ^
       contextRequested.hashCode ^
       contextActual.hashCode ^
       contextSubstituted.hashCode ^
@@ -662,6 +669,7 @@ class FrbCompareRow {
           profileId == other.profileId &&
           displayName == other.displayName &&
           modelType == other.modelType &&
+          generationKind == other.generationKind &&
           contextRequested == other.contextRequested &&
           contextActual == other.contextActual &&
           contextSubstituted == other.contextSubstituted &&
@@ -1065,6 +1073,7 @@ class FrbHfSearchResult {
 class FrbModelStats {
   final String profileId;
   final String displayName;
+  final String generationKind;
   final PlatformInt64 totalRuns;
   final String? latestMeasuredAt;
   final FrbTierInfo? currentTier;
@@ -1077,6 +1086,7 @@ class FrbModelStats {
   const FrbModelStats({
     required this.profileId,
     required this.displayName,
+    required this.generationKind,
     required this.totalRuns,
     this.latestMeasuredAt,
     this.currentTier,
@@ -1091,6 +1101,7 @@ class FrbModelStats {
   int get hashCode =>
       profileId.hashCode ^
       displayName.hashCode ^
+      generationKind.hashCode ^
       totalRuns.hashCode ^
       latestMeasuredAt.hashCode ^
       currentTier.hashCode ^
@@ -1107,6 +1118,7 @@ class FrbModelStats {
           runtimeType == other.runtimeType &&
           profileId == other.profileId &&
           displayName == other.displayName &&
+          generationKind == other.generationKind &&
           totalRuns == other.totalRuns &&
           latestMeasuredAt == other.latestMeasuredAt &&
           currentTier == other.currentTier &&
@@ -1121,6 +1133,7 @@ class FrbOverviewRow {
   final String profileId;
   final String displayName;
   final String modelType;
+  final String generationKind;
   final double? decodeTps;
   final FrbTierInfo? tier;
   final double? ttftMs;
@@ -1132,6 +1145,7 @@ class FrbOverviewRow {
     required this.profileId,
     required this.displayName,
     required this.modelType,
+    required this.generationKind,
     this.decodeTps,
     this.tier,
     this.ttftMs,
@@ -1145,6 +1159,7 @@ class FrbOverviewRow {
       profileId.hashCode ^
       displayName.hashCode ^
       modelType.hashCode ^
+      generationKind.hashCode ^
       decodeTps.hashCode ^
       tier.hashCode ^
       ttftMs.hashCode ^
@@ -1160,6 +1175,7 @@ class FrbOverviewRow {
           profileId == other.profileId &&
           displayName == other.displayName &&
           modelType == other.modelType &&
+          generationKind == other.generationKind &&
           decodeTps == other.decodeTps &&
           tier == other.tier &&
           ttftMs == other.ttftMs &&
@@ -1172,6 +1188,7 @@ class FrbProfileRow {
   final String id;
   final String backend;
   final String modelType;
+  final String generationKind;
   final int contextDefault;
   final int contextMin;
   final int contextMax;
@@ -1185,6 +1202,7 @@ class FrbProfileRow {
     required this.id,
     required this.backend,
     required this.modelType,
+    required this.generationKind,
     required this.contextDefault,
     required this.contextMin,
     required this.contextMax,
@@ -1200,6 +1218,7 @@ class FrbProfileRow {
       id.hashCode ^
       backend.hashCode ^
       modelType.hashCode ^
+      generationKind.hashCode ^
       contextDefault.hashCode ^
       contextMin.hashCode ^
       contextMax.hashCode ^
@@ -1217,6 +1236,7 @@ class FrbProfileRow {
           id == other.id &&
           backend == other.backend &&
           modelType == other.modelType &&
+          generationKind == other.generationKind &&
           contextDefault == other.contextDefault &&
           contextMin == other.contextMin &&
           contextMax == other.contextMax &&
@@ -1282,6 +1302,7 @@ class FrbRunListRow {
   final PlatformInt64 runId;
   final String profileId;
   final String displayName;
+  final String generationKind;
   final String kind;
   final PlatformInt64? contextSize;
   final String status;
@@ -1295,6 +1316,7 @@ class FrbRunListRow {
     required this.runId,
     required this.profileId,
     required this.displayName,
+    required this.generationKind,
     required this.kind,
     this.contextSize,
     required this.status,
@@ -1310,6 +1332,7 @@ class FrbRunListRow {
       runId.hashCode ^
       profileId.hashCode ^
       displayName.hashCode ^
+      generationKind.hashCode ^
       kind.hashCode ^
       contextSize.hashCode ^
       status.hashCode ^
@@ -1327,6 +1350,7 @@ class FrbRunListRow {
           runId == other.runId &&
           profileId == other.profileId &&
           displayName == other.displayName &&
+          generationKind == other.generationKind &&
           kind == other.kind &&
           contextSize == other.contextSize &&
           status == other.status &&

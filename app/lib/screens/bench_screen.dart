@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app/metric_help.dart';
 import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart';
 import 'package:app/task_labels.dart';
@@ -433,6 +434,7 @@ class _BenchScreenState extends State<BenchScreen> {
                   TierBadge(
                     decodeTps: result.decodeTps,
                     tier: result.tier,
+                    generationKind: result.generationKind,
                     compact: true,
                   ),
               ],
@@ -447,9 +449,11 @@ class _BenchScreenState extends State<BenchScreen> {
                 term: 'TTFT',
               ),
               _ResultMetric(
-                label: 'decode TPS',
+                label: result.generationKind == 'diffusion'
+                    ? 'TPS(전체 처리율)'
+                    : 'decode TPS',
                 value: result.decodeTps?.toStringAsFixed(1) ?? '—',
-                term: 'TPS',
+                term: MetricHelp.tpsTerm(result.generationKind),
               ),
             ] else ...[
               _ResultMetric(

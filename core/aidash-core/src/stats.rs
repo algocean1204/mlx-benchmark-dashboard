@@ -3,7 +3,10 @@
 use serde::Serialize;
 
 use crate::db::{Database, DbError};
-use crate::profile::{hf_url, model_type_from_profile_json, source_kind_from_profile_json};
+use crate::profile::{
+    generation_kind_from_profile_json, hf_url, model_type_from_profile_json,
+    source_kind_from_profile_json,
+};
 use crate::tps_tier::{self, TpsTier};
 
 pub const DEFAULT_OVERVIEW_CONTEXT: i64 = 4096;
@@ -20,6 +23,7 @@ pub struct OverviewRow {
     pub profile_id: String,
     pub display_name: String,
     pub model_type: String,
+    pub generation_kind: String,
     pub decode_tps: Option<f64>,
     pub tier: Option<TpsTier>,
     pub ttft_ms: Option<f64>,
@@ -44,6 +48,7 @@ pub struct ContextStatsRow {
 pub struct ModelStats {
     pub profile_id: String,
     pub display_name: String,
+    pub generation_kind: String,
     pub total_runs: i64,
     pub latest_measured_at: Option<String>,
     pub current_tier: Option<TpsTier>,
@@ -61,6 +66,7 @@ pub(crate) struct CompletedRunRow {
     pub ended_at: Option<String>,
     pub started_at: String,
     pub decode_tps: Option<f64>,
+    pub total_tps: Option<f64>,
     pub ttft_ms: f64,
     pub peak_phys: i64,
     pub peak_mlx: i64,
@@ -138,7 +144,7 @@ impl Database {
         let sql = if profile_id.is_some() {
             "SELECT m.profile_id, m.display_name, m.profile_json,
                     r.id, r.context_size, r.ended_at, r.started_at,
-                    res.decode_tps, res.ttft_ms,
+                    res.decode_tps, res.total_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
                     res.tokens_in, res.tokens_out, r.params_json
              FROM models m
@@ -149,7 +155,7 @@ impl Database {
         } else {
             "SELECT m.profile_id, m.display_name, m.profile_json,
                     r.id, r.context_size, r.ended_at, r.started_at,
-                    res.decode_tps, res.ttft_ms,
+                    res.decode_tps, res.total_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
                     res.tokens_in, res.tokens_out, r.params_json
              FROM models m
@@ -162,18 +168,19 @@ impl Database {
             std::collections::BTreeMap::new();
 
         let map_row = |row: &rusqlite::Row<'_>| -> rusqlite::Result<CompletedRunRow> {
-            let params_json: String = row.get(13)?;
+            let params_json: String = row.get(14)?;
             Ok(CompletedRunRow {
                 run_id: row.get(3)?,
                 context_size: row.get(4)?,
                 ended_at: row.get(5)?,
                 started_at: row.get(6)?,
                 decode_tps: row.get(7)?,
-                ttft_ms: row.get(8)?,
-                peak_phys: row.get(9)?,
-                peak_mlx: row.get(10)?,
-                tokens_in: row.get(11)?,
-                tokens_out: row.get(12)?,
+                total_tps: row.get(8)?,
+                ttft_ms: row.get(9)?,
+                peak_phys: row.get(10)?,
+                peak_mlx: row.get(11)?,
+                tokens_in: row.get(12)?,
+                tokens_out: row.get(13)?,
                 use_draft: crate::bench::parse_use_draft(&params_json),
             })
         };
@@ -282,20 +289,31 @@ impl Database {
 
             let model_type = model_type_from_profile_json(&model.profile_json)
                 .unwrap_or_else(|| "llm".into());
+            let generation_kind = generation_kind_from_profile_json(&model.profile_json);
 
             if let Some((run, pick)) = pick_representative_run(&model.runs, target_context) {
+                let display_tps = tps_tier::effective_display_tps(
+                    &generation_kind,
+                    run.decode_tps,
+                    run.total_tps,
+                );
                 let row = OverviewRow {
                     profile_id: model.profile_id.clone(),
                     display_name: model.display_name,
                     model_type: model_type.clone(),
-                    decode_tps: run.decode_tps,
-                    tier: run.decode_tps.map(tps_tier::tps_tier),
+                    generation_kind: generation_kind.clone(),
+                    decode_tps: display_tps,
+                    tier: tps_tier::tier_for_run(
+                        &generation_kind,
+                        run.decode_tps,
+                        run.total_tps,
+                    ),
                     ttft_ms: Some(run.ttft_ms),
                     context: pick,
                     hf_url: url,
                     measured_at: run.ended_at.clone(),
                 };
-                if run.decode_tps.is_some() {
+                if display_tps.is_some() {
                     tps_rows.push(row);
                 } else {
                     timing_rows.push(row);
@@ -352,6 +370,8 @@ impl Database {
             runs: Vec::new(),
         });
 
+        let generation_kind = generation_kind_from_profile_json(&profile_json);
+
         let latest = model_runs.runs.iter().max_by(|a, b| {
             a.ended_at
                 .cmp(&b.ended_at)
@@ -370,7 +390,16 @@ impl Database {
             .into_iter()
             .map(|(ctx, runs)| {
                 let count = runs.len() as i64;
-                let tps_values: Vec<f64> = runs.iter().filter_map(|r| r.decode_tps).collect();
+                let tps_values: Vec<f64> = runs
+                    .iter()
+                    .filter_map(|r| {
+                        tps_tier::effective_display_tps(
+                            &generation_kind,
+                            r.decode_tps,
+                            r.total_tps,
+                        )
+                    })
+                    .collect();
                 let decode_min = tps_values
                     .iter()
                     .copied()
@@ -422,10 +451,15 @@ impl Database {
         Ok(ModelStats {
             profile_id: profile_id.to_string(),
             display_name,
+            generation_kind: generation_kind.clone(),
             total_runs,
             latest_measured_at: latest.and_then(|r| r.ended_at.clone()),
-            current_tier: latest.and_then(|r| r.decode_tps.map(tps_tier::tps_tier)),
-            current_decode_tps: latest.and_then(|r| r.decode_tps),
+            current_tier: latest.and_then(|r| {
+                tps_tier::tier_for_run(&generation_kind, r.decode_tps, r.total_tps)
+            }),
+            current_decode_tps: latest.and_then(|r| {
+                tps_tier::effective_display_tps(&generation_kind, r.decode_tps, r.total_tps)
+            }),
             peak_phys_footprint_bytes: peak_phys,
             peak_mlx_active_bytes: peak_mlx,
             hf_url: hf_url(profile_id, kind.as_deref()),

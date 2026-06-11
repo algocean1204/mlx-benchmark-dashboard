@@ -17,6 +17,17 @@ class MetricHelp {
       example: '예: 52 TPS → 약 5초에 260토큰(짧은 문단) 생성',
       tierTable: true,
     ),
+    'TPS(전체 처리율)': MetricEntry(
+      label: 'TPS(전체 처리율)',
+      tooltip: '요청부터 완료까지의 전체 토큰 처리율',
+      shortHint: '전체 처리율 기준',
+      detail:
+          '디퓨전 LM은 블록 단위로 토큰을 한꺼번에 출력하므로 decode TPS(첫 토큰 '
+          '이후 속도)가 실제 체감과 맞지 않습니다. 이 지표는 요청 시작부터 응답 '
+          '완료까지의 total TPS로, 체감 속도와 등급 판정에 사용됩니다.',
+      example: '예: 71토큰·15초 → 약 4.7 TPS(전체 처리율)',
+      tierTable: true,
+    ),
     'TTFT': MetricEntry(
       label: 'TTFT(첫 응답)',
       tooltip: '첫 토큰까지 걸린 시간 — 응답 체감 속도',
@@ -90,6 +101,9 @@ class MetricHelp {
   };
 
   static MetricEntry? get(String term) => terms[term];
+
+  static String tpsTerm(String? generationKind) =>
+      generationKind == 'diffusion' ? 'TPS(전체 처리율)' : 'TPS';
 
   static void showDetailDialog(BuildContext context, String term) {
     final entry = get(term);

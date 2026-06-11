@@ -66,6 +66,26 @@ pub struct ModelProfile {
     /// HF repo id of the paired speculative drafter (MTP assistant), if any.
     #[serde(default)]
     pub draft_model: Option<String>,
+    /// `"autoregressive"` (default) or `"diffusion"` for block/masked diffusion LMs.
+    #[serde(default = "default_generation_kind")]
+    pub generation_kind: String,
+}
+
+fn default_generation_kind() -> String {
+    GENERATION_KIND_AUTOREGRESSIVE.into()
+}
+
+pub const GENERATION_KIND_AUTOREGRESSIVE: &str = "autoregressive";
+pub const GENERATION_KIND_DIFFUSION: &str = "diffusion";
+
+pub fn is_diffusion_kind(generation_kind: &str) -> bool {
+    generation_kind == GENERATION_KIND_DIFFUSION
+}
+
+pub fn generation_kind_from_profile_json(profile_json: &str) -> String {
+    serde_json::from_str::<ModelProfile>(profile_json)
+        .map(|p| p.generation_kind)
+        .unwrap_or_else(|_| GENERATION_KIND_AUTOREGRESSIVE.into())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -360,6 +380,30 @@ pub fn find_config_json_local(path: &Path) -> Result<PathBuf, ProfileError> {
         "config.json not found in {}",
         path.display()
     )))
+}
+
+fn infer_generation_kind(config: &serde_json::Value) -> String {
+    let model_type = config
+        .get("model_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if model_type.contains("diffusion") {
+        return GENERATION_KIND_DIFFUSION.into();
+    }
+    let archs: Vec<String> = config
+        .get("architectures")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_lowercase()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if archs.iter().any(|a| a.contains("diffusion") || a.contains("blockdiffusion")) {
+        return GENERATION_KIND_DIFFUSION.into();
+    }
+    GENERATION_KIND_AUTOREGRESSIVE.into()
 }
 
 fn infer_model_type(config: &serde_json::Value, repo_id: &str) -> String {
@@ -784,6 +828,20 @@ pub fn draft_from_config(
         }
     };
 
+    let generation_kind = infer_generation_kind(&config);
+    let mut default_params = serde_json::json!({
+        "max_tokens": 512,
+        "temperature": 0.7,
+        "top_p": 0.95
+    });
+    if generation_kind == GENERATION_KIND_DIFFUSION {
+        if let Some(gc) = config.get("generation_config").and_then(|v| v.as_object()) {
+            if let Some(steps) = gc.get("max_denoising_steps") {
+                default_params["max_denoising_steps"] = steps.clone();
+            }
+        }
+    }
+
     let mut profile = ModelProfile {
         schema_version: 1,
         id: id.into(),
@@ -798,11 +856,7 @@ pub fn draft_from_config(
             default: context_default,
             sweep_steps: generate_sweep_steps(context_max),
         },
-        default_params: serde_json::json!({
-            "max_tokens": 512,
-            "temperature": 0.7,
-            "top_p": 0.95
-        }),
+        default_params,
         quantization: infer_quantization(&config, id),
         load_timeout_sec: 600,
         notes: {
@@ -815,6 +869,7 @@ pub fn draft_from_config(
             notes
         },
         draft_model: None,
+        generation_kind,
     };
 
     if !is_drafter {
@@ -1056,6 +1111,46 @@ mod tests {
     }
 
     #[test]
+    fn infer_generation_kind_detects_diffusion() {
+        let by_model_type = serde_json::json!({"model_type": "diffusion_gemma"});
+        assert_eq!(
+            infer_generation_kind(&by_model_type),
+            GENERATION_KIND_DIFFUSION
+        );
+
+        let by_arch = serde_json::json!({
+            "model_type": "gemma",
+            "architectures": ["DiffusionGemmaForConditionalGeneration"]
+        });
+        assert_eq!(infer_generation_kind(&by_arch), GENERATION_KIND_DIFFUSION);
+
+        let ar = serde_json::json!({
+            "architectures": ["Qwen3ForCausalLM"],
+            "model_type": "qwen3"
+        });
+        assert_eq!(infer_generation_kind(&ar), GENERATION_KIND_AUTOREGRESSIVE);
+    }
+
+    #[test]
+    fn legacy_profile_without_generation_kind_deserializes() {
+        let json = r#"{
+            "schema_version": 1,
+            "id": "org/model",
+            "display_name": "Legacy",
+            "source": { "kind": "hf", "hf_repo": "org/model" },
+            "model_type": "llm",
+            "backend": "vllm_mlx",
+            "io": { "input": ["chat"], "output": "text" },
+            "context": { "min": 512, "max": 4096, "default": 4096 },
+            "default_params": {},
+            "quantization": null,
+            "load_timeout_sec": 600
+        }"#;
+        let profile: ModelProfile = serde_json::from_str(json).expect("parse legacy profile");
+        assert_eq!(profile.generation_kind, GENERATION_KIND_AUTOREGRESSIVE);
+    }
+
+    #[test]
     fn infer_model_type_heuristics() {
         let whisper = serde_json::json!({"model_type": "whisper"});
         assert_eq!(infer_model_type(&whisper, "org/model"), "asr");
@@ -1119,6 +1214,7 @@ mod tests {
             load_timeout_sec: 600,
             notes: String::new(),
             draft_model: None,
+            generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
         };
         write_profile_draft(dir.path(), &profile).expect("write draft");
 
@@ -1331,6 +1427,7 @@ mod tests {
             load_timeout_sec: 600,
             notes: String::new(),
             draft_model: Some("org/assistant".into()),
+            generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
         };
         let spawned = profile_for_spawn(&profile, false);
         assert!(spawned.draft_model.is_none());
@@ -1367,6 +1464,7 @@ mod tests {
             load_timeout_sec: 600,
             notes: String::new(),
             draft_model: None,
+            generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
         };
         assert!(ensure_runnable_profile(&drafter).is_err());
     }

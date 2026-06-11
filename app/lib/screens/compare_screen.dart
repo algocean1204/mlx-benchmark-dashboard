@@ -1,3 +1,4 @@
+import 'package:app/metric_help.dart';
 import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart';
 import 'package:app/theme/app_theme.dart';
@@ -376,11 +377,12 @@ class _StatCards extends StatelessWidget {
                           TierBadge(
                             decodeTps: r.decodeTps,
                             tier: r.tier,
+                            generationKind: r.generationKind,
                             large: true,
                           ),
                           const SizedBox(height: 12),
                           _StatLine(
-                            term: 'TPS',
+                            term: MetricHelp.tpsTerm(r.generationKind),
                             value: r.decodeTps!.toStringAsFixed(1),
                             highlight: tpsWin,
                           ),

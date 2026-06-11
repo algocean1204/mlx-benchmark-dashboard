@@ -8,7 +8,7 @@ use aidash_core::api::{self, ApiServerConfig, ApiState};
 use aidash_core::auth;
 use aidash_core::bench::{self, parse_steps_list};
 use aidash_core::client::{self, StreamStats};
-use aidash_core::db::{CompareRow, Database, DeleteSummary};
+use aidash_core::db::{CompareRow, Database, DeleteSummary, RunListRow};
 use aidash_core::eval;
 use aidash_core::eval_templates::{self, EvalTemplateSummary};
 use aidash_core::export::{self, ExportRequest};
@@ -391,6 +391,19 @@ fn tier_json(decode_tps: f64) -> serde_json::Value {
     tps_tier::tps_tier(decode_tps).json_value()
 }
 
+fn format_run_list_tps(row: &RunListRow) -> String {
+    row.decode_tps
+        .map(|tps| {
+            format!(
+                "{:.1} {}{}",
+                tps,
+                tps_tier::tps_tier(tps).display(),
+                tps_tier::tier_display_suffix(&row.generation_kind)
+            )
+        })
+        .unwrap_or_else(|| "-".into())
+}
+
 fn bench_run_exit_code(result: &bench::RunResult) -> i32 {
     if result.status == "failed" || result.status == "aborted_watchdog" {
         EXIT_ERROR
@@ -439,8 +452,12 @@ fn print_bench_result(result: &bench::RunResult, json: bool) {
             "peak_mlx_active_bytes": result.peak_mlx_active_bytes,
         });
         if let Some(stats) = &result.stats {
-            if let Some(tps) = stats.decode_tps {
-                payload["tier"] = tier_json(tps);
+            if let Some(tier) = tps_tier::tier_for_run(
+                &result.generation_kind,
+                stats.decode_tps,
+                Some(stats.total_tps),
+            ) {
+                payload["tier"] = tier.json_value();
             }
         }
         if let Some(ref msg) = result.error_message {
@@ -455,7 +472,19 @@ fn print_bench_result(result: &bench::RunResult, json: bool) {
         println!("TTFT:        {:.1} ms", stats.ttft_ms);
         if client::is_token_benchmark(stats) {
             println!("Prefill TPS: {:.1}", stats.prefill_tps);
-            println!("Decode TPS:  {}", format_decode_tps_opt(stats.decode_tps));
+            if aidash_core::profile::is_diffusion_kind(&result.generation_kind) {
+                println!(
+                    "TPS(전체):   {}",
+                    tps_tier::format_display_tps_opt(
+                        &result.generation_kind,
+                        stats.decode_tps,
+                        Some(stats.total_tps),
+                    )
+                );
+                println!("Decode TPS:  {:.1} (참고, 등급 미사용)", stats.decode_tps.unwrap_or(0.0));
+            } else {
+                println!("Decode TPS:  {}", format_decode_tps_opt(stats.decode_tps));
+            }
             println!("Total TPS:   {:.1}", stats.total_tps);
             println!("Tokens in:   {}", stats.tokens_in);
             println!("Tokens out:  {}", stats.tokens_out);
@@ -746,10 +775,7 @@ async fn db_list_runs_cmd(model: Option<String>, json: bool) -> i32 {
                     "id", "model", "kind", "context", "status", "decode TPS", "peak RAM"
                 );
                 for row in rows {
-                    let decode = row
-                        .decode_tps
-                        .map(format_decode_tps)
-                        .unwrap_or_else(|| "-".into());
+                    let decode = format_run_list_tps(&row);
                     println!(
                         "{:<6} {:<40} {:<14} {:<8} {:<18} {:<22} {:<12}",
                         row.run_id,
@@ -1003,7 +1029,11 @@ async fn stats_overview_cmd(context: Option<i64>, json: bool) -> i32 {
                 );
                 for row in &rows {
                     let metric = if row.decode_tps.is_some() {
-                        format_decode_tps_opt(row.decode_tps)
+                        format!(
+                            "{}{}",
+                            format_decode_tps_opt(row.decode_tps),
+                            tps_tier::tier_display_suffix(&row.generation_kind)
+                        )
                     } else {
                         format_processing_time_ms(row.ttft_ms)
                     };

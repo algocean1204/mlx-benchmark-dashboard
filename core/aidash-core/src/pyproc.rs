@@ -131,6 +131,7 @@ mod tests {
             load_timeout_sec: 600,
             notes: String::new(),
             draft_model: draft_model.map(str::to_string),
+            generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
         }
     }
 

@@ -49,6 +49,7 @@ typedef struct wire_cst_frb_bench_result {
   int64_t run_id;
   struct wire_cst_list_prim_u_8_strict *status;
   uint32_t context_size;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   double *decode_tps;
   struct wire_cst_frb_tier_info *tier;
   double *ttft_ms;
@@ -112,6 +113,7 @@ typedef struct wire_cst_frb_compare_row {
   struct wire_cst_list_prim_u_8_strict *profile_id;
   struct wire_cst_list_prim_u_8_strict *display_name;
   struct wire_cst_list_prim_u_8_strict *model_type;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   int64_t context_requested;
   int64_t context_actual;
   bool context_substituted;
@@ -221,6 +223,7 @@ typedef struct wire_cst_frb_overview_row {
   struct wire_cst_list_prim_u_8_strict *profile_id;
   struct wire_cst_list_prim_u_8_strict *display_name;
   struct wire_cst_list_prim_u_8_strict *model_type;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   double *decode_tps;
   struct wire_cst_frb_tier_info *tier;
   double *ttft_ms;
@@ -238,6 +241,7 @@ typedef struct wire_cst_frb_profile_row {
   struct wire_cst_list_prim_u_8_strict *id;
   struct wire_cst_list_prim_u_8_strict *backend;
   struct wire_cst_list_prim_u_8_strict *model_type;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   uint32_t context_default;
   uint32_t context_min;
   uint32_t context_max;
@@ -257,6 +261,7 @@ typedef struct wire_cst_frb_run_list_row {
   int64_t run_id;
   struct wire_cst_list_prim_u_8_strict *profile_id;
   struct wire_cst_list_prim_u_8_strict *display_name;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   struct wire_cst_list_prim_u_8_strict *kind;
   int64_t *context_size;
   struct wire_cst_list_prim_u_8_strict *status;
@@ -429,6 +434,7 @@ typedef struct wire_cst_frb_fix_progress {
 typedef struct wire_cst_frb_model_stats {
   struct wire_cst_list_prim_u_8_strict *profile_id;
   struct wire_cst_list_prim_u_8_strict *display_name;
+  struct wire_cst_list_prim_u_8_strict *generation_kind;
   int64_t total_runs;
   struct wire_cst_list_prim_u_8_strict *latest_measured_at;
   struct wire_cst_frb_tier_info *current_tier;
