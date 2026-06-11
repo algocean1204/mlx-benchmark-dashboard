@@ -1,3 +1,4 @@
+import 'package:app/theme/app_theme.dart';
 import 'package:app/utils/formatters.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,7 +22,18 @@ void main() {
     });
 
     test('M values', () {
+      expect(formatContext(524288), '512K');
       expect(formatContext(1048576), '1M');
+    });
+  });
+
+  group('evalScoreColor', () {
+    test('tier thresholds', () {
+      expect(evalScoreColor(90), AppTheme.tierIdeal);
+      expect(evalScoreColor(80), AppTheme.tierIdeal);
+      expect(evalScoreColor(65), AppTheme.tierSluggish);
+      expect(evalScoreColor(50), AppTheme.tierSluggish);
+      expect(evalScoreColor(30), AppTheme.tierUnusable);
     });
   });
 }

@@ -19,6 +19,7 @@ class ModelManageScreen extends StatefulWidget {
 class _ModelManageScreenState extends State<ModelManageScreen> {
   FrbDiskUsage? _disk;
   List<FrbCacheRepoEntry> _repos = [];
+  Set<String> _drafterRepoIds = {};
   bool _loading = true;
   String? _error;
   String _searchQuery = '';
@@ -55,10 +56,16 @@ class _ModelManageScreenState extends State<ModelManageScreen> {
     try {
       final disk = await api.diskUsage();
       final scan = await api.cacheScan();
+      final drafters = api
+          .listProfiles()
+          .where((p) => p.isDrafter)
+          .map((p) => p.id)
+          .toSet();
       if (!mounted) return;
       setState(() {
         _disk = disk;
         _repos = scan.repos;
+        _drafterRepoIds = drafters;
         _loading = false;
       });
     } catch (e) {
@@ -142,7 +149,10 @@ class _ModelManageScreenState extends State<ModelManageScreen> {
             }
           }
         });
-        if (p.done && p.success) _load();
+        if (p.done && p.success) {
+          _load();
+          _autoGenerateProfile(repo);
+        }
       },
       onError: (e) {
         if (!mounted) return;
@@ -210,17 +220,47 @@ class _ModelManageScreenState extends State<ModelManageScreen> {
     }
   }
 
-  Future<void> _generateProfile(String repoId) async {
+  Future<void> _autoGenerateProfile(String repoId) async {
+    final api = context.read<AidashApi>();
+    if (api.listProfiles().any((p) => p.id == repoId)) {
+      return;
+    }
+    await _generateProfile(repoId, auto: true);
+  }
+
+  Future<void> _generateProfile(String repoId, {bool auto = false}) async {
     final api = context.read<AidashApi>();
     try {
-      final path = api.profileGenerate(repoId: repoId);
+      api.profileGenerate(repoId: repoId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('프로파일 생성됨: $path')),
-      );
+      final profile = api.listProfiles().cast<FrbProfileRow?>().firstWhere(
+            (p) => p?.id == repoId,
+            orElse: () => null,
+          );
+      if (auto) {
+        final maxLabel =
+            profile != null ? formatContext(profile.contextMax) : '—';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('프로파일 자동 생성됨 — 최대 컨텍스트 $maxLabel 감지'),
+          ),
+        );
+      } else {
+        final path = profile?.filename ?? repoId;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('프로파일 생성됨: $path')),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      ErrorCard.showSnackBar(context, e.toString());
+      final msg = e.toString();
+      if (auto && msg.contains('already exists')) {
+        return;
+      }
+      ErrorCard.showSnackBar(
+        context,
+        auto ? '프로파일 자동 생성 실패: $msg' : msg,
+      );
     }
   }
 
@@ -257,11 +297,17 @@ class _ModelManageScreenState extends State<ModelManageScreen> {
                         (r) => ListTile(
                           title: Text(r.repoId),
                           subtitle: Text(
-                            '${formatBytesInt(r.sizeBytes.toInt())} · ${_fmtDate(r.lastModified)}',
+                            '${formatBytesInt(r.sizeBytes.toInt())} · ${_fmtDate(r.lastModified)}'
+                            '${_drafterRepoIds.contains(r.repoId) ? ' · 보조(drafter) 모델' : ''}',
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (_drafterRepoIds.contains(r.repoId))
+                                const Chip(
+                                  label: Text('drafter'),
+                                  visualDensity: VisualDensity.compact,
+                                ),
                               if (r.hasProfile)
                                 const Chip(
                                   label: Text('프로파일'),

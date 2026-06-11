@@ -45,6 +45,7 @@ fn test_profile() -> ModelProfile {
         quantization: Some("4bit".into()),
         load_timeout_sec: 30,
         notes: String::new(),
+        draft_model: None,
     }
 }
 

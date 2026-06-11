@@ -29,6 +29,7 @@ _SHUTDOWN = threading.Event()
 
 _MODEL = None
 _TOKENIZER = None
+_DRAFT_MODEL = None
 _LOAD_ERROR: str | None = None
 _MODEL_LOADED = False
 _LOAD_LOCK = threading.Lock()
@@ -105,15 +106,31 @@ def _apply_chat_template(tokenizer: Any, messages: list[dict[str, Any]]) -> str:
     raise RuntimeError("tokenizer does not support apply_chat_template")
 
 
-def _background_model_load(model_path: str) -> None:
-    global _MODEL, _TOKENIZER, _LOAD_ERROR, _MODEL_LOADED
+def _load_draft_model(draft_model_path: str | None) -> Any | None:
+    if not draft_model_path:
+        return None
+    try:
+        resolved = _resolve_model_path(draft_model_path)
+        _log_json("draft_load_start", draft_model_path=draft_model_path)
+        draft_model, _draft_tokenizer = load(resolved)
+        _log_json("draft_loaded", draft_model_path=draft_model_path)
+        return draft_model
+    except Exception as exc:
+        _log_json("draft_load_failed", draft_model_path=draft_model_path, error=str(exc))
+        return None
+
+
+def _background_model_load(model_path: str, draft_model_path: str | None = None) -> None:
+    global _MODEL, _TOKENIZER, _DRAFT_MODEL, _LOAD_ERROR, _MODEL_LOADED
 
     try:
         _log_json("model_load_start", model_path=model_path)
         model, tokenizer = load(model_path)
+        draft_model = _load_draft_model(draft_model_path)
         with _LOAD_LOCK:
             _MODEL = model
             _TOKENIZER = tokenizer
+            _DRAFT_MODEL = draft_model
             _LOAD_ERROR = None
             _MODEL_LOADED = True
         _log_json("model_loaded", model_path=model_path)
@@ -159,13 +176,13 @@ async def metrics() -> JSONResponse:
     return JSONResponse(_mlx_metrics_payload())
 
 
-def _require_model() -> tuple[Any, Any]:
+def _require_model() -> tuple[Any, Any, Any | None]:
     with _LOAD_LOCK:
         if _LOAD_ERROR is not None:
             raise HTTPException(status_code=503, detail=f"model load failed: {_LOAD_ERROR}")
         if not _MODEL_LOADED or _MODEL is None or _TOKENIZER is None:
             raise HTTPException(status_code=503, detail="model not loaded")
-        return _MODEL, _TOKENIZER
+        return _MODEL, _TOKENIZER, _DRAFT_MODEL
 
 
 def _generation_kwargs(body: ChatCompletionRequest) -> dict[str, Any]:
@@ -189,7 +206,7 @@ def _messages_to_dicts(messages: list[ChatMessage]) -> list[dict[str, Any]]:
 
 @app.post("/v1/chat/completions")
 async def chat_completions(body: ChatCompletionRequest) -> Any:
-    model, tokenizer = _require_model()
+    model, tokenizer, draft_model = _require_model()
     messages = _messages_to_dicts(body.messages)
     prompt = _apply_chat_template(tokenizer, messages)
     max_tokens = body.max_tokens if body.max_tokens is not None else 256
@@ -203,7 +220,12 @@ async def chat_completions(body: ChatCompletionRequest) -> Any:
             prompt_tokens = 0
             completion_tokens = 0
             for response in stream_generate(
-                model, tokenizer, prompt, max_tokens=max_tokens, **gen_kwargs
+                model,
+                tokenizer,
+                prompt,
+                max_tokens=max_tokens,
+                draft_model=draft_model,
+                **gen_kwargs,
             ):
                 prompt_tokens = int(response.prompt_tokens)
                 completion_tokens = int(response.generation_tokens)
@@ -236,7 +258,12 @@ async def chat_completions(body: ChatCompletionRequest) -> Any:
     prompt_tokens = 0
     completion_tokens = 0
     for response in stream_generate(
-        model, tokenizer, prompt, max_tokens=max_tokens, **gen_kwargs
+        model,
+        tokenizer,
+        prompt,
+        max_tokens=max_tokens,
+        draft_model=draft_model,
+        **gen_kwargs,
     ):
         text_parts.append(response.text)
         prompt_tokens = int(response.prompt_tokens)
@@ -279,6 +306,7 @@ def main() -> None:
     parser.add_argument("--context-size", type=int, required=True)
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--profile-json", required=True)
+    parser.add_argument("--draft-model-path", default=None)
     args = parser.parse_args()
 
     _configure_logging()
@@ -300,7 +328,7 @@ def main() -> None:
 
     load_thread = threading.Thread(
         target=_background_model_load,
-        args=(resolved_model_path,),
+        args=(resolved_model_path, args.draft_model_path),
         daemon=True,
     )
     load_thread.start()
@@ -337,6 +365,7 @@ def main() -> None:
     with _LOAD_LOCK:
         _MODEL = None
         _TOKENIZER = None
+        _DRAFT_MODEL = None
 
     _log_json("exit", code=0)
     sys.exit(0)

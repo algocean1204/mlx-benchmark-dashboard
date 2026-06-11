@@ -1,3 +1,6 @@
+import 'package:app/theme/app_theme.dart';
+import 'package:flutter/material.dart';
+
 String formatBytes(BigInt bytes) {
   final b = bytes.toDouble();
   if (b >= 1024 * 1024 * 1024) {
@@ -29,6 +32,12 @@ String formatContext(int n) {
 String _trimTrailingZero(String s) {
   if (s.endsWith('.0')) return s.substring(0, s.length - 2);
   return s;
+}
+
+Color evalScoreColor(int score) {
+  if (score >= 80) return AppTheme.tierIdeal;
+  if (score >= 50) return AppTheme.tierSluggish;
+  return AppTheme.tierUnusable;
 }
 
 int platformIntToInt(dynamic value) {

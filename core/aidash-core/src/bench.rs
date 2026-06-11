@@ -160,6 +160,14 @@ pub struct BenchRunConfig {
     pub child_spec: Option<ChildSpec>,
     pub port: Option<u16>,
     pub progress_tx: Option<broadcast::Sender<CoreEvent>>,
+    pub use_draft: bool,
+}
+
+pub fn parse_use_draft(params_json: &str) -> Option<bool> {
+    serde_json::from_str::<serde_json::Value>(params_json)
+        .ok()?
+        .get("use_draft")
+        .and_then(|v| v.as_bool())
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -324,13 +332,17 @@ fn run_params_json(
     profile: &ModelProfile,
     context: u32,
     prompt_file: Option<&Path>,
+    use_draft: bool,
 ) -> Result<String, String> {
-    let payload = serde_json::json!({
+    let mut payload = serde_json::json!({
         "context_size": context,
         "max_tokens": profile_max_tokens(profile),
         "prompt_file": prompt_file.map(|p| p.display().to_string()),
         "fill_ratio": if prompt_file.is_some() { 0.0 } else { 0.8 },
     });
+    if profile.draft_model.is_some() {
+        payload["use_draft"] = serde_json::Value::Bool(use_draft);
+    }
     serde_json::to_string(&payload).map_err(|e| e.to_string())
 }
 
@@ -389,7 +401,12 @@ pub fn allocate_bench_run(
     let model_id = db
         .upsert_model(&config.profile)
         .map_err(|e| e.to_string())?;
-    let params_json = run_params_json(&config.profile, config.context, prompt_file)?;
+    let params_json = run_params_json(
+        &config.profile,
+        config.context,
+        prompt_file,
+        config.use_draft,
+    )?;
     db.insert_run(
         model_id,
         config.kind.as_str(),
@@ -484,7 +501,7 @@ async fn execute_cycle(
     let mut progress_events = handle.event_tx.subscribe();
 
     let start = StartParams {
-        profile: config.profile.clone(),
+        profile: crate::profile::profile_for_spawn(&config.profile, config.use_draft),
         context: config.context,
         mem_limit_gb: config.mem_limit_gb,
         port: config.port,
@@ -849,6 +866,7 @@ pub async fn run_bench_single(
         child_spec,
         port,
         progress_tx,
+        use_draft: true,
     };
     run_single(db, config, prompt_file).await
 }
@@ -879,6 +897,7 @@ pub async fn run_context_sweep(
     port: Option<u16>,
     prompt_file: Option<&Path>,
     progress_tx: Option<broadcast::Sender<CoreEvent>>,
+    use_draft: bool,
 ) -> Result<SweepSummary, String> {
     let config_json = serde_json::json!({
         "profile_id": profile.id,
@@ -928,6 +947,7 @@ pub async fn run_context_sweep(
             child_spec: child_spec.clone(),
             port,
             progress_tx: progress_tx.clone(),
+            use_draft,
         };
         let result = run_single(db, config, prompt_file).await?;
 
@@ -1015,6 +1035,7 @@ pub async fn run_limit_search(
             child_spec: child_spec.clone(),
             port,
             progress_tx: progress_tx.clone(),
+            use_draft: true,
         };
         let result = run_single(db, config, prompt_file).await?;
         attempts.push(LimitAttemptRow {
@@ -1074,6 +1095,7 @@ pub async fn run_ab_battle(
             child_spec: child_spec.clone(),
             port,
             progress_tx: progress_tx.clone(),
+            use_draft: true,
         };
         let result = run_single(db, config, prompt_file).await?;
         rows.push(AbBattleRow {
@@ -1136,6 +1158,7 @@ pub async fn run_quant_compare(
             child_spec: child_spec.clone(),
             port,
             progress_tx: progress_tx.clone(),
+            use_draft: true,
         };
         let result = run_single(db, config, prompt_file).await?;
         rows.push(QuantCompareRow {

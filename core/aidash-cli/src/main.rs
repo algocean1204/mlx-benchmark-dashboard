@@ -10,6 +10,7 @@ use aidash_core::bench::{self, parse_steps_list};
 use aidash_core::client::{self, StreamStats};
 use aidash_core::db::{CompareRow, Database, DeleteSummary};
 use aidash_core::eval;
+use aidash_core::eval_templates::{self, EvalTemplateSummary};
 use aidash_core::export::{self, ExportRequest};
 use aidash_core::stats::{self, DEFAULT_OVERVIEW_CONTEXT};
 use aidash_core::tps_tier::{self, format_decode_tps, format_decode_tps_opt, format_processing_time_ms};
@@ -213,12 +214,21 @@ struct ApiServeArgs {
 #[derive(Subcommand)]
 enum EvalCmd {
     Run(EvalRunArgs),
+    Template(EvalTemplateArgs),
 }
 
 #[derive(Args)]
 struct EvalRunArgs {
     #[arg(long)]
     profile: String,
+}
+
+#[derive(Args)]
+struct EvalTemplateArgs {
+    #[arg(long)]
+    profile: String,
+    #[arg(long)]
+    context: u32,
 }
 
 #[derive(Subcommand)]
@@ -601,6 +611,7 @@ async fn bench_sweep_cmd(args: BenchSweepArgs, json: bool) -> i32 {
         None,
         prompt_file,
         Some(progress_tx),
+        true,
     )
     .await;
 
@@ -1637,6 +1648,88 @@ async fn export_card_cmd(args: ExportCardArgs, json: bool) -> i32 {
     }
 }
 
+fn print_eval_template_summary(summary: &EvalTemplateSummary, json: bool) {
+    if json {
+        if let Ok(line) = serde_json::to_string(summary) {
+            println!("{line}");
+        }
+    } else {
+        println!();
+        println!("--- eval template ctx {} ---", summary.context_size);
+        for item in &summary.items {
+            println!(
+                "  {} ({}) — {}점 · {}ms",
+                item.template_id, item.description, item.score, item.elapsed_ms
+            );
+        }
+        println!("총점: {}/100", summary.total_score);
+    }
+}
+
+async fn eval_template_cmd(args: EvalTemplateArgs, json: bool) -> i32 {
+    let root = project_root_or_exit(json);
+    let model_profile = load_profile_or_exit(&root, &args.profile, json);
+    let db = open_db_or_exit(json);
+
+    let template_path = eval_sets_dir(&root).join("context_templates_ko.json");
+    let template_set = match eval_templates::load_template_set(&template_path) {
+        Ok(s) => s,
+        Err(e) => {
+            if json {
+                eprintln!(r#"{{"error":"{e}"}}"#);
+            } else {
+                eprintln!("{e}");
+            }
+            return EXIT_ERROR;
+        }
+    };
+
+    if args.context < model_profile.context.min || args.context > model_profile.context.max {
+        let msg = format!(
+            "context {} out of profile range {}-{}",
+            args.context, model_profile.context.min, model_profile.context.max
+        );
+        if json {
+            eprintln!(r#"{{"error":"{msg}"}}"#);
+        } else {
+            eprintln!("{msg}");
+        }
+        return EXIT_ERROR;
+    }
+
+    let (progress_tx, progress_rx) = broadcast::channel(128);
+    let printer = spawn_progress_printer(progress_rx, json);
+
+    let summary = eval_templates::run_template_eval(
+        &db,
+        model_profile,
+        args.context,
+        &template_set,
+        python_dir(&root),
+        None,
+        None,
+        Some(progress_tx),
+    )
+    .await;
+
+    printer.abort();
+
+    match summary {
+        Ok(summary) => {
+            print_eval_template_summary(&summary, json);
+            0
+        }
+        Err(e) => {
+            if json {
+                eprintln!(r#"{{"error":"{e}"}}"#);
+            } else {
+                eprintln!("{e}");
+            }
+            EXIT_ERROR
+        }
+    }
+}
+
 async fn eval_run_cmd(args: EvalRunArgs, json: bool) -> i32 {
     let root = project_root_or_exit(json);
     let model_profile = load_profile_or_exit(&root, &args.profile, json);
@@ -1967,6 +2060,7 @@ async fn main() -> ExitCode {
         },
         Commands::Eval { command } => match command {
             EvalCmd::Run(args) => eval_run_cmd(args, cli.json).await,
+            EvalCmd::Template(args) => eval_template_cmd(args, cli.json).await,
         },
         Commands::Export { command } => match command {
             ExportCmd::Card(args) => export_card_cmd(args, cli.json).await,

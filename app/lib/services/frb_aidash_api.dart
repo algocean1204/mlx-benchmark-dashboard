@@ -61,6 +61,7 @@ class FrbAidashApi implements AidashApi {
     String? audioPath,
     String? benchTask,
     List<int>? sweepSteps,
+    bool? useDraft,
   }) async {
     final id = await frb.benchStart(
       profileId: profileId,
@@ -73,8 +74,20 @@ class FrbAidashApi implements AidashApi {
       sweepSteps: sweepSteps == null
           ? null
           : Uint32List.fromList(sweepSteps),
+      useDraft: useDraft,
     );
     return id.toInt();
+  }
+
+  @override
+  List<String> listDrafterProfiles() => frb.listDrafterProfiles();
+
+  @override
+  void profileSetDraftModel({
+    required String profileId,
+    String? draftModel,
+  }) {
+    frb.profileSetDraftModel(profileId: profileId, draftModel: draftModel);
   }
 
   @override
@@ -242,4 +255,34 @@ class FrbAidashApi implements AidashApi {
   @override
   String profileGenerate({required String repoId}) =>
       frb.profileGenerate(repoId: repoId);
+
+  @override
+  List<frb.FrbEvalTemplateInfo> evalTemplateList() => frb.evalTemplateList();
+
+  @override
+  List<int> evalTemplateMeasurableContexts({required String profileId}) =>
+      frb
+          .evalTemplateMeasurableContexts(profileId: profileId)
+          .map((v) => v.toInt())
+          .toList();
+
+  @override
+  List<frb.FrbEvalTemplateHistoryEntry> evalTemplateHistory({
+    required String profileId,
+    int? contextSize,
+  }) =>
+      frb.evalTemplateHistory(
+        profileId: profileId,
+        contextSize: contextSize,
+      );
+
+  @override
+  Stream<frb.FrbEvalTemplateEvent> evalTemplateRun({
+    required String profileId,
+    required int contextSize,
+  }) =>
+      frb.evalTemplateRun(
+        profileId: profileId,
+        contextSize: contextSize,
+      );
 }

@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2097317494;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -705172980;
 
 // Section: executor
 
@@ -201,6 +201,7 @@ fn wire__crate__api__bench_start_impl(
     audio_path: impl CstDecode<Option<String>>,
     bench_task: impl CstDecode<Option<String>>,
     sweep_steps: impl CstDecode<Option<Vec<u32>>>,
+    use_draft: impl CstDecode<Option<bool>>,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
@@ -217,6 +218,7 @@ fn wire__crate__api__bench_start_impl(
             let api_audio_path = audio_path.cst_decode();
             let api_bench_task = bench_task.cst_decode();
             let api_sweep_steps = sweep_steps.cst_decode();
+            let api_use_draft = use_draft.cst_decode();
             move |context| async move {
                 transform_result_dco::<_, _, String>(
                     (move || async move {
@@ -229,6 +231,7 @@ fn wire__crate__api__bench_start_impl(
                             api_audio_path,
                             api_bench_task,
                             api_sweep_steps,
+                            api_use_draft,
                         )
                         .await?;
                         Ok(output_ok)
@@ -620,6 +623,114 @@ fn wire__crate__api__env_bootstrap_impl(
         },
     )
 }
+fn wire__crate__api__eval_template_history_impl(
+    profile_id: impl CstDecode<String>,
+    context_size: impl CstDecode<Option<u32>>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "eval_template_history",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_profile_id = profile_id.cst_decode();
+            let api_context_size = context_size.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok =
+                    crate::api::eval_template_history(api_profile_id, api_context_size)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__eval_template_list_impl(
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "eval_template_list",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::eval_template_list()?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__eval_template_measurable_contexts_impl(
+    profile_id: impl CstDecode<String>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "eval_template_measurable_contexts",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_profile_id = profile_id.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::eval_template_measurable_contexts(api_profile_id)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__eval_template_preview_prompt_impl(
+    template_id: impl CstDecode<String>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "eval_template_preview_prompt",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_template_id = template_id.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::eval_template_preview_prompt(api_template_id)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__eval_template_run_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    profile_id: impl CstDecode<String>,
+    context_size: impl CstDecode<u32>,
+    sink: impl CstDecode<
+        StreamSink<crate::api::FrbEvalTemplateEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+    >,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "eval_template_run",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_profile_id = profile_id.cst_decode();
+            let api_context_size = context_size.cst_decode();
+            let api_sink = sink.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::eval_template_run(
+                            api_profile_id,
+                            api_context_size,
+                            api_sink,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__get_project_root_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
@@ -763,6 +874,22 @@ fn wire__crate__api__is_bundle_deploy_mode_impl(
         },
     )
 }
+fn wire__crate__api__list_drafter_profiles_impl(
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "list_drafter_profiles",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::list_drafter_profiles()?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__list_profiles_impl() -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco
 {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
@@ -810,6 +937,27 @@ fn wire__crate__api__profile_generate_impl(
             let api_repo_id = repo_id.cst_decode();
             transform_result_dco::<_, _, String>((move || {
                 let output_ok = crate::api::profile_generate(api_repo_id)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__profile_set_draft_model_impl(
+    profile_id: impl CstDecode<String>,
+    draft_model: impl CstDecode<Option<String>>,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "profile_set_draft_model",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let api_profile_id = profile_id.cst_decode();
+            let api_draft_model = draft_model.cst_decode();
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok =
+                    crate::api::profile_set_draft_model(api_profile_id, api_draft_model)?;
                 Ok(output_ok)
             })())
         },
@@ -1154,6 +1302,16 @@ impl SseDecode
 }
 
 impl SseDecode
+    for StreamSink<crate::api::FrbEvalTemplateEvent, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
     for StreamSink<crate::api::FrbFixProgress, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -1461,6 +1619,7 @@ impl SseDecode for crate::api::FrbCompareRow {
         let mut var_tokensOut = <Option<i64>>::sse_decode(deserializer);
         let mut var_measuredAt = <Option<String>>::sse_decode(deserializer);
         let mut var_hfUrl = <Option<String>>::sse_decode(deserializer);
+        let mut var_useDraft = <Option<bool>>::sse_decode(deserializer);
         return crate::api::FrbCompareRow {
             profile_id: var_profileId,
             display_name: var_displayName,
@@ -1477,6 +1636,7 @@ impl SseDecode for crate::api::FrbCompareRow {
             tokens_out: var_tokensOut,
             measured_at: var_measuredAt,
             hf_url: var_hfUrl,
+            use_draft: var_useDraft,
         };
     }
 }
@@ -1591,6 +1751,103 @@ impl SseDecode for crate::api::FrbDownloadProgress {
     }
 }
 
+impl SseDecode for crate::api::FrbEvalTemplateEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut tag_ = <i32>::sse_decode(deserializer);
+        match tag_ {
+            0 => {
+                let mut var_templateId = <String>::sse_decode(deserializer);
+                let mut var_index = <u32>::sse_decode(deserializer);
+                let mut var_total = <u32>::sse_decode(deserializer);
+                return crate::api::FrbEvalTemplateEvent::Started {
+                    template_id: var_templateId,
+                    index: var_index,
+                    total: var_total,
+                };
+            }
+            1 => {
+                let mut var_templateId = <String>::sse_decode(deserializer);
+                let mut var_score = <u32>::sse_decode(deserializer);
+                let mut var_elapsedMs = <u64>::sse_decode(deserializer);
+                return crate::api::FrbEvalTemplateEvent::Completed {
+                    template_id: var_templateId,
+                    score: var_score,
+                    elapsed_ms: var_elapsedMs,
+                };
+            }
+            2 => {
+                let mut var_totalScore = <u32>::sse_decode(deserializer);
+                let mut var_items =
+                    <Vec<crate::api::FrbEvalTemplateItemResult>>::sse_decode(deserializer);
+                return crate::api::FrbEvalTemplateEvent::Finished {
+                    total_score: var_totalScore,
+                    items: var_items,
+                };
+            }
+            3 => {
+                let mut var_message = <String>::sse_decode(deserializer);
+                return crate::api::FrbEvalTemplateEvent::Log {
+                    message: var_message,
+                };
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseDecode for crate::api::FrbEvalTemplateHistoryEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_contextSize = <u32>::sse_decode(deserializer);
+        let mut var_totalScore = <u32>::sse_decode(deserializer);
+        let mut var_createdAt = <String>::sse_decode(deserializer);
+        let mut var_items = <Vec<crate::api::FrbEvalTemplateItemResult>>::sse_decode(deserializer);
+        return crate::api::FrbEvalTemplateHistoryEntry {
+            context_size: var_contextSize,
+            total_score: var_totalScore,
+            created_at: var_createdAt,
+            items: var_items,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbEvalTemplateInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <String>::sse_decode(deserializer);
+        let mut var_contextSize = <u32>::sse_decode(deserializer);
+        let mut var_kind = <String>::sse_decode(deserializer);
+        let mut var_description = <String>::sse_decode(deserializer);
+        return crate::api::FrbEvalTemplateInfo {
+            id: var_id,
+            context_size: var_contextSize,
+            kind: var_kind,
+            description: var_description,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbEvalTemplateItemResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_templateId = <String>::sse_decode(deserializer);
+        let mut var_description = <String>::sse_decode(deserializer);
+        let mut var_score = <u32>::sse_decode(deserializer);
+        let mut var_outputExcerpt = <String>::sse_decode(deserializer);
+        let mut var_elapsedMs = <u64>::sse_decode(deserializer);
+        return crate::api::FrbEvalTemplateItemResult {
+            template_id: var_templateId,
+            description: var_description,
+            score: var_score,
+            output_excerpt: var_outputExcerpt,
+            elapsed_ms: var_elapsedMs,
+        };
+    }
+}
+
 impl SseDecode for crate::api::FrbFixProgress {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1691,6 +1948,8 @@ impl SseDecode for crate::api::FrbProfileRow {
         let mut var_sweepSteps = <Vec<u32>>::sse_decode(deserializer);
         let mut var_filename = <String>::sse_decode(deserializer);
         let mut var_isMultimodal = <bool>::sse_decode(deserializer);
+        let mut var_draftModel = <Option<String>>::sse_decode(deserializer);
+        let mut var_isDrafter = <bool>::sse_decode(deserializer);
         return crate::api::FrbProfileRow {
             id: var_id,
             backend: var_backend,
@@ -1701,6 +1960,8 @@ impl SseDecode for crate::api::FrbProfileRow {
             sweep_steps: var_sweepSteps,
             filename: var_filename,
             is_multimodal: var_isMultimodal,
+            draft_model: var_draftModel,
+            is_drafter: var_isDrafter,
         };
     }
 }
@@ -1744,6 +2005,7 @@ impl SseDecode for crate::api::FrbRunListRow {
         let mut var_peakPhysFootprintBytes = <Option<i64>>::sse_decode(deserializer);
         let mut var_tier = <Option<crate::api::FrbTierInfo>>::sse_decode(deserializer);
         let mut var_endedAt = <Option<String>>::sse_decode(deserializer);
+        let mut var_useDraft = <Option<bool>>::sse_decode(deserializer);
         return crate::api::FrbRunListRow {
             run_id: var_runId,
             profile_id: var_profileId,
@@ -1755,6 +2017,7 @@ impl SseDecode for crate::api::FrbRunListRow {
             peak_phys_footprint_bytes: var_peakPhysFootprintBytes,
             tier: var_tier,
             ended_at: var_endedAt,
+            use_draft: var_useDraft,
         };
     }
 }
@@ -1892,6 +2155,46 @@ impl SseDecode for Vec<crate::api::FrbDoctorItem> {
         let mut ans_ = Vec::with_capacity(len_ as usize);
         for idx_ in 0..len_ {
             ans_.push(<crate::api::FrbDoctorItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::FrbEvalTemplateHistoryEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::FrbEvalTemplateHistoryEntry>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::FrbEvalTemplateInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::FrbEvalTemplateInfo>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::FrbEvalTemplateItemResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::FrbEvalTemplateItemResult>::sse_decode(
+                deserializer,
+            ));
         }
         return ans_;
     }
@@ -2460,6 +2763,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbCompareRow {
             self.tokens_out.into_into_dart().into_dart(),
             self.measured_at.into_into_dart().into_dart(),
             self.hf_url.into_into_dart().into_dart(),
+            self.use_draft.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2608,6 +2912,128 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbDownloadProgress>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbEvalTemplateEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            crate::api::FrbEvalTemplateEvent::Started {
+                template_id,
+                index,
+                total,
+            } => [
+                0.into_dart(),
+                template_id.into_into_dart().into_dart(),
+                index.into_into_dart().into_dart(),
+                total.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::FrbEvalTemplateEvent::Completed {
+                template_id,
+                score,
+                elapsed_ms,
+            } => [
+                1.into_dart(),
+                template_id.into_into_dart().into_dart(),
+                score.into_into_dart().into_dart(),
+                elapsed_ms.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::FrbEvalTemplateEvent::Finished { total_score, items } => [
+                2.into_dart(),
+                total_score.into_into_dart().into_dart(),
+                items.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::FrbEvalTemplateEvent::Log { message } => {
+                [3.into_dart(), message.into_into_dart().into_dart()].into_dart()
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::FrbEvalTemplateEvent
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbEvalTemplateEvent>
+    for crate::api::FrbEvalTemplateEvent
+{
+    fn into_into_dart(self) -> crate::api::FrbEvalTemplateEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbEvalTemplateHistoryEntry {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.context_size.into_into_dart().into_dart(),
+            self.total_score.into_into_dart().into_dart(),
+            self.created_at.into_into_dart().into_dart(),
+            self.items.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::FrbEvalTemplateHistoryEntry
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbEvalTemplateHistoryEntry>
+    for crate::api::FrbEvalTemplateHistoryEntry
+{
+    fn into_into_dart(self) -> crate::api::FrbEvalTemplateHistoryEntry {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbEvalTemplateInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.context_size.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::FrbEvalTemplateInfo
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbEvalTemplateInfo>
+    for crate::api::FrbEvalTemplateInfo
+{
+    fn into_into_dart(self) -> crate::api::FrbEvalTemplateInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbEvalTemplateItemResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.template_id.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
+            self.score.into_into_dart().into_dart(),
+            self.output_excerpt.into_into_dart().into_dart(),
+            self.elapsed_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::FrbEvalTemplateItemResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbEvalTemplateItemResult>
+    for crate::api::FrbEvalTemplateItemResult
+{
+    fn into_into_dart(self) -> crate::api::FrbEvalTemplateItemResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::FrbFixProgress {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2706,6 +3132,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbProfileRow {
             self.sweep_steps.into_into_dart().into_dart(),
             self.filename.into_into_dart().into_dart(),
             self.is_multimodal.into_into_dart().into_dart(),
+            self.draft_model.into_into_dart().into_dart(),
+            self.is_drafter.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2755,6 +3183,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbRunListRow {
             self.peak_phys_footprint_bytes.into_into_dart().into_dart(),
             self.tier.into_into_dart().into_dart(),
             self.ended_at.into_into_dart().into_dart(),
+            self.use_draft.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2841,6 +3270,15 @@ impl SseEncode
 
 impl SseEncode
     for StreamSink<crate::api::FrbDownloadProgress, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
+    for StreamSink<crate::api::FrbEvalTemplateEvent, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3078,6 +3516,7 @@ impl SseEncode for crate::api::FrbCompareRow {
         <Option<i64>>::sse_encode(self.tokens_out, serializer);
         <Option<String>>::sse_encode(self.measured_at, serializer);
         <Option<String>>::sse_encode(self.hf_url, serializer);
+        <Option<bool>>::sse_encode(self.use_draft, serializer);
     }
 }
 
@@ -3151,6 +3590,77 @@ impl SseEncode for crate::api::FrbDownloadProgress {
     }
 }
 
+impl SseEncode for crate::api::FrbEvalTemplateEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        match self {
+            crate::api::FrbEvalTemplateEvent::Started {
+                template_id,
+                index,
+                total,
+            } => {
+                <i32>::sse_encode(0, serializer);
+                <String>::sse_encode(template_id, serializer);
+                <u32>::sse_encode(index, serializer);
+                <u32>::sse_encode(total, serializer);
+            }
+            crate::api::FrbEvalTemplateEvent::Completed {
+                template_id,
+                score,
+                elapsed_ms,
+            } => {
+                <i32>::sse_encode(1, serializer);
+                <String>::sse_encode(template_id, serializer);
+                <u32>::sse_encode(score, serializer);
+                <u64>::sse_encode(elapsed_ms, serializer);
+            }
+            crate::api::FrbEvalTemplateEvent::Finished { total_score, items } => {
+                <i32>::sse_encode(2, serializer);
+                <u32>::sse_encode(total_score, serializer);
+                <Vec<crate::api::FrbEvalTemplateItemResult>>::sse_encode(items, serializer);
+            }
+            crate::api::FrbEvalTemplateEvent::Log { message } => {
+                <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(message, serializer);
+            }
+            _ => {
+                unimplemented!("");
+            }
+        }
+    }
+}
+
+impl SseEncode for crate::api::FrbEvalTemplateHistoryEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.context_size, serializer);
+        <u32>::sse_encode(self.total_score, serializer);
+        <String>::sse_encode(self.created_at, serializer);
+        <Vec<crate::api::FrbEvalTemplateItemResult>>::sse_encode(self.items, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbEvalTemplateInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.id, serializer);
+        <u32>::sse_encode(self.context_size, serializer);
+        <String>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.description, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbEvalTemplateItemResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.template_id, serializer);
+        <String>::sse_encode(self.description, serializer);
+        <u32>::sse_encode(self.score, serializer);
+        <String>::sse_encode(self.output_excerpt, serializer);
+        <u64>::sse_encode(self.elapsed_ms, serializer);
+    }
+}
+
 impl SseEncode for crate::api::FrbFixProgress {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3215,6 +3725,8 @@ impl SseEncode for crate::api::FrbProfileRow {
         <Vec<u32>>::sse_encode(self.sweep_steps, serializer);
         <String>::sse_encode(self.filename, serializer);
         <bool>::sse_encode(self.is_multimodal, serializer);
+        <Option<String>>::sse_encode(self.draft_model, serializer);
+        <bool>::sse_encode(self.is_drafter, serializer);
     }
 }
 
@@ -3246,6 +3758,7 @@ impl SseEncode for crate::api::FrbRunListRow {
         <Option<i64>>::sse_encode(self.peak_phys_footprint_bytes, serializer);
         <Option<crate::api::FrbTierInfo>>::sse_encode(self.tier, serializer);
         <Option<String>>::sse_encode(self.ended_at, serializer);
+        <Option<bool>>::sse_encode(self.use_draft, serializer);
     }
 }
 
@@ -3357,6 +3870,36 @@ impl SseEncode for Vec<crate::api::FrbDoctorItem> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::FrbDoctorItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::FrbEvalTemplateHistoryEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::FrbEvalTemplateHistoryEntry>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::FrbEvalTemplateInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::FrbEvalTemplateInfo>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::FrbEvalTemplateItemResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::FrbEvalTemplateItemResult>::sse_encode(item, serializer);
         }
     }
 }
@@ -3669,6 +4212,25 @@ mod io {
     }
     impl
         CstDecode<
+            StreamSink<
+                crate::api::FrbEvalTemplateEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for *mut wire_cst_list_prim_u_8_strict
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<
+            crate::api::FrbEvalTemplateEvent,
+            flutter_rust_bridge::for_generated::DcoCodec,
+        > {
+            let raw: String = self.cst_decode();
+            StreamSink::deserialize(raw)
+        }
+    }
+    impl
+        CstDecode<
             StreamSink<crate::api::FrbFixProgress, flutter_rust_bridge::for_generated::DcoCodec>,
         > for *mut wire_cst_list_prim_u_8_strict
     {
@@ -3944,6 +4506,7 @@ mod io {
                 tokens_out: self.tokens_out.cst_decode(),
                 measured_at: self.measured_at.cst_decode(),
                 hf_url: self.hf_url.cst_decode(),
+                use_draft: self.use_draft.cst_decode(),
             }
         }
     }
@@ -4024,6 +4587,79 @@ mod io {
             }
         }
     }
+    impl CstDecode<crate::api::FrbEvalTemplateEvent> for wire_cst_frb_eval_template_event {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateEvent {
+            match self.tag {
+                0 => {
+                    let ans = unsafe { self.kind.Started };
+                    crate::api::FrbEvalTemplateEvent::Started {
+                        template_id: ans.template_id.cst_decode(),
+                        index: ans.index.cst_decode(),
+                        total: ans.total.cst_decode(),
+                    }
+                }
+                1 => {
+                    let ans = unsafe { self.kind.Completed };
+                    crate::api::FrbEvalTemplateEvent::Completed {
+                        template_id: ans.template_id.cst_decode(),
+                        score: ans.score.cst_decode(),
+                        elapsed_ms: ans.elapsed_ms.cst_decode(),
+                    }
+                }
+                2 => {
+                    let ans = unsafe { self.kind.Finished };
+                    crate::api::FrbEvalTemplateEvent::Finished {
+                        total_score: ans.total_score.cst_decode(),
+                        items: ans.items.cst_decode(),
+                    }
+                }
+                3 => {
+                    let ans = unsafe { self.kind.Log };
+                    crate::api::FrbEvalTemplateEvent::Log {
+                        message: ans.message.cst_decode(),
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateHistoryEntry>
+        for wire_cst_frb_eval_template_history_entry
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateHistoryEntry {
+            crate::api::FrbEvalTemplateHistoryEntry {
+                context_size: self.context_size.cst_decode(),
+                total_score: self.total_score.cst_decode(),
+                created_at: self.created_at.cst_decode(),
+                items: self.items.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateInfo> for wire_cst_frb_eval_template_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateInfo {
+            crate::api::FrbEvalTemplateInfo {
+                id: self.id.cst_decode(),
+                context_size: self.context_size.cst_decode(),
+                kind: self.kind.cst_decode(),
+                description: self.description.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateItemResult> for wire_cst_frb_eval_template_item_result {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateItemResult {
+            crate::api::FrbEvalTemplateItemResult {
+                template_id: self.template_id.cst_decode(),
+                description: self.description.cst_decode(),
+                score: self.score.cst_decode(),
+                output_excerpt: self.output_excerpt.cst_decode(),
+                elapsed_ms: self.elapsed_ms.cst_decode(),
+            }
+        }
+    }
     impl CstDecode<crate::api::FrbFixProgress> for wire_cst_frb_fix_progress {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> crate::api::FrbFixProgress {
@@ -4093,6 +4729,8 @@ mod io {
                 sweep_steps: self.sweep_steps.cst_decode(),
                 filename: self.filename.cst_decode(),
                 is_multimodal: self.is_multimodal.cst_decode(),
+                draft_model: self.draft_model.cst_decode(),
+                is_drafter: self.is_drafter.cst_decode(),
             }
         }
     }
@@ -4126,6 +4764,7 @@ mod io {
                 peak_phys_footprint_bytes: self.peak_phys_footprint_bytes.cst_decode(),
                 tier: self.tier.cst_decode(),
                 ended_at: self.ended_at.cst_decode(),
+                use_draft: self.use_draft.cst_decode(),
             }
         }
     }
@@ -4222,6 +4861,40 @@ mod io {
     impl CstDecode<Vec<crate::api::FrbDoctorItem>> for *mut wire_cst_list_frb_doctor_item {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Vec<crate::api::FrbDoctorItem> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateHistoryEntry>>
+        for *mut wire_cst_list_frb_eval_template_history_entry
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateHistoryEntry> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateInfo>> for *mut wire_cst_list_frb_eval_template_info {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateInfo> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateItemResult>>
+        for *mut wire_cst_list_frb_eval_template_item_result
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateItemResult> {
             let vec = unsafe {
                 let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
                 flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
@@ -4498,6 +5171,7 @@ mod io {
                 tokens_out: core::ptr::null_mut(),
                 measured_at: core::ptr::null_mut(),
                 hf_url: core::ptr::null_mut(),
+                use_draft: core::ptr::null_mut(),
             }
         }
     }
@@ -4611,6 +5285,65 @@ mod io {
             Self::new_with_null_ptr()
         }
     }
+    impl NewWithNullPtr for wire_cst_frb_eval_template_event {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                tag: -1,
+                kind: FrbEvalTemplateEventKind { nil__: () },
+            }
+        }
+    }
+    impl Default for wire_cst_frb_eval_template_event {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_eval_template_history_entry {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                context_size: Default::default(),
+                total_score: Default::default(),
+                created_at: core::ptr::null_mut(),
+                items: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_eval_template_history_entry {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_eval_template_info {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                id: core::ptr::null_mut(),
+                context_size: Default::default(),
+                kind: core::ptr::null_mut(),
+                description: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_eval_template_info {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_eval_template_item_result {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                template_id: core::ptr::null_mut(),
+                description: core::ptr::null_mut(),
+                score: Default::default(),
+                output_excerpt: core::ptr::null_mut(),
+                elapsed_ms: Default::default(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_eval_template_item_result {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
     impl NewWithNullPtr for wire_cst_frb_fix_progress {
         fn new_with_null_ptr() -> Self {
             Self {
@@ -4695,6 +5428,8 @@ mod io {
                 sweep_steps: core::ptr::null_mut(),
                 filename: core::ptr::null_mut(),
                 is_multimodal: Default::default(),
+                draft_model: core::ptr::null_mut(),
+                is_drafter: Default::default(),
             }
         }
     }
@@ -4736,6 +5471,7 @@ mod io {
                 peak_phys_footprint_bytes: core::ptr::null_mut(),
                 tier: core::ptr::null_mut(),
                 ended_at: core::ptr::null_mut(),
+                use_draft: core::ptr::null_mut(),
             }
         }
     }
@@ -4845,6 +5581,7 @@ mod io {
         audio_path: *mut wire_cst_list_prim_u_8_strict,
         bench_task: *mut wire_cst_list_prim_u_8_strict,
         sweep_steps: *mut wire_cst_list_prim_u_32_strict,
+        use_draft: *mut bool,
     ) {
         wire__crate__api__bench_start_impl(
             port_,
@@ -4856,6 +5593,7 @@ mod io {
             audio_path,
             bench_task,
             sweep_steps,
+            use_draft,
         )
     }
 
@@ -4991,6 +5729,44 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__eval_template_history(
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+        context_size: *mut u32,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_history_impl(profile_id, context_size)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__eval_template_list(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_list_impl()
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__eval_template_measurable_contexts(
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_measurable_contexts_impl(profile_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__eval_template_preview_prompt(
+        template_id: *mut wire_cst_list_prim_u_8_strict,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_preview_prompt_impl(template_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__eval_template_run(
+        port_: i64,
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+        context_size: u32,
+        sink: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__eval_template_run_impl(port_, profile_id, context_size, sink)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__get_project_root(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__get_project_root_impl()
@@ -5041,6 +5817,12 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__list_drafter_profiles(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__list_drafter_profiles_impl()
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__list_profiles(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__list_profiles_impl()
@@ -5058,6 +5840,14 @@ mod io {
         repo_id: *mut wire_cst_list_prim_u_8_strict,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__profile_generate_impl(repo_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__profile_set_draft_model(
+        profile_id: *mut wire_cst_list_prim_u_8_strict,
+        draft_model: *mut wire_cst_list_prim_u_8_strict,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__profile_set_draft_model_impl(profile_id, draft_model)
     }
 
     #[unsafe(no_mangle)]
@@ -5298,6 +6088,48 @@ mod io {
         let wrap = wire_cst_list_frb_doctor_item {
             ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
                 <wire_cst_frb_doctor_item>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_list_frb_eval_template_history_entry(
+        len: i32,
+    ) -> *mut wire_cst_list_frb_eval_template_history_entry {
+        let wrap = wire_cst_list_frb_eval_template_history_entry {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_frb_eval_template_history_entry>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_list_frb_eval_template_info(
+        len: i32,
+    ) -> *mut wire_cst_list_frb_eval_template_info {
+        let wrap = wire_cst_list_frb_eval_template_info {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_frb_eval_template_info>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_cst_new_list_frb_eval_template_item_result(
+        len: i32,
+    ) -> *mut wire_cst_list_frb_eval_template_item_result {
+        let wrap = wire_cst_list_frb_eval_template_item_result {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_frb_eval_template_item_result>::new_with_null_ptr(),
                 len,
             ),
             len,
@@ -5554,6 +6386,7 @@ mod io {
         tokens_out: *mut i64,
         measured_at: *mut wire_cst_list_prim_u_8_strict,
         hf_url: *mut wire_cst_list_prim_u_8_strict,
+        use_draft: *mut bool,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5613,6 +6446,71 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_eval_template_event {
+        tag: i32,
+        kind: FrbEvalTemplateEventKind,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub union FrbEvalTemplateEventKind {
+        Started: wire_cst_FrbEvalTemplateEvent_Started,
+        Completed: wire_cst_FrbEvalTemplateEvent_Completed,
+        Finished: wire_cst_FrbEvalTemplateEvent_Finished,
+        Log: wire_cst_FrbEvalTemplateEvent_Log,
+        nil__: (),
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_FrbEvalTemplateEvent_Started {
+        template_id: *mut wire_cst_list_prim_u_8_strict,
+        index: u32,
+        total: u32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_FrbEvalTemplateEvent_Completed {
+        template_id: *mut wire_cst_list_prim_u_8_strict,
+        score: u32,
+        elapsed_ms: u64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_FrbEvalTemplateEvent_Finished {
+        total_score: u32,
+        items: *mut wire_cst_list_frb_eval_template_item_result,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_FrbEvalTemplateEvent_Log {
+        message: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_eval_template_history_entry {
+        context_size: u32,
+        total_score: u32,
+        created_at: *mut wire_cst_list_prim_u_8_strict,
+        items: *mut wire_cst_list_frb_eval_template_item_result,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_eval_template_info {
+        id: *mut wire_cst_list_prim_u_8_strict,
+        context_size: u32,
+        kind: *mut wire_cst_list_prim_u_8_strict,
+        description: *mut wire_cst_list_prim_u_8_strict,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_eval_template_item_result {
+        template_id: *mut wire_cst_list_prim_u_8_strict,
+        description: *mut wire_cst_list_prim_u_8_strict,
+        score: u32,
+        output_excerpt: *mut wire_cst_list_prim_u_8_strict,
+        elapsed_ms: u64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_frb_fix_progress {
         line: *mut wire_cst_list_prim_u_8_strict,
         done: bool,
@@ -5667,6 +6565,8 @@ mod io {
         sweep_steps: *mut wire_cst_list_prim_u_32_strict,
         filename: *mut wire_cst_list_prim_u_8_strict,
         is_multimodal: bool,
+        draft_model: *mut wire_cst_list_prim_u_8_strict,
+        is_drafter: bool,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5694,6 +6594,7 @@ mod io {
         peak_phys_footprint_bytes: *mut i64,
         tier: *mut wire_cst_frb_tier_info,
         ended_at: *mut wire_cst_list_prim_u_8_strict,
+        use_draft: *mut bool,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5755,6 +6656,24 @@ mod io {
     #[derive(Clone, Copy)]
     pub struct wire_cst_list_frb_doctor_item {
         ptr: *mut wire_cst_frb_doctor_item,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_list_frb_eval_template_history_entry {
+        ptr: *mut wire_cst_frb_eval_template_history_entry,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_list_frb_eval_template_info {
+        ptr: *mut wire_cst_frb_eval_template_info,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct wire_cst_list_frb_eval_template_item_result {
+        ptr: *mut wire_cst_frb_eval_template_item_result,
         len: i32,
     }
     #[repr(C)]
@@ -5895,6 +6814,24 @@ mod web {
             self,
         ) -> StreamSink<crate::api::FrbDownloadProgress, flutter_rust_bridge::for_generated::DcoCodec>
         {
+            StreamSink::deserialize(self)
+        }
+    }
+    impl
+        CstDecode<
+            StreamSink<
+                crate::api::FrbEvalTemplateEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for String
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<
+            crate::api::FrbEvalTemplateEvent,
+            flutter_rust_bridge::for_generated::DcoCodec,
+        > {
             StreamSink::deserialize(self)
         }
     }
@@ -6201,8 +7138,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                15,
-                "Expected 15 elements, got {}",
+                16,
+                "Expected 16 elements, got {}",
                 self_.length()
             );
             crate::api::FrbCompareRow {
@@ -6221,6 +7158,7 @@ mod web {
                 tokens_out: self_.get(12).cst_decode(),
                 measured_at: self_.get(13).cst_decode(),
                 hf_url: self_.get(14).cst_decode(),
+                use_draft: self_.get(15).cst_decode(),
             }
         }
     }
@@ -6378,6 +7316,101 @@ mod web {
             }
         }
     }
+    impl CstDecode<crate::api::FrbEvalTemplateEvent>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateEvent {
+            let self_ = self.unchecked_into::<flutter_rust_bridge::for_generated::js_sys::Array>();
+            match self_.get(0).unchecked_into_f64() as _ {
+                0 => crate::api::FrbEvalTemplateEvent::Started {
+                    template_id: self_.get(1).cst_decode(),
+                    index: self_.get(2).cst_decode(),
+                    total: self_.get(3).cst_decode(),
+                },
+                1 => crate::api::FrbEvalTemplateEvent::Completed {
+                    template_id: self_.get(1).cst_decode(),
+                    score: self_.get(2).cst_decode(),
+                    elapsed_ms: self_.get(3).cst_decode(),
+                },
+                2 => crate::api::FrbEvalTemplateEvent::Finished {
+                    total_score: self_.get(1).cst_decode(),
+                    items: self_.get(2).cst_decode(),
+                },
+                3 => crate::api::FrbEvalTemplateEvent::Log {
+                    message: self_.get(1).cst_decode(),
+                },
+                _ => unreachable!(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateHistoryEntry>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateHistoryEntry {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                4,
+                "Expected 4 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbEvalTemplateHistoryEntry {
+                context_size: self_.get(0).cst_decode(),
+                total_score: self_.get(1).cst_decode(),
+                created_at: self_.get(2).cst_decode(),
+                items: self_.get(3).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateInfo>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateInfo {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                4,
+                "Expected 4 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbEvalTemplateInfo {
+                id: self_.get(0).cst_decode(),
+                context_size: self_.get(1).cst_decode(),
+                kind: self_.get(2).cst_decode(),
+                description: self_.get(3).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbEvalTemplateItemResult>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbEvalTemplateItemResult {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                5,
+                "Expected 5 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbEvalTemplateItemResult {
+                template_id: self_.get(0).cst_decode(),
+                description: self_.get(1).cst_decode(),
+                score: self_.get(2).cst_decode(),
+                output_excerpt: self_.get(3).cst_decode(),
+                elapsed_ms: self_.get(4).cst_decode(),
+            }
+        }
+    }
     impl CstDecode<crate::api::FrbFixProgress>
         for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
     {
@@ -6488,8 +7521,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                9,
-                "Expected 9 elements, got {}",
+                11,
+                "Expected 11 elements, got {}",
                 self_.length()
             );
             crate::api::FrbProfileRow {
@@ -6502,6 +7535,8 @@ mod web {
                 sweep_steps: self_.get(6).cst_decode(),
                 filename: self_.get(7).cst_decode(),
                 is_multimodal: self_.get(8).cst_decode(),
+                draft_model: self_.get(9).cst_decode(),
+                is_drafter: self_.get(10).cst_decode(),
             }
         }
     }
@@ -6542,8 +7577,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                10,
-                "Expected 10 elements, got {}",
+                11,
+                "Expected 11 elements, got {}",
                 self_.length()
             );
             crate::api::FrbRunListRow {
@@ -6557,6 +7592,7 @@ mod web {
                 peak_phys_footprint_bytes: self_.get(7).cst_decode(),
                 tier: self_.get(8).cst_decode(),
                 ended_at: self_.get(9).cst_decode(),
+                use_draft: self_.get(10).cst_decode(),
             }
         }
     }
@@ -6689,6 +7725,42 @@ mod web {
     {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Vec<crate::api::FrbDoctorItem> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateHistoryEntry>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateHistoryEntry> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateInfo>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateInfo> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
+    impl CstDecode<Vec<crate::api::FrbEvalTemplateItemResult>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::FrbEvalTemplateItemResult> {
             self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
                 .unwrap()
                 .iter()
@@ -6868,6 +7940,24 @@ mod web {
     }
     impl
         CstDecode<
+            StreamSink<
+                crate::api::FrbEvalTemplateEvent,
+                flutter_rust_bridge::for_generated::DcoCodec,
+            >,
+        > for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<
+            crate::api::FrbEvalTemplateEvent,
+            flutter_rust_bridge::for_generated::DcoCodec,
+        > {
+            StreamSink::deserialize(self.as_string().expect("should be a string"))
+        }
+    }
+    impl
+        CstDecode<
             StreamSink<crate::api::FrbFixProgress, flutter_rust_bridge::for_generated::DcoCodec>,
         > for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
     {
@@ -7028,6 +8118,7 @@ mod web {
         audio_path: Option<String>,
         bench_task: Option<String>,
         sweep_steps: Option<Box<[u32]>>,
+        use_draft: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
     ) {
         wire__crate__api__bench_start_impl(
             port_,
@@ -7039,6 +8130,7 @@ mod web {
             audio_path,
             bench_task,
             sweep_steps,
+            use_draft,
         )
     }
 
@@ -7174,6 +8266,44 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__eval_template_history(
+        profile_id: String,
+        context_size: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_history_impl(profile_id, context_size)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__eval_template_list(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_list_impl()
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__eval_template_measurable_contexts(
+        profile_id: String,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_measurable_contexts_impl(profile_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__eval_template_preview_prompt(
+        template_id: String,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__eval_template_preview_prompt_impl(template_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__eval_template_run(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        profile_id: String,
+        context_size: u32,
+        sink: String,
+    ) {
+        wire__crate__api__eval_template_run_impl(port_, profile_id, context_size, sink)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__get_project_root(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__get_project_root_impl()
@@ -7224,6 +8354,12 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__list_drafter_profiles(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__list_drafter_profiles_impl()
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__list_profiles(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__list_profiles_impl()
@@ -7241,6 +8377,14 @@ mod web {
         repo_id: String,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__profile_generate_impl(repo_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__profile_set_draft_model(
+        profile_id: String,
+        draft_model: Option<String>,
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__profile_set_draft_model_impl(profile_id, draft_model)
     }
 
     #[wasm_bindgen]

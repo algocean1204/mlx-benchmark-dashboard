@@ -31,6 +31,8 @@ _SHUTDOWN = threading.Event()
 
 _MODEL = None
 _PROCESSOR = None
+_DRAFT_MODEL = None
+_DRAFT_KIND: str | None = None
 _LOAD_ERROR: str | None = None
 _MODEL_LOADED = False
 _LOAD_LOCK = threading.Lock()
@@ -184,9 +186,37 @@ def _ensure_mlx_thread() -> None:
         _MLX_THREAD.start()
 
 
+def _load_vlm_drafter(model: Any, draft_model_path: str | None) -> tuple[Any | None, str | None]:
+    if not draft_model_path:
+        return None, None
+    try:
+        from mlx_vlm.speculative.drafters import (
+            load_drafter,
+            validate_drafter_compatibility,
+        )
+
+        resolved = _resolve_model_path(draft_model_path)
+        _log_json("draft_load_start", draft_model_path=draft_model_path)
+        draft_model, draft_kind = load_drafter(resolved)
+        validate_drafter_compatibility(model, draft_model, draft_kind)
+        _log_json(
+            "draft_loaded",
+            draft_model_path=draft_model_path,
+            draft_kind=draft_kind,
+        )
+        return draft_model, draft_kind
+    except Exception as exc:
+        _log_json(
+            "draft_load_failed",
+            draft_model_path=draft_model_path,
+            error=str(exc),
+        )
+        return None, None
+
+
 def _mlx_worker_loop() -> None:
     """모델 로드·생성을 동일 MLX 스레드에서 직렬 처리한다."""
-    global _MODEL, _PROCESSOR, _LOAD_ERROR, _MODEL_LOADED
+    global _MODEL, _PROCESSOR, _DRAFT_MODEL, _DRAFT_KIND, _LOAD_ERROR, _MODEL_LOADED
 
     while True:
         cmd = _MLX_CMD_QUEUE.get()
@@ -194,13 +224,16 @@ def _mlx_worker_loop() -> None:
         if kind == "shutdown":
             break
         if kind == "load":
-            _, model_path = cmd
+            _, model_path, draft_model_path = cmd
             try:
                 _log_json("model_load_start", model_path=model_path)
                 model, processor = load(model_path)
+                draft_model, draft_kind = _load_vlm_drafter(model, draft_model_path)
                 with _LOAD_LOCK:
                     _MODEL = model
                     _PROCESSOR = processor
+                    _DRAFT_MODEL = draft_model
+                    _DRAFT_KIND = draft_kind
                     _LOAD_ERROR = None
                     _MODEL_LOADED = True
                 _log_json("model_loaded", model_path=model_path)
@@ -222,6 +255,8 @@ def _mlx_worker_loop() -> None:
                     job["prompt"],
                     image=job["image_arg"],
                     max_tokens=job["max_tokens"],
+                    draft_model=job.get("draft_model"),
+                    draft_kind=job.get("draft_kind"),
                     **job["gen_kwargs"],
                 ):
                     prompt_tokens = int(response.prompt_tokens)
@@ -270,6 +305,8 @@ def _mlx_worker_loop() -> None:
                     job["prompt"],
                     image=job["image_arg"],
                     max_tokens=job["max_tokens"],
+                    draft_model=job.get("draft_model"),
+                    draft_kind=job.get("draft_kind"),
                     **job["gen_kwargs"],
                 ):
                     text_parts.append(response.text)
@@ -283,9 +320,9 @@ def _mlx_worker_loop() -> None:
                 result_queue.put(("err", str(exc)))
 
 
-def _enqueue_model_load(model_path: str) -> None:
+def _enqueue_model_load(model_path: str, draft_model_path: str | None = None) -> None:
     _ensure_mlx_thread()
-    _MLX_CMD_QUEUE.put(("load", model_path))
+    _MLX_CMD_QUEUE.put(("load", model_path, draft_model_path))
 
 
 class ChatMessage(BaseModel):
@@ -418,6 +455,10 @@ async def chat_completions(body: ChatCompletionRequest) -> Any:
     model_name = body.model or _SERVED_MODEL_NAME
     image_arg = images[0] if len(images) == 1 else (images if images else None)
 
+    with _LOAD_LOCK:
+        draft_model = _DRAFT_MODEL
+        draft_kind = _DRAFT_KIND
+
     job = _generation_job(
         model=model,
         processor=processor,
@@ -428,6 +469,9 @@ async def chat_completions(body: ChatCompletionRequest) -> Any:
         completion_id=completion_id,
         model_name=model_name,
     )
+    if draft_model is not None:
+        job["draft_model"] = draft_model
+        job["draft_kind"] = draft_kind
 
     if body.stream:
 
@@ -483,6 +527,7 @@ def main() -> None:
     parser.add_argument("--context-size", type=int, required=True)
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--profile-json", required=True)
+    parser.add_argument("--draft-model-path", default=None)
     args = parser.parse_args()
 
     _configure_logging()
@@ -502,7 +547,7 @@ def main() -> None:
         _log_json("startup_failed", error=str(exc))
         sys.exit(1)
 
-    _enqueue_model_load(resolved_model_path)
+    _enqueue_model_load(resolved_model_path, args.draft_model_path)
 
     _log_json(
         "server_starting",
@@ -538,6 +583,8 @@ def main() -> None:
     with _LOAD_LOCK:
         _MODEL = None
         _PROCESSOR = None
+        _DRAFT_MODEL = None
+        _DRAFT_KIND = None
 
     for path in _TEMP_IMAGE_FILES:
         try:

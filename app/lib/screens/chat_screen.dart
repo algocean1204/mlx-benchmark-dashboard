@@ -55,7 +55,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _loadProfiles() {
     final api = context.read<AidashApi>();
-    final profiles = api.listProfiles();
+    final profiles =
+        api.listProfiles().where((p) => !p.isDrafter).toList();
     setState(() {
       _profiles = profiles;
       if (profiles.isNotEmpty && _profileId == null) {

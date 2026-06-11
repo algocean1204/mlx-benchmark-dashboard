@@ -124,6 +124,7 @@ typedef struct wire_cst_frb_compare_row {
   int64_t *tokens_out;
   struct wire_cst_list_prim_u_8_strict *measured_at;
   struct wire_cst_list_prim_u_8_strict *hf_url;
+  bool *use_draft;
 } wire_cst_frb_compare_row;
 
 typedef struct wire_cst_list_frb_compare_row {
@@ -159,6 +160,43 @@ typedef struct wire_cst_list_frb_doctor_item {
   struct wire_cst_frb_doctor_item *ptr;
   int32_t len;
 } wire_cst_list_frb_doctor_item;
+
+typedef struct wire_cst_frb_eval_template_item_result {
+  struct wire_cst_list_prim_u_8_strict *template_id;
+  struct wire_cst_list_prim_u_8_strict *description;
+  uint32_t score;
+  struct wire_cst_list_prim_u_8_strict *output_excerpt;
+  uint64_t elapsed_ms;
+} wire_cst_frb_eval_template_item_result;
+
+typedef struct wire_cst_list_frb_eval_template_item_result {
+  struct wire_cst_frb_eval_template_item_result *ptr;
+  int32_t len;
+} wire_cst_list_frb_eval_template_item_result;
+
+typedef struct wire_cst_frb_eval_template_history_entry {
+  uint32_t context_size;
+  uint32_t total_score;
+  struct wire_cst_list_prim_u_8_strict *created_at;
+  struct wire_cst_list_frb_eval_template_item_result *items;
+} wire_cst_frb_eval_template_history_entry;
+
+typedef struct wire_cst_list_frb_eval_template_history_entry {
+  struct wire_cst_frb_eval_template_history_entry *ptr;
+  int32_t len;
+} wire_cst_list_frb_eval_template_history_entry;
+
+typedef struct wire_cst_frb_eval_template_info {
+  struct wire_cst_list_prim_u_8_strict *id;
+  uint32_t context_size;
+  struct wire_cst_list_prim_u_8_strict *kind;
+  struct wire_cst_list_prim_u_8_strict *description;
+} wire_cst_frb_eval_template_info;
+
+typedef struct wire_cst_list_frb_eval_template_info {
+  struct wire_cst_frb_eval_template_info *ptr;
+  int32_t len;
+} wire_cst_list_frb_eval_template_info;
 
 typedef struct wire_cst_frb_hf_search_result {
   struct wire_cst_list_prim_u_8_strict *repo_id;
@@ -206,6 +244,8 @@ typedef struct wire_cst_frb_profile_row {
   struct wire_cst_list_prim_u_32_strict *sweep_steps;
   struct wire_cst_list_prim_u_8_strict *filename;
   bool is_multimodal;
+  struct wire_cst_list_prim_u_8_strict *draft_model;
+  bool is_drafter;
 } wire_cst_frb_profile_row;
 
 typedef struct wire_cst_list_frb_profile_row {
@@ -224,6 +264,7 @@ typedef struct wire_cst_frb_run_list_row {
   int64_t *peak_phys_footprint_bytes;
   struct wire_cst_frb_tier_info *tier;
   struct wire_cst_list_prim_u_8_strict *ended_at;
+  bool *use_draft;
 } wire_cst_frb_run_list_row;
 
 typedef struct wire_cst_list_frb_run_list_row {
@@ -345,6 +386,39 @@ typedef struct wire_cst_frb_download_progress {
   bool success;
 } wire_cst_frb_download_progress;
 
+typedef struct wire_cst_FrbEvalTemplateEvent_Started {
+  struct wire_cst_list_prim_u_8_strict *template_id;
+  uint32_t index;
+  uint32_t total;
+} wire_cst_FrbEvalTemplateEvent_Started;
+
+typedef struct wire_cst_FrbEvalTemplateEvent_Completed {
+  struct wire_cst_list_prim_u_8_strict *template_id;
+  uint32_t score;
+  uint64_t elapsed_ms;
+} wire_cst_FrbEvalTemplateEvent_Completed;
+
+typedef struct wire_cst_FrbEvalTemplateEvent_Finished {
+  uint32_t total_score;
+  struct wire_cst_list_frb_eval_template_item_result *items;
+} wire_cst_FrbEvalTemplateEvent_Finished;
+
+typedef struct wire_cst_FrbEvalTemplateEvent_Log {
+  struct wire_cst_list_prim_u_8_strict *message;
+} wire_cst_FrbEvalTemplateEvent_Log;
+
+typedef union FrbEvalTemplateEventKind {
+  struct wire_cst_FrbEvalTemplateEvent_Started Started;
+  struct wire_cst_FrbEvalTemplateEvent_Completed Completed;
+  struct wire_cst_FrbEvalTemplateEvent_Finished Finished;
+  struct wire_cst_FrbEvalTemplateEvent_Log Log;
+} FrbEvalTemplateEventKind;
+
+typedef struct wire_cst_frb_eval_template_event {
+  int32_t tag;
+  union FrbEvalTemplateEventKind kind;
+} wire_cst_frb_eval_template_event;
+
 typedef struct wire_cst_frb_fix_progress {
   struct wire_cst_list_prim_u_8_strict *line;
   bool done;
@@ -397,7 +471,8 @@ void frbgen_app_wire__crate__api__bench_start(int64_t port_,
                                               struct wire_cst_list_prim_u_8_strict *image_path,
                                               struct wire_cst_list_prim_u_8_strict *audio_path,
                                               struct wire_cst_list_prim_u_8_strict *bench_task,
-                                              struct wire_cst_list_prim_u_32_strict *sweep_steps);
+                                              struct wire_cst_list_prim_u_32_strict *sweep_steps,
+                                              bool *use_draft);
 
 void frbgen_app_wire__crate__api__cache_delete(int64_t port_,
                                                struct wire_cst_list_prim_u_8_strict *repo_id);
@@ -448,6 +523,20 @@ void frbgen_app_wire__crate__api__doctor_report(int64_t port_);
 void frbgen_app_wire__crate__api__env_bootstrap(int64_t port_,
                                                 struct wire_cst_list_prim_u_8_strict *sink);
 
+WireSyncRust2DartDco frbgen_app_wire__crate__api__eval_template_history(struct wire_cst_list_prim_u_8_strict *profile_id,
+                                                                        uint32_t *context_size);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__eval_template_list(void);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__eval_template_measurable_contexts(struct wire_cst_list_prim_u_8_strict *profile_id);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__eval_template_preview_prompt(struct wire_cst_list_prim_u_8_strict *template_id);
+
+void frbgen_app_wire__crate__api__eval_template_run(int64_t port_,
+                                                    struct wire_cst_list_prim_u_8_strict *profile_id,
+                                                    uint32_t context_size,
+                                                    struct wire_cst_list_prim_u_8_strict *sink);
+
 WireSyncRust2DartDco frbgen_app_wire__crate__api__get_project_root(void);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__hf_download_cancel(void);
@@ -466,11 +555,16 @@ WireSyncRust2DartDco frbgen_app_wire__crate__api__init(struct wire_cst_list_prim
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__is_bundle_deploy_mode(void);
 
+WireSyncRust2DartDco frbgen_app_wire__crate__api__list_drafter_profiles(void);
+
 WireSyncRust2DartDco frbgen_app_wire__crate__api__list_profiles(void);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__list_runs(struct wire_cst_list_prim_u_8_strict *model);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__profile_generate(struct wire_cst_list_prim_u_8_strict *repo_id);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__profile_set_draft_model(struct wire_cst_list_prim_u_8_strict *profile_id,
+                                                                          struct wire_cst_list_prim_u_8_strict *draft_model);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__profile_set_task(struct wire_cst_list_prim_u_8_strict *profile_id,
                                                                    struct wire_cst_list_prim_u_8_strict *task,
@@ -535,6 +629,12 @@ struct wire_cst_list_frb_context_stats_row *frbgen_app_cst_new_list_frb_context_
 
 struct wire_cst_list_frb_doctor_item *frbgen_app_cst_new_list_frb_doctor_item(int32_t len);
 
+struct wire_cst_list_frb_eval_template_history_entry *frbgen_app_cst_new_list_frb_eval_template_history_entry(int32_t len);
+
+struct wire_cst_list_frb_eval_template_info *frbgen_app_cst_new_list_frb_eval_template_info(int32_t len);
+
+struct wire_cst_list_frb_eval_template_item_result *frbgen_app_cst_new_list_frb_eval_template_item_result(int32_t len);
+
 struct wire_cst_list_frb_hf_search_result *frbgen_app_cst_new_list_frb_hf_search_result(int32_t len);
 
 struct wire_cst_list_frb_overview_row *frbgen_app_cst_new_list_frb_overview_row(int32_t len);
@@ -567,6 +667,9 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_compare_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_context_stats_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_doctor_item);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_eval_template_history_entry);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_eval_template_info);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_eval_template_item_result);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_hf_search_result);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_overview_row);
     dummy_var ^= ((int64_t) (void*) frbgen_app_cst_new_list_frb_profile_row);
@@ -600,6 +703,11 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__disk_usage);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__doctor_report);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__env_bootstrap);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__eval_template_history);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__eval_template_list);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__eval_template_measurable_contexts);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__eval_template_preview_prompt);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__eval_template_run);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__get_project_root);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_download_cancel);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_download_start);
@@ -607,9 +715,11 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_search);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__init);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__is_bundle_deploy_mode);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_drafter_profiles);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_profiles);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_runs);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_generate);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_set_draft_model);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_set_task);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_task_label);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__run_fix_action);

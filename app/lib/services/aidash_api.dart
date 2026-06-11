@@ -42,6 +42,14 @@ abstract class AidashApi {
     String? audioPath,
     String? benchTask,
     List<int>? sweepSteps,
+    bool? useDraft,
+  });
+
+  List<String> listDrafterProfiles();
+
+  void profileSetDraftModel({
+    required String profileId,
+    String? draftModel,
   });
 
   void profileSetTask({
@@ -126,6 +134,20 @@ abstract class AidashApi {
   bool hfDownloadCancel();
 
   String profileGenerate({required String repoId});
+
+  List<FrbEvalTemplateInfo> evalTemplateList();
+
+  List<int> evalTemplateMeasurableContexts({required String profileId});
+
+  List<FrbEvalTemplateHistoryEntry> evalTemplateHistory({
+    required String profileId,
+    int? contextSize,
+  });
+
+  Stream<FrbEvalTemplateEvent> evalTemplateRun({
+    required String profileId,
+    required int contextSize,
+  });
 }
 
 /// In-memory mock for widget tests — no FRB / native library required.
@@ -257,6 +279,7 @@ class MockAidashApi implements AidashApi {
           peakPhysFootprintBytes: 6 * 1024 * 1024 * 1024,
           tier: _tier(52.3),
           endedAt: '1717920000000',
+          useDraft: true,
         ),
         FrbRunListRow(
           runId: 102,
@@ -269,6 +292,7 @@ class MockAidashApi implements AidashApi {
           peakPhysFootprintBytes: 7 * 1024 * 1024 * 1024,
           tier: _tier(44.5),
           endedAt: '1718006400000',
+          useDraft: false,
         ),
       ];
 
@@ -283,6 +307,21 @@ class MockAidashApi implements AidashApi {
           sweepSteps: Uint32List.fromList(<int>[2048, 4096, 8192, 16384]),
           filename: 'mlx-community-Qwen2.5-7B-Instruct-4bit.json',
           isMultimodal: false,
+          draftModel: 'mlx-community/gemma-assistant',
+          isDrafter: false,
+        ),
+        FrbProfileRow(
+          id: 'mlx-community/gemma-assistant',
+          backend: 'mlx_vlm',
+          modelType: 'drafter',
+          contextDefault: 4096,
+          contextMin: 512,
+          contextMax: 4096,
+          sweepSteps: Uint32List.fromList(<int>[4096]),
+          filename: 'mlx-community-gemma-assistant.json',
+          isMultimodal: true,
+          draftModel: null,
+          isDrafter: true,
         ),
       ];
 
@@ -391,12 +430,25 @@ class MockAidashApi implements AidashApi {
               tokensOut: 64,
               measuredAt: '2026-06-09T12:00:00Z',
               hfUrl: 'https://huggingface.co/$m',
+              useDraft: m.contains('Qwen'),
             ),
           )
           .toList();
 
   @override
   List<FrbProfileRow> listProfiles() => profiles;
+
+  @override
+  List<String> listDrafterProfiles() => profiles
+      .where((p) => p.isDrafter)
+      .map((p) => p.id)
+      .toList();
+
+  @override
+  void profileSetDraftModel({
+    required String profileId,
+    String? draftModel,
+  }) {}
 
   @override
   Future<int> benchStart({
@@ -408,6 +460,7 @@ class MockAidashApi implements AidashApi {
     String? audioPath,
     String? benchTask,
     List<int>? sweepSteps,
+    bool? useDraft,
   }) async =>
       201;
 
@@ -660,6 +713,137 @@ class MockAidashApi implements AidashApi {
   bool hfDownloadCancel() => true;
 
   @override
-  String profileGenerate({required String repoId}) =>
-      '/mock/profiles/$repoId.json';
+  String profileGenerate({required String repoId}) {
+    if (!profiles.any((p) => p.id == repoId)) {
+      profiles.add(
+        FrbProfileRow(
+          id: repoId,
+          backend: 'vllm_mlx',
+          modelType: 'llm',
+          contextDefault: 4096,
+          contextMin: 1024,
+          contextMax: 1048576,
+          sweepSteps: Uint32List.fromList(<int>[
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+          ]),
+          filename: '${repoId.replaceAll('/', '-')}.json',
+          isMultimodal: false,
+          draftModel: null,
+          isDrafter: false,
+        ),
+      );
+    }
+    return '/mock/profiles/$repoId.json';
+  }
+
+  @override
+  List<FrbEvalTemplateInfo> evalTemplateList() => const [];
+
+  @override
+  List<int> evalTemplateMeasurableContexts({required String profileId}) {
+    final profile = profiles.cast<FrbProfileRow?>().firstWhere(
+          (p) => p?.id == profileId,
+          orElse: () => null,
+        );
+    if (profile != null && profile.contextMax >= 1048576) {
+      return const [
+        1024,
+        4096,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+        524288,
+        1048576,
+      ];
+    }
+    if (profile != null && profile.contextMax >= 262144) {
+      return const [
+        1024,
+        4096,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+      ];
+    }
+    return const [1024, 4096];
+  }
+
+  @override
+  List<FrbEvalTemplateHistoryEntry> evalTemplateHistory({
+    required String profileId,
+    int? contextSize,
+  }) =>
+      [
+        FrbEvalTemplateHistoryEntry(
+          contextSize: 4096,
+          totalScore: 72,
+          createdAt: '1717920000000',
+          items: [
+            FrbEvalTemplateItemResult(
+              templateId: 'ctx4k-1',
+              description: '지식 QA — 화학식',
+              score: 100,
+              outputExcerpt: 'H2O',
+              elapsedMs: BigInt.from(1200),
+            ),
+            FrbEvalTemplateItemResult(
+              templateId: 'ctx4k-2',
+              description: '추론 — 일수 계산',
+              score: 100,
+              outputExcerpt: '15',
+              elapsedMs: BigInt.from(1100),
+            ),
+            FrbEvalTemplateItemResult(
+              templateId: 'ctx4k-3',
+              description: '지시 이행 — 3색 나열',
+              score: 15,
+              outputExcerpt: '빨강, 노랑, 파랑',
+              elapsedMs: BigInt.from(1500),
+            ),
+          ],
+        ),
+      ];
+
+  @override
+  Stream<FrbEvalTemplateEvent> evalTemplateRun({
+    required String profileId,
+    required int contextSize,
+  }) async* {
+    yield const FrbEvalTemplateEvent.started(
+      templateId: 'ctx4k-1',
+      index: 1,
+      total: 3,
+    );
+    yield FrbEvalTemplateEvent.completed(
+      templateId: 'ctx4k-1',
+      score: 100,
+      elapsedMs: BigInt.from(1200),
+    );
+    yield FrbEvalTemplateEvent.finished(
+      totalScore: 72,
+      items: [
+        FrbEvalTemplateItemResult(
+          templateId: 'ctx4k-1',
+          description: '지식 QA',
+          score: 100,
+          outputExcerpt: 'H2O',
+          elapsedMs: BigInt.from(1200),
+        ),
+      ],
+    );
+  }
 }

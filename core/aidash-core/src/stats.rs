@@ -66,6 +66,7 @@ pub(crate) struct CompletedRunRow {
     pub peak_mlx: i64,
     pub tokens_in: Option<i64>,
     pub tokens_out: Option<i64>,
+    pub use_draft: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -139,7 +140,7 @@ impl Database {
                     r.id, r.context_size, r.ended_at, r.started_at,
                     res.decode_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
-                    res.tokens_in, res.tokens_out
+                    res.tokens_in, res.tokens_out, r.params_json
              FROM models m
              JOIN runs r ON r.model_id = m.id AND r.status = 'completed'
              JOIN results res ON res.run_id = r.id AND res.ttft_ms IS NOT NULL
@@ -150,7 +151,7 @@ impl Database {
                     r.id, r.context_size, r.ended_at, r.started_at,
                     res.decode_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
-                    res.tokens_in, res.tokens_out
+                    res.tokens_in, res.tokens_out, r.params_json
              FROM models m
              JOIN runs r ON r.model_id = m.id AND r.status = 'completed'
              JOIN results res ON res.run_id = r.id AND res.ttft_ms IS NOT NULL
@@ -161,6 +162,7 @@ impl Database {
             std::collections::BTreeMap::new();
 
         let map_row = |row: &rusqlite::Row<'_>| -> rusqlite::Result<CompletedRunRow> {
+            let params_json: String = row.get(13)?;
             Ok(CompletedRunRow {
                 run_id: row.get(3)?,
                 context_size: row.get(4)?,
@@ -172,6 +174,7 @@ impl Database {
                 peak_mlx: row.get(10)?,
                 tokens_in: row.get(11)?,
                 tokens_out: row.get(12)?,
+                use_draft: crate::bench::parse_use_draft(&params_json),
             })
         };
 

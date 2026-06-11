@@ -8,6 +8,7 @@ pub mod db;
 pub mod env_detect;
 pub mod hf_cache;
 pub mod eval;
+pub mod eval_templates;
 pub mod events;
 pub mod export;
 pub mod lifecycle;

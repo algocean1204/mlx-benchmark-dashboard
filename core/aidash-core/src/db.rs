@@ -14,7 +14,7 @@ use crate::client::StreamStats;
 use crate::monitor::ResourceSample;
 use crate::profile::ModelProfile;
 
-const SCHEMA_VERSION: i32 = 3;
+const SCHEMA_VERSION: i32 = 4;
 
 const SCHEMA_SQL: &str = r#"
 CREATE TABLE IF NOT EXISTS models (
@@ -182,6 +182,22 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_updated ON chat_sessions(updated_at DESC);
 "#;
 
+const MIGRATION_V4_SQL: &str = r#"
+CREATE TABLE IF NOT EXISTS eval_template_results (
+  id INTEGER PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  context_size INTEGER NOT NULL,
+  template_id TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  output_excerpt TEXT NOT NULL,
+  elapsed_ms INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_template_profile
+  ON eval_template_results(profile_id, context_size, created_at DESC);
+"#;
+
 #[derive(Debug)]
 pub struct Database {
     pub(crate) conn: Mutex<Connection>,
@@ -199,6 +215,7 @@ pub struct RunListRow {
     pub decode_tps: Option<f64>,
     pub peak_phys_footprint_bytes: Option<i64>,
     pub ended_at: Option<String>,
+    pub use_draft: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,6 +282,7 @@ pub struct CompareRow {
     pub tokens_out: Option<i64>,
     pub measured_at: Option<String>,
     pub hf_url: Option<String>,
+    pub use_draft: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -274,6 +292,18 @@ pub struct ChatSessionRow {
     pub title: String,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvalTemplateResultRow {
+    pub id: i64,
+    pub profile_id: String,
+    pub context_size: i64,
+    pub template_id: String,
+    pub score: i64,
+    pub output_excerpt: String,
+    pub elapsed_ms: i64,
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -618,7 +648,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let sql = if model_profile_id.is_some() {
             "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at
+                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at, r.params_json
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
@@ -626,7 +656,7 @@ impl Database {
              ORDER BY r.id DESC"
         } else {
             "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at
+                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at, r.params_json
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
@@ -780,6 +810,7 @@ impl Database {
                     tokens_out: run.tokens_out,
                     measured_at: run.ended_at.clone(),
                     hf_url: url,
+                    use_draft: run.use_draft,
                 });
             } else {
                 rows.push(CompareRow {
@@ -797,6 +828,7 @@ impl Database {
                     tokens_out: None,
                     measured_at: None,
                     hf_url: url,
+                    use_draft: None,
                 });
             }
         }
@@ -1019,6 +1051,68 @@ impl Database {
         Ok(id)
     }
 
+    pub fn insert_eval_template_result(
+        &self,
+        profile_id: &str,
+        context_size: u32,
+        template_id: &str,
+        score: u32,
+        output_excerpt: &str,
+        elapsed_ms: u64,
+    ) -> Result<i64, DbError> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO eval_template_results
+             (profile_id, context_size, template_id, score, output_excerpt, elapsed_ms, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                profile_id,
+                context_size as i64,
+                template_id,
+                score as i64,
+                output_excerpt,
+                elapsed_ms as i64,
+                iso_timestamp(),
+            ],
+        )?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    pub fn list_eval_template_results(
+        &self,
+        profile_id: &str,
+        context_size: Option<u32>,
+    ) -> Result<Vec<EvalTemplateResultRow>, DbError> {
+        let conn = self.conn.lock().unwrap();
+        let mut rows = Vec::new();
+        if let Some(ctx) = context_size {
+            let mut stmt = conn.prepare(
+                "SELECT id, profile_id, context_size, template_id, score,
+                        output_excerpt, elapsed_ms, created_at
+                 FROM eval_template_results
+                 WHERE profile_id = ?1 AND context_size = ?2
+                 ORDER BY created_at DESC, id DESC",
+            )?;
+            let mapped = stmt.query_map(params![profile_id, ctx as i64], map_eval_template_row)?;
+            for row in mapped {
+                rows.push(row?);
+            }
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT id, profile_id, context_size, template_id, score,
+                        output_excerpt, elapsed_ms, created_at
+                 FROM eval_template_results
+                 WHERE profile_id = ?1
+                 ORDER BY created_at DESC, id DESC",
+            )?;
+            let mapped = stmt.query_map(params![profile_id], map_eval_template_row)?;
+            for row in mapped {
+                rows.push(row?);
+            }
+        }
+        Ok(rows)
+    }
+
     pub fn export_run_csv(&self, run_id: i64) -> Result<String, DbError> {
         let export = self.export_run(run_id)?;
         let mut out = String::new();
@@ -1118,6 +1212,12 @@ fn migrate_schema(conn: &Connection) -> Result<(), DbError> {
     if version < 3 {
         conn.execute_batch(MIGRATION_V3_SQL)?;
         conn.execute_batch("PRAGMA user_version=3;")?;
+        version = 3;
+    }
+
+    if version < 4 {
+        conn.execute_batch(MIGRATION_V4_SQL)?;
+        conn.execute_batch("PRAGMA user_version=4;")?;
     }
 
     Ok(())
@@ -1152,7 +1252,7 @@ impl Database {
             "SELECT r.id, r.context_size, r.ended_at, r.started_at,
                     res.decode_tps, res.ttft_ms,
                     res.peak_phys_footprint_bytes, res.peak_mlx_active_bytes,
-                    res.tokens_in, res.tokens_out
+                    res.tokens_in, res.tokens_out, r.params_json
              FROM runs r
              JOIN models m ON r.model_id = m.id
              JOIN results res ON res.run_id = r.id AND res.ttft_ms IS NOT NULL
@@ -1171,6 +1271,7 @@ impl Database {
                 peak_mlx: row.get(7)?,
                 tokens_in: row.get(8)?,
                 tokens_out: row.get(9)?,
+                use_draft: crate::bench::parse_use_draft(&row.get::<_, String>(10)?),
             })
         })?;
         let mut runs = Vec::new();
@@ -1186,7 +1287,21 @@ impl Database {
     }
 }
 
+fn map_eval_template_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<EvalTemplateResultRow> {
+    Ok(EvalTemplateResultRow {
+        id: row.get(0)?,
+        profile_id: row.get(1)?,
+        context_size: row.get(2)?,
+        template_id: row.get(3)?,
+        score: row.get(4)?,
+        output_excerpt: row.get(5)?,
+        elapsed_ms: row.get(6)?,
+        created_at: row.get(7)?,
+    })
+}
+
 fn map_run_list_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RunListRow> {
+    let params_json: String = row.get(9)?;
     Ok(RunListRow {
         run_id: row.get(0)?,
         profile_id: row.get(1)?,
@@ -1197,12 +1312,41 @@ fn map_run_list_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RunListRow> {
         decode_tps: row.get(6)?,
         peak_phys_footprint_bytes: row.get(7)?,
         ended_at: row.get(8)?,
+        use_draft: crate::bench::parse_use_draft(&params_json),
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn eval_template_results_crud() {
+        let dir = std::env::temp_dir().join(format!("aidash_eval_tpl_{}", std::process::id()));
+        let path = dir.join("test.db");
+        let db = Database::open(Some(&path)).expect("open");
+        assert_eq!(db.user_version().expect("version"), 4);
+
+        let id = db
+            .insert_eval_template_result(
+                "test/model",
+                4096,
+                "ctx4k-1",
+                85,
+                "서울",
+                1200,
+            )
+            .expect("insert");
+        assert!(id > 0);
+
+        let rows = db
+            .list_eval_template_results("test/model", Some(4096))
+            .expect("list");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].template_id, "ctx4k-1");
+        assert_eq!(rows[0].score, 85);
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn chat_session_crud() {
@@ -1258,6 +1402,7 @@ mod tests {
             quantization: None,
             load_timeout_sec: 60,
             notes: String::new(),
+            draft_model: None,
         };
         let model_id = db.upsert_model(&profile).expect("upsert");
         let run_id = db

@@ -7,6 +7,7 @@ import 'package:app/task_labels.dart';
 import 'package:app/theme/app_theme.dart';
 import 'package:app/utils/formatters.dart';
 import 'package:app/utils/wav_duration.dart';
+import 'package:app/widgets/draft_badge.dart';
 import 'package:app/widgets/metric_label.dart';
 import 'package:app/widgets/tier_badge.dart';
 import 'package:file_selector/file_selector.dart';
@@ -40,6 +41,7 @@ class _BenchScreenState extends State<BenchScreen> {
   final _promptController = TextEditingController();
   String? _imagePath;
   String? _audioPath;
+  bool _useDraft = true;
 
   static const _defaultTtsText = 'Hello, benchmark test.';
   static const _defaultImagePrompt =
@@ -65,13 +67,15 @@ class _BenchScreenState extends State<BenchScreen> {
 
   void _loadProfiles() {
     final api = context.read<AidashApi>();
-    final profiles = api.listProfiles();
+    final profiles =
+        api.listProfiles().where((p) => !p.isDrafter).toList();
     setState(() {
       _profiles = profiles;
       if (profiles.isNotEmpty) {
         _profileId = profiles.first.id;
         _ctx = profiles.first.contextDefault;
         _benchTask = TaskLabels.benchTasksForProfile(profiles.first.modelType).first;
+        _useDraft = profiles.first.draftModel != null;
         _applyTaskDefaults(api);
         _resetSweepStepSelection();
       }
@@ -230,6 +234,7 @@ class _BenchScreenState extends State<BenchScreen> {
         sweepSteps: _mode == FrbBenchMode.sweep
             ? _orderedSelectedSweepSteps
             : null,
+        useDraft: profile?.draftModel != null ? _useDraft : null,
       );
     } catch (e) {
       if (mounted) {
@@ -420,6 +425,10 @@ class _BenchScreenState extends State<BenchScreen> {
               children: [
                 const Text('벤치 결과', style: TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
+                if (_useDraft && _profile?.draftModel != null) ...[
+                  const DraftBadge(),
+                  const SizedBox(width: 8),
+                ],
                 if (isTokenTask)
                   TierBadge(
                     decodeTps: result.decodeTps,
@@ -507,11 +516,29 @@ class _BenchScreenState extends State<BenchScreen> {
                       _profileId = v;
                       _ctx = p.contextDefault;
                       _benchTask = tasks.first;
+                      _useDraft = p.draftModel != null;
                       _applyTaskDefaults(api);
                       _resetSweepStepSelection();
                     });
                   },
                 ),
+                if (profile?.draftModel != null) ...[
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('보조 모델 가속(speculative) 사용'),
+                    subtitle: Text(
+                      profile!.draftModel!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.inkMuted,
+                          ),
+                    ),
+                    value: _useDraft,
+                    onChanged: _running
+                        ? null
+                        : (v) => setState(() => _useDraft = v),
+                  ),
+                ],
                 if (taskOptions.length > 1) ...[
                   const SizedBox(height: 16),
                   Text('태스크', style: Theme.of(context).textTheme.labelLarge),

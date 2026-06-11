@@ -2,6 +2,7 @@ import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart';
 import 'package:app/theme/app_theme.dart';
 import 'package:app/utils/formatters.dart';
+import 'package:app/widgets/draft_badge.dart';
 import 'package:app/widgets/error_card.dart';
 import 'package:app/widgets/metric_label.dart';
 import 'package:app/widgets/tier_badge.dart';
@@ -367,6 +368,10 @@ class _StatCards extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (r.useDraft == true) ...[
+                            const SizedBox(height: 6),
+                            const DraftBadge(),
+                          ],
                           const SizedBox(height: 8),
                           TierBadge(
                             decodeTps: r.decodeTps,

@@ -65,7 +65,7 @@ class AidashFrb
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 2097317494;
+  int get rustContentHash => -705172980;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -100,6 +100,7 @@ abstract class AidashFrbApi extends BaseApi {
     String? audioPath,
     String? benchTask,
     Uint32List? sweepSteps,
+    bool? useDraft,
   });
 
   Future<FrbCacheDeleteResult> crateApiCacheDelete({required String repoId});
@@ -162,6 +163,24 @@ abstract class AidashFrbApi extends BaseApi {
 
   Stream<FrbBootstrapEvent> crateApiEnvBootstrap();
 
+  List<FrbEvalTemplateHistoryEntry> crateApiEvalTemplateHistory({
+    required String profileId,
+    int? contextSize,
+  });
+
+  List<FrbEvalTemplateInfo> crateApiEvalTemplateList();
+
+  Uint32List crateApiEvalTemplateMeasurableContexts({
+    required String profileId,
+  });
+
+  String crateApiEvalTemplatePreviewPrompt({required String templateId});
+
+  Stream<FrbEvalTemplateEvent> crateApiEvalTemplateRun({
+    required String profileId,
+    required int contextSize,
+  });
+
   String crateApiGetProjectRoot();
 
   bool crateApiHfDownloadCancel();
@@ -176,11 +195,18 @@ abstract class AidashFrbApi extends BaseApi {
 
   bool crateApiIsBundleDeployMode();
 
+  List<String> crateApiListDrafterProfiles();
+
   List<FrbProfileRow> crateApiListProfiles();
 
   List<FrbRunListRow> crateApiListRuns({String? model});
 
   String crateApiProfileGenerate({required String repoId});
+
+  void crateApiProfileSetDraftModel({
+    required String profileId,
+    String? draftModel,
+  });
 
   void crateApiProfileSetTask({
     required String profileId,
@@ -385,6 +411,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     String? audioPath,
     String? benchTask,
     Uint32List? sweepSteps,
+    bool? useDraft,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -397,6 +424,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
           var arg5 = cst_encode_opt_String(audioPath);
           var arg6 = cst_encode_opt_String(benchTask);
           var arg7 = cst_encode_opt_list_prim_u_32_strict(sweepSteps);
+          var arg8 = cst_encode_opt_box_autoadd_bool(useDraft);
           return wire.wire__crate__api__bench_start(
             port_,
             arg0,
@@ -407,6 +435,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
             arg5,
             arg6,
             arg7,
+            arg8,
           );
         },
         codec: DcoCodec(
@@ -423,6 +452,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
           audioPath,
           benchTask,
           sweepSteps,
+          useDraft,
         ],
         apiImpl: this,
       ),
@@ -440,6 +470,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       "audioPath",
       "benchTask",
       "sweepSteps",
+      "useDraft",
     ],
   );
 
@@ -896,6 +927,146 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       const TaskConstMeta(debugName: "env_bootstrap", argNames: ["sink"]);
 
   @override
+  List<FrbEvalTemplateHistoryEntry> crateApiEvalTemplateHistory({
+    required String profileId,
+    int? contextSize,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_String(profileId);
+          var arg1 = cst_encode_opt_box_autoadd_u_32(contextSize);
+          return wire.wire__crate__api__eval_template_history(arg0, arg1);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_frb_eval_template_history_entry,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiEvalTemplateHistoryConstMeta,
+        argValues: [profileId, contextSize],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEvalTemplateHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "eval_template_history",
+        argNames: ["profileId", "contextSize"],
+      );
+
+  @override
+  List<FrbEvalTemplateInfo> crateApiEvalTemplateList() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          return wire.wire__crate__api__eval_template_list();
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_frb_eval_template_info,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiEvalTemplateListConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEvalTemplateListConstMeta =>
+      const TaskConstMeta(debugName: "eval_template_list", argNames: []);
+
+  @override
+  Uint32List crateApiEvalTemplateMeasurableContexts({
+    required String profileId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_String(profileId);
+          return wire.wire__crate__api__eval_template_measurable_contexts(arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_prim_u_32_strict,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiEvalTemplateMeasurableContextsConstMeta,
+        argValues: [profileId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEvalTemplateMeasurableContextsConstMeta =>
+      const TaskConstMeta(
+        debugName: "eval_template_measurable_contexts",
+        argNames: ["profileId"],
+      );
+
+  @override
+  String crateApiEvalTemplatePreviewPrompt({required String templateId}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_String(templateId);
+          return wire.wire__crate__api__eval_template_preview_prompt(arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_String,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiEvalTemplatePreviewPromptConstMeta,
+        argValues: [templateId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEvalTemplatePreviewPromptConstMeta =>
+      const TaskConstMeta(
+        debugName: "eval_template_preview_prompt",
+        argNames: ["templateId"],
+      );
+
+  @override
+  Stream<FrbEvalTemplateEvent> crateApiEvalTemplateRun({
+    required String profileId,
+    required int contextSize,
+  }) {
+    final sink = RustStreamSink<FrbEvalTemplateEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            var arg0 = cst_encode_String(profileId);
+            var arg1 = cst_encode_u_32(contextSize);
+            var arg2 = cst_encode_StreamSink_frb_eval_template_event_Dco(sink);
+            return wire.wire__crate__api__eval_template_run(
+              port_,
+              arg0,
+              arg1,
+              arg2,
+            );
+          },
+          codec: DcoCodec(
+            decodeSuccessData: dco_decode_unit,
+            decodeErrorData: dco_decode_String,
+          ),
+          constMeta: kCrateApiEvalTemplateRunConstMeta,
+          argValues: [profileId, contextSize, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiEvalTemplateRunConstMeta => const TaskConstMeta(
+    debugName: "eval_template_run",
+    argNames: ["profileId", "contextSize", "sink"],
+  );
+
+  @override
   String crateApiGetProjectRoot() {
     return handler.executeSync(
       SyncTask(
@@ -1056,6 +1227,27 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       const TaskConstMeta(debugName: "is_bundle_deploy_mode", argNames: []);
 
   @override
+  List<String> crateApiListDrafterProfiles() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          return wire.wire__crate__api__list_drafter_profiles();
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_String,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiListDrafterProfilesConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiListDrafterProfilesConstMeta =>
+      const TaskConstMeta(debugName: "list_drafter_profiles", argNames: []);
+
+  @override
   List<FrbProfileRow> crateApiListProfiles() {
     return handler.executeSync(
       SyncTask(
@@ -1119,6 +1311,35 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
 
   TaskConstMeta get kCrateApiProfileGenerateConstMeta =>
       const TaskConstMeta(debugName: "profile_generate", argNames: ["repoId"]);
+
+  @override
+  void crateApiProfileSetDraftModel({
+    required String profileId,
+    String? draftModel,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          var arg0 = cst_encode_String(profileId);
+          var arg1 = cst_encode_opt_String(draftModel);
+          return wire.wire__crate__api__profile_set_draft_model(arg0, arg1);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_unit,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiProfileSetDraftModelConstMeta,
+        argValues: [profileId, draftModel],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfileSetDraftModelConstMeta =>
+      const TaskConstMeta(
+        debugName: "profile_set_draft_model",
+        argNames: ["profileId", "draftModel"],
+      );
 
   @override
   void crateApiProfileSetTask({
@@ -1421,6 +1642,13 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  dco_decode_StreamSink_frb_eval_template_event_Dco(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
   RustStreamSink<FrbFixProgress> dco_decode_StreamSink_frb_fix_progress_Dco(
     dynamic raw,
   ) {
@@ -1704,8 +1932,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbCompareRow dco_decode_frb_compare_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 15)
-      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
+    if (arr.length != 16)
+      throw Exception('unexpected arr length: expect 16 but see ${arr.length}');
     return FrbCompareRow(
       profileId: dco_decode_String(arr[0]),
       displayName: dco_decode_String(arr[1]),
@@ -1722,6 +1950,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       tokensOut: dco_decode_opt_box_autoadd_i_64(arr[12]),
       measuredAt: dco_decode_opt_String(arr[13]),
       hfUrl: dco_decode_opt_String(arr[14]),
+      useDraft: dco_decode_opt_box_autoadd_bool(arr[15]),
     );
   }
 
@@ -1822,6 +2051,81 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  FrbEvalTemplateEvent dco_decode_frb_eval_template_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return FrbEvalTemplateEvent_Started(
+          templateId: dco_decode_String(raw[1]),
+          index: dco_decode_u_32(raw[2]),
+          total: dco_decode_u_32(raw[3]),
+        );
+      case 1:
+        return FrbEvalTemplateEvent_Completed(
+          templateId: dco_decode_String(raw[1]),
+          score: dco_decode_u_32(raw[2]),
+          elapsedMs: dco_decode_u_64(raw[3]),
+        );
+      case 2:
+        return FrbEvalTemplateEvent_Finished(
+          totalScore: dco_decode_u_32(raw[1]),
+          items: dco_decode_list_frb_eval_template_item_result(raw[2]),
+        );
+      case 3:
+        return FrbEvalTemplateEvent_Log(message: dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  FrbEvalTemplateHistoryEntry dco_decode_frb_eval_template_history_entry(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return FrbEvalTemplateHistoryEntry(
+      contextSize: dco_decode_u_32(arr[0]),
+      totalScore: dco_decode_u_32(arr[1]),
+      createdAt: dco_decode_String(arr[2]),
+      items: dco_decode_list_frb_eval_template_item_result(arr[3]),
+    );
+  }
+
+  @protected
+  FrbEvalTemplateInfo dco_decode_frb_eval_template_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return FrbEvalTemplateInfo(
+      id: dco_decode_String(arr[0]),
+      contextSize: dco_decode_u_32(arr[1]),
+      kind: dco_decode_String(arr[2]),
+      description: dco_decode_String(arr[3]),
+    );
+  }
+
+  @protected
+  FrbEvalTemplateItemResult dco_decode_frb_eval_template_item_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return FrbEvalTemplateItemResult(
+      templateId: dco_decode_String(arr[0]),
+      description: dco_decode_String(arr[1]),
+      score: dco_decode_u_32(arr[2]),
+      outputExcerpt: dco_decode_String(arr[3]),
+      elapsedMs: dco_decode_u_64(arr[4]),
+    );
+  }
+
+  @protected
   FrbFixProgress dco_decode_frb_fix_progress(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1893,8 +2197,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbProfileRow dco_decode_frb_profile_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return FrbProfileRow(
       id: dco_decode_String(arr[0]),
       backend: dco_decode_String(arr[1]),
@@ -1905,6 +2209,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       sweepSteps: dco_decode_list_prim_u_32_strict(arr[6]),
       filename: dco_decode_String(arr[7]),
       isMultimodal: dco_decode_bool(arr[8]),
+      draftModel: dco_decode_opt_String(arr[9]),
+      isDrafter: dco_decode_bool(arr[10]),
     );
   }
 
@@ -1931,8 +2237,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbRunListRow dco_decode_frb_run_list_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 10)
-      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return FrbRunListRow(
       runId: dco_decode_i_64(arr[0]),
       profileId: dco_decode_String(arr[1]),
@@ -1944,6 +2250,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[7]),
       tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[8]),
       endedAt: dco_decode_opt_String(arr[9]),
+      useDraft: dco_decode_opt_box_autoadd_bool(arr[10]),
     );
   }
 
@@ -2033,6 +2340,35 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   List<FrbDoctorItem> dco_decode_list_frb_doctor_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_frb_doctor_item).toList();
+  }
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  dco_decode_list_frb_eval_template_history_entry(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_frb_eval_template_history_entry)
+        .toList();
+  }
+
+  @protected
+  List<FrbEvalTemplateInfo> dco_decode_list_frb_eval_template_info(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_frb_eval_template_info)
+        .toList();
+  }
+
+  @protected
+  List<FrbEvalTemplateItemResult> dco_decode_list_frb_eval_template_item_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_frb_eval_template_item_result)
+        .toList();
   }
 
   @protected
@@ -2222,6 +2558,15 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  sse_decode_StreamSink_frb_eval_template_event_Dco(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -2570,6 +2915,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_tokensOut = sse_decode_opt_box_autoadd_i_64(deserializer);
     var var_measuredAt = sse_decode_opt_String(deserializer);
     var var_hfUrl = sse_decode_opt_String(deserializer);
+    var var_useDraft = sse_decode_opt_box_autoadd_bool(deserializer);
     return FrbCompareRow(
       profileId: var_profileId,
       displayName: var_displayName,
@@ -2586,6 +2932,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       tokensOut: var_tokensOut,
       measuredAt: var_measuredAt,
       hfUrl: var_hfUrl,
+      useDraft: var_useDraft,
     );
   }
 
@@ -2697,6 +3044,102 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  FrbEvalTemplateEvent sse_decode_frb_eval_template_event(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_templateId = sse_decode_String(deserializer);
+        var var_index = sse_decode_u_32(deserializer);
+        var var_total = sse_decode_u_32(deserializer);
+        return FrbEvalTemplateEvent_Started(
+          templateId: var_templateId,
+          index: var_index,
+          total: var_total,
+        );
+      case 1:
+        var var_templateId = sse_decode_String(deserializer);
+        var var_score = sse_decode_u_32(deserializer);
+        var var_elapsedMs = sse_decode_u_64(deserializer);
+        return FrbEvalTemplateEvent_Completed(
+          templateId: var_templateId,
+          score: var_score,
+          elapsedMs: var_elapsedMs,
+        );
+      case 2:
+        var var_totalScore = sse_decode_u_32(deserializer);
+        var var_items = sse_decode_list_frb_eval_template_item_result(
+          deserializer,
+        );
+        return FrbEvalTemplateEvent_Finished(
+          totalScore: var_totalScore,
+          items: var_items,
+        );
+      case 3:
+        var var_message = sse_decode_String(deserializer);
+        return FrbEvalTemplateEvent_Log(message: var_message);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  FrbEvalTemplateHistoryEntry sse_decode_frb_eval_template_history_entry(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_contextSize = sse_decode_u_32(deserializer);
+    var var_totalScore = sse_decode_u_32(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    var var_items = sse_decode_list_frb_eval_template_item_result(deserializer);
+    return FrbEvalTemplateHistoryEntry(
+      contextSize: var_contextSize,
+      totalScore: var_totalScore,
+      createdAt: var_createdAt,
+      items: var_items,
+    );
+  }
+
+  @protected
+  FrbEvalTemplateInfo sse_decode_frb_eval_template_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_contextSize = sse_decode_u_32(deserializer);
+    var var_kind = sse_decode_String(deserializer);
+    var var_description = sse_decode_String(deserializer);
+    return FrbEvalTemplateInfo(
+      id: var_id,
+      contextSize: var_contextSize,
+      kind: var_kind,
+      description: var_description,
+    );
+  }
+
+  @protected
+  FrbEvalTemplateItemResult sse_decode_frb_eval_template_item_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_templateId = sse_decode_String(deserializer);
+    var var_description = sse_decode_String(deserializer);
+    var var_score = sse_decode_u_32(deserializer);
+    var var_outputExcerpt = sse_decode_String(deserializer);
+    var var_elapsedMs = sse_decode_u_64(deserializer);
+    return FrbEvalTemplateItemResult(
+      templateId: var_templateId,
+      description: var_description,
+      score: var_score,
+      outputExcerpt: var_outputExcerpt,
+      elapsedMs: var_elapsedMs,
+    );
+  }
+
+  @protected
   FrbFixProgress sse_decode_frb_fix_progress(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_line = sse_decode_String(deserializer);
@@ -2796,6 +3239,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_sweepSteps = sse_decode_list_prim_u_32_strict(deserializer);
     var var_filename = sse_decode_String(deserializer);
     var var_isMultimodal = sse_decode_bool(deserializer);
+    var var_draftModel = sse_decode_opt_String(deserializer);
+    var var_isDrafter = sse_decode_bool(deserializer);
     return FrbProfileRow(
       id: var_id,
       backend: var_backend,
@@ -2806,6 +3251,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       sweepSteps: var_sweepSteps,
       filename: var_filename,
       isMultimodal: var_isMultimodal,
+      draftModel: var_draftModel,
+      isDrafter: var_isDrafter,
     );
   }
 
@@ -2851,6 +3298,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     );
     var var_tier = sse_decode_opt_box_autoadd_frb_tier_info(deserializer);
     var var_endedAt = sse_decode_opt_String(deserializer);
+    var var_useDraft = sse_decode_opt_box_autoadd_bool(deserializer);
     return FrbRunListRow(
       runId: var_runId,
       profileId: var_profileId,
@@ -2862,6 +3310,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       peakPhysFootprintBytes: var_peakPhysFootprintBytes,
       tier: var_tier,
       endedAt: var_endedAt,
+      useDraft: var_useDraft,
     );
   }
 
@@ -3007,6 +3456,49 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var ans_ = <FrbDoctorItem>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_frb_doctor_item(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  sse_decode_list_frb_eval_template_history_entry(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FrbEvalTemplateHistoryEntry>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_frb_eval_template_history_entry(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<FrbEvalTemplateInfo> sse_decode_list_frb_eval_template_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FrbEvalTemplateInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_frb_eval_template_info(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<FrbEvalTemplateItemResult> sse_decode_list_frb_eval_template_item_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FrbEvalTemplateItemResult>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_frb_eval_template_item_result(deserializer));
     }
     return ans_;
   }
@@ -3372,6 +3864,23 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  void sse_encode_StreamSink_frb_eval_template_event_Dco(
+    RustStreamSink<FrbEvalTemplateEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_eval_template_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_StreamSink_frb_fix_progress_Dco(
     RustStreamSink<FrbFixProgress> self,
     SseSerializer serializer,
@@ -3684,6 +4193,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_opt_box_autoadd_i_64(self.tokensOut, serializer);
     sse_encode_opt_String(self.measuredAt, serializer);
     sse_encode_opt_String(self.hfUrl, serializer);
+    sse_encode_opt_box_autoadd_bool(self.useDraft, serializer);
   }
 
   @protected
@@ -3768,6 +4278,81 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  void sse_encode_frb_eval_template_event(
+    FrbEvalTemplateEvent self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case FrbEvalTemplateEvent_Started(
+        templateId: final templateId,
+        index: final index,
+        total: final total,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(templateId, serializer);
+        sse_encode_u_32(index, serializer);
+        sse_encode_u_32(total, serializer);
+      case FrbEvalTemplateEvent_Completed(
+        templateId: final templateId,
+        score: final score,
+        elapsedMs: final elapsedMs,
+      ):
+        sse_encode_i_32(1, serializer);
+        sse_encode_String(templateId, serializer);
+        sse_encode_u_32(score, serializer);
+        sse_encode_u_64(elapsedMs, serializer);
+      case FrbEvalTemplateEvent_Finished(
+        totalScore: final totalScore,
+        items: final items,
+      ):
+        sse_encode_i_32(2, serializer);
+        sse_encode_u_32(totalScore, serializer);
+        sse_encode_list_frb_eval_template_item_result(items, serializer);
+      case FrbEvalTemplateEvent_Log(message: final message):
+        sse_encode_i_32(3, serializer);
+        sse_encode_String(message, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_frb_eval_template_history_entry(
+    FrbEvalTemplateHistoryEntry self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.contextSize, serializer);
+    sse_encode_u_32(self.totalScore, serializer);
+    sse_encode_String(self.createdAt, serializer);
+    sse_encode_list_frb_eval_template_item_result(self.items, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_eval_template_info(
+    FrbEvalTemplateInfo self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_u_32(self.contextSize, serializer);
+    sse_encode_String(self.kind, serializer);
+    sse_encode_String(self.description, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_eval_template_item_result(
+    FrbEvalTemplateItemResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.templateId, serializer);
+    sse_encode_String(self.description, serializer);
+    sse_encode_u_32(self.score, serializer);
+    sse_encode_String(self.outputExcerpt, serializer);
+    sse_encode_u_64(self.elapsedMs, serializer);
+  }
+
+  @protected
   void sse_encode_frb_fix_progress(
     FrbFixProgress self,
     SseSerializer serializer,
@@ -3842,6 +4427,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_list_prim_u_32_strict(self.sweepSteps, serializer);
     sse_encode_String(self.filename, serializer);
     sse_encode_bool(self.isMultimodal, serializer);
+    sse_encode_opt_String(self.draftModel, serializer);
+    sse_encode_bool(self.isDrafter, serializer);
   }
 
   @protected
@@ -3877,6 +4464,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_opt_box_autoadd_i_64(self.peakPhysFootprintBytes, serializer);
     sse_encode_opt_box_autoadd_frb_tier_info(self.tier, serializer);
     sse_encode_opt_String(self.endedAt, serializer);
+    sse_encode_opt_box_autoadd_bool(self.useDraft, serializer);
   }
 
   @protected
@@ -4000,6 +4588,42 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_frb_doctor_item(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_frb_eval_template_history_entry(
+    List<FrbEvalTemplateHistoryEntry> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_frb_eval_template_history_entry(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_frb_eval_template_info(
+    List<FrbEvalTemplateInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_frb_eval_template_info(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_frb_eval_template_item_result(
+    List<FrbEvalTemplateItemResult> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_frb_eval_template_item_result(item, serializer);
     }
   }
 

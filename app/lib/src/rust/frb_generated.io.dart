@@ -39,6 +39,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   dco_decode_StreamSink_frb_download_progress_Dco(dynamic raw);
 
   @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  dco_decode_StreamSink_frb_eval_template_event_Dco(dynamic raw);
+
+  @protected
   RustStreamSink<FrbFixProgress> dco_decode_StreamSink_frb_fix_progress_Dco(
     dynamic raw,
   );
@@ -144,6 +148,22 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   FrbDownloadProgress dco_decode_frb_download_progress(dynamic raw);
 
   @protected
+  FrbEvalTemplateEvent dco_decode_frb_eval_template_event(dynamic raw);
+
+  @protected
+  FrbEvalTemplateHistoryEntry dco_decode_frb_eval_template_history_entry(
+    dynamic raw,
+  );
+
+  @protected
+  FrbEvalTemplateInfo dco_decode_frb_eval_template_info(dynamic raw);
+
+  @protected
+  FrbEvalTemplateItemResult dco_decode_frb_eval_template_item_result(
+    dynamic raw,
+  );
+
+  @protected
   FrbFixProgress dco_decode_frb_fix_progress(dynamic raw);
 
   @protected
@@ -199,6 +219,18 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   List<FrbDoctorItem> dco_decode_list_frb_doctor_item(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  dco_decode_list_frb_eval_template_history_entry(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateInfo> dco_decode_list_frb_eval_template_info(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateItemResult> dco_decode_list_frb_eval_template_item_result(
+    dynamic raw,
+  );
 
   @protected
   List<FrbHfSearchResult> dco_decode_list_frb_hf_search_result(dynamic raw);
@@ -292,6 +324,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  sse_decode_StreamSink_frb_eval_template_event_Dco(
+    SseDeserializer deserializer,
+  );
 
   @protected
   RustStreamSink<FrbFixProgress> sse_decode_StreamSink_frb_fix_progress_Dco(
@@ -423,6 +461,26 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  FrbEvalTemplateEvent sse_decode_frb_eval_template_event(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateHistoryEntry sse_decode_frb_eval_template_history_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateInfo sse_decode_frb_eval_template_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateItemResult sse_decode_frb_eval_template_item_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FrbFixProgress sse_decode_frb_fix_progress(SseDeserializer deserializer);
 
   @protected
@@ -496,6 +554,20 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   List<FrbDoctorItem> sse_decode_list_frb_doctor_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  sse_decode_list_frb_eval_template_history_entry(SseDeserializer deserializer);
+
+  @protected
+  List<FrbEvalTemplateInfo> sse_decode_list_frb_eval_template_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbEvalTemplateItemResult> sse_decode_list_frb_eval_template_item_result(
     SseDeserializer deserializer,
   );
 
@@ -650,6 +722,22 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       raw.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_download_progress,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_prim_u_8_strict>
+  cst_encode_StreamSink_frb_eval_template_event_Dco(
+    RustStreamSink<FrbEvalTemplateEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_eval_template_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -850,6 +938,49 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     final ans = wire.cst_new_list_frb_doctor_item(raw.length);
     for (var i = 0; i < raw.length; ++i) {
       cst_api_fill_to_wire_frb_doctor_item(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_frb_eval_template_history_entry>
+  cst_encode_list_frb_eval_template_history_entry(
+    List<FrbEvalTemplateHistoryEntry> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_frb_eval_template_history_entry(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_frb_eval_template_history_entry(
+        raw[i],
+        ans.ref.ptr[i],
+      );
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_frb_eval_template_info>
+  cst_encode_list_frb_eval_template_info(List<FrbEvalTemplateInfo> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_frb_eval_template_info(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_frb_eval_template_info(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_frb_eval_template_item_result>
+  cst_encode_list_frb_eval_template_item_result(
+    List<FrbEvalTemplateItemResult> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_frb_eval_template_item_result(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_frb_eval_template_item_result(
+        raw[i],
+        ans.ref.ptr[i],
+      );
     }
     return ans;
   }
@@ -1246,6 +1377,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.tokens_out = cst_encode_opt_box_autoadd_i_64(apiObj.tokensOut);
     wireObj.measured_at = cst_encode_opt_String(apiObj.measuredAt);
     wireObj.hf_url = cst_encode_opt_String(apiObj.hfUrl);
+    wireObj.use_draft = cst_encode_opt_box_autoadd_bool(apiObj.useDraft);
   }
 
   @protected
@@ -1328,6 +1460,83 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  void cst_api_fill_to_wire_frb_eval_template_event(
+    FrbEvalTemplateEvent apiObj,
+    wire_cst_frb_eval_template_event wireObj,
+  ) {
+    if (apiObj is FrbEvalTemplateEvent_Started) {
+      var pre_template_id = cst_encode_String(apiObj.templateId);
+      var pre_index = cst_encode_u_32(apiObj.index);
+      var pre_total = cst_encode_u_32(apiObj.total);
+      wireObj.tag = 0;
+      wireObj.kind.Started.template_id = pre_template_id;
+      wireObj.kind.Started.index = pre_index;
+      wireObj.kind.Started.total = pre_total;
+      return;
+    }
+    if (apiObj is FrbEvalTemplateEvent_Completed) {
+      var pre_template_id = cst_encode_String(apiObj.templateId);
+      var pre_score = cst_encode_u_32(apiObj.score);
+      var pre_elapsed_ms = cst_encode_u_64(apiObj.elapsedMs);
+      wireObj.tag = 1;
+      wireObj.kind.Completed.template_id = pre_template_id;
+      wireObj.kind.Completed.score = pre_score;
+      wireObj.kind.Completed.elapsed_ms = pre_elapsed_ms;
+      return;
+    }
+    if (apiObj is FrbEvalTemplateEvent_Finished) {
+      var pre_total_score = cst_encode_u_32(apiObj.totalScore);
+      var pre_items = cst_encode_list_frb_eval_template_item_result(
+        apiObj.items,
+      );
+      wireObj.tag = 2;
+      wireObj.kind.Finished.total_score = pre_total_score;
+      wireObj.kind.Finished.items = pre_items;
+      return;
+    }
+    if (apiObj is FrbEvalTemplateEvent_Log) {
+      var pre_message = cst_encode_String(apiObj.message);
+      wireObj.tag = 3;
+      wireObj.kind.Log.message = pre_message;
+      return;
+    }
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_eval_template_history_entry(
+    FrbEvalTemplateHistoryEntry apiObj,
+    wire_cst_frb_eval_template_history_entry wireObj,
+  ) {
+    wireObj.context_size = cst_encode_u_32(apiObj.contextSize);
+    wireObj.total_score = cst_encode_u_32(apiObj.totalScore);
+    wireObj.created_at = cst_encode_String(apiObj.createdAt);
+    wireObj.items = cst_encode_list_frb_eval_template_item_result(apiObj.items);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_eval_template_info(
+    FrbEvalTemplateInfo apiObj,
+    wire_cst_frb_eval_template_info wireObj,
+  ) {
+    wireObj.id = cst_encode_String(apiObj.id);
+    wireObj.context_size = cst_encode_u_32(apiObj.contextSize);
+    wireObj.kind = cst_encode_String(apiObj.kind);
+    wireObj.description = cst_encode_String(apiObj.description);
+  }
+
+  @protected
+  void cst_api_fill_to_wire_frb_eval_template_item_result(
+    FrbEvalTemplateItemResult apiObj,
+    wire_cst_frb_eval_template_item_result wireObj,
+  ) {
+    wireObj.template_id = cst_encode_String(apiObj.templateId);
+    wireObj.description = cst_encode_String(apiObj.description);
+    wireObj.score = cst_encode_u_32(apiObj.score);
+    wireObj.output_excerpt = cst_encode_String(apiObj.outputExcerpt);
+    wireObj.elapsed_ms = cst_encode_u_64(apiObj.elapsedMs);
+  }
+
+  @protected
   void cst_api_fill_to_wire_frb_fix_progress(
     FrbFixProgress apiObj,
     wire_cst_frb_fix_progress wireObj,
@@ -1405,6 +1614,8 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.sweep_steps = cst_encode_list_prim_u_32_strict(apiObj.sweepSteps);
     wireObj.filename = cst_encode_String(apiObj.filename);
     wireObj.is_multimodal = cst_encode_bool(apiObj.isMultimodal);
+    wireObj.draft_model = cst_encode_opt_String(apiObj.draftModel);
+    wireObj.is_drafter = cst_encode_bool(apiObj.isDrafter);
   }
 
   @protected
@@ -1442,6 +1653,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     );
     wireObj.tier = cst_encode_opt_box_autoadd_frb_tier_info(apiObj.tier);
     wireObj.ended_at = cst_encode_opt_String(apiObj.endedAt);
+    wireObj.use_draft = cst_encode_opt_box_autoadd_bool(apiObj.useDraft);
   }
 
   @protected
@@ -1523,6 +1735,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_StreamSink_frb_download_progress_Dco(
     RustStreamSink<FrbDownloadProgress> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_frb_eval_template_event_Dco(
+    RustStreamSink<FrbEvalTemplateEvent> self,
     SseSerializer serializer,
   );
 
@@ -1689,6 +1907,30 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_frb_eval_template_event(
+    FrbEvalTemplateEvent self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_history_entry(
+    FrbEvalTemplateHistoryEntry self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_info(
+    FrbEvalTemplateInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_item_result(
+    FrbEvalTemplateItemResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_frb_fix_progress(
     FrbFixProgress self,
     SseSerializer serializer,
@@ -1781,6 +2023,24 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_list_frb_doctor_item(
     List<FrbDoctorItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_history_entry(
+    List<FrbEvalTemplateHistoryEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_info(
+    List<FrbEvalTemplateInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_item_result(
+    List<FrbEvalTemplateItemResult> self,
     SseSerializer serializer,
   );
 
@@ -2046,6 +2306,7 @@ class AidashFrbWire implements BaseWire {
     ffi.Pointer<wire_cst_list_prim_u_8_strict> audio_path,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> bench_task,
     ffi.Pointer<wire_cst_list_prim_u_32_strict> sweep_steps,
+    ffi.Pointer<ffi.Bool> use_draft,
   ) {
     return _wire__crate__api__bench_start(
       port_,
@@ -2057,6 +2318,7 @@ class AidashFrbWire implements BaseWire {
       audio_path,
       bench_task,
       sweep_steps,
+      use_draft,
     );
   }
 
@@ -2073,6 +2335,7 @@ class AidashFrbWire implements BaseWire {
             ffi.Pointer<wire_cst_list_prim_u_8_strict>,
             ffi.Pointer<wire_cst_list_prim_u_8_strict>,
             ffi.Pointer<wire_cst_list_prim_u_32_strict>,
+            ffi.Pointer<ffi.Bool>,
           )
         >
       >('frbgen_app_wire__crate__api__bench_start');
@@ -2088,6 +2351,7 @@ class AidashFrbWire implements BaseWire {
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
           ffi.Pointer<wire_cst_list_prim_u_32_strict>,
+          ffi.Pointer<ffi.Bool>,
         )
       >();
 
@@ -2428,6 +2692,123 @@ class AidashFrbWire implements BaseWire {
             void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)
           >();
 
+  WireSyncRust2DartDco wire__crate__api__eval_template_history(
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id,
+    ffi.Pointer<ffi.Uint32> context_size,
+  ) {
+    return _wire__crate__api__eval_template_history(profile_id, context_size);
+  }
+
+  late final _wire__crate__api__eval_template_historyPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__eval_template_history');
+  late final _wire__crate__api__eval_template_history =
+      _wire__crate__api__eval_template_historyPtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<ffi.Uint32>,
+            )
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__eval_template_list() {
+    return _wire__crate__api__eval_template_list();
+  }
+
+  late final _wire__crate__api__eval_template_listPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function()>>(
+        'frbgen_app_wire__crate__api__eval_template_list',
+      );
+  late final _wire__crate__api__eval_template_list =
+      _wire__crate__api__eval_template_listPtr
+          .asFunction<WireSyncRust2DartDco Function()>();
+
+  WireSyncRust2DartDco wire__crate__api__eval_template_measurable_contexts(
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id,
+  ) {
+    return _wire__crate__api__eval_template_measurable_contexts(profile_id);
+  }
+
+  late final _wire__crate__api__eval_template_measurable_contextsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__eval_template_measurable_contexts');
+  late final _wire__crate__api__eval_template_measurable_contexts =
+      _wire__crate__api__eval_template_measurable_contextsPtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__eval_template_preview_prompt(
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> template_id,
+  ) {
+    return _wire__crate__api__eval_template_preview_prompt(template_id);
+  }
+
+  late final _wire__crate__api__eval_template_preview_promptPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__eval_template_preview_prompt');
+  late final _wire__crate__api__eval_template_preview_prompt =
+      _wire__crate__api__eval_template_preview_promptPtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
+
+  void wire__crate__api__eval_template_run(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id,
+    int context_size,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> sink,
+  ) {
+    return _wire__crate__api__eval_template_run(
+      port_,
+      profile_id,
+      context_size,
+      sink,
+    );
+  }
+
+  late final _wire__crate__api__eval_template_runPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(
+            ffi.Int64,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Uint32,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__eval_template_run');
+  late final _wire__crate__api__eval_template_run =
+      _wire__crate__api__eval_template_runPtr
+          .asFunction<
+            void Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
+
   WireSyncRust2DartDco wire__crate__api__get_project_root() {
     return _wire__crate__api__get_project_root();
   }
@@ -2556,6 +2937,18 @@ class AidashFrbWire implements BaseWire {
       _wire__crate__api__is_bundle_deploy_modePtr
           .asFunction<WireSyncRust2DartDco Function()>();
 
+  WireSyncRust2DartDco wire__crate__api__list_drafter_profiles() {
+    return _wire__crate__api__list_drafter_profiles();
+  }
+
+  late final _wire__crate__api__list_drafter_profilesPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function()>>(
+        'frbgen_app_wire__crate__api__list_drafter_profiles',
+      );
+  late final _wire__crate__api__list_drafter_profiles =
+      _wire__crate__api__list_drafter_profilesPtr
+          .asFunction<WireSyncRust2DartDco Function()>();
+
   WireSyncRust2DartDco wire__crate__api__list_profiles() {
     return _wire__crate__api__list_profiles();
   }
@@ -2607,6 +3000,31 @@ class AidashFrbWire implements BaseWire {
       _wire__crate__api__profile_generatePtr
           .asFunction<
             WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            )
+          >();
+
+  WireSyncRust2DartDco wire__crate__api__profile_set_draft_model(
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> profile_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> draft_model,
+  ) {
+    return _wire__crate__api__profile_set_draft_model(profile_id, draft_model);
+  }
+
+  late final _wire__crate__api__profile_set_draft_modelPtr =
+      _lookup<
+        ffi.NativeFunction<
+          WireSyncRust2DartDco Function(
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__profile_set_draft_model');
+  late final _wire__crate__api__profile_set_draft_model =
+      _wire__crate__api__profile_set_draft_modelPtr
+          .asFunction<
+            WireSyncRust2DartDco Function(
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>,
             )
           >();
@@ -3061,6 +3479,65 @@ class AidashFrbWire implements BaseWire {
   late final _cst_new_list_frb_doctor_item = _cst_new_list_frb_doctor_itemPtr
       .asFunction<ffi.Pointer<wire_cst_list_frb_doctor_item> Function(int)>();
 
+  ffi.Pointer<wire_cst_list_frb_eval_template_history_entry>
+  cst_new_list_frb_eval_template_history_entry(int len) {
+    return _cst_new_list_frb_eval_template_history_entry(len);
+  }
+
+  late final _cst_new_list_frb_eval_template_history_entryPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_frb_eval_template_history_entry> Function(
+            ffi.Int32,
+          )
+        >
+      >('frbgen_app_cst_new_list_frb_eval_template_history_entry');
+  late final _cst_new_list_frb_eval_template_history_entry =
+      _cst_new_list_frb_eval_template_history_entryPtr
+          .asFunction<
+            ffi.Pointer<wire_cst_list_frb_eval_template_history_entry> Function(
+              int,
+            )
+          >();
+
+  ffi.Pointer<wire_cst_list_frb_eval_template_info>
+  cst_new_list_frb_eval_template_info(int len) {
+    return _cst_new_list_frb_eval_template_info(len);
+  }
+
+  late final _cst_new_list_frb_eval_template_infoPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_frb_eval_template_info> Function(ffi.Int32)
+        >
+      >('frbgen_app_cst_new_list_frb_eval_template_info');
+  late final _cst_new_list_frb_eval_template_info =
+      _cst_new_list_frb_eval_template_infoPtr
+          .asFunction<
+            ffi.Pointer<wire_cst_list_frb_eval_template_info> Function(int)
+          >();
+
+  ffi.Pointer<wire_cst_list_frb_eval_template_item_result>
+  cst_new_list_frb_eval_template_item_result(int len) {
+    return _cst_new_list_frb_eval_template_item_result(len);
+  }
+
+  late final _cst_new_list_frb_eval_template_item_resultPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_frb_eval_template_item_result> Function(
+            ffi.Int32,
+          )
+        >
+      >('frbgen_app_cst_new_list_frb_eval_template_item_result');
+  late final _cst_new_list_frb_eval_template_item_result =
+      _cst_new_list_frb_eval_template_item_resultPtr
+          .asFunction<
+            ffi.Pointer<wire_cst_list_frb_eval_template_item_result> Function(
+              int,
+            )
+          >();
+
   ffi.Pointer<wire_cst_list_frb_hf_search_result>
   cst_new_list_frb_hf_search_result(int len) {
     return _cst_new_list_frb_hf_search_result(len);
@@ -3377,6 +3854,8 @@ final class wire_cst_frb_compare_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> measured_at;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> hf_url;
+
+  external ffi.Pointer<ffi.Bool> use_draft;
 }
 
 final class wire_cst_list_frb_compare_row extends ffi.Struct {
@@ -3433,6 +3912,64 @@ final class wire_cst_frb_doctor_item extends ffi.Struct {
 
 final class wire_cst_list_frb_doctor_item extends ffi.Struct {
   external ffi.Pointer<wire_cst_frb_doctor_item> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_frb_eval_template_item_result extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> template_id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
+
+  @ffi.Uint32()
+  external int score;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> output_excerpt;
+
+  @ffi.Uint64()
+  external int elapsed_ms;
+}
+
+final class wire_cst_list_frb_eval_template_item_result extends ffi.Struct {
+  external ffi.Pointer<wire_cst_frb_eval_template_item_result> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_frb_eval_template_history_entry extends ffi.Struct {
+  @ffi.Uint32()
+  external int context_size;
+
+  @ffi.Uint32()
+  external int total_score;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> created_at;
+
+  external ffi.Pointer<wire_cst_list_frb_eval_template_item_result> items;
+}
+
+final class wire_cst_list_frb_eval_template_history_entry extends ffi.Struct {
+  external ffi.Pointer<wire_cst_frb_eval_template_history_entry> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_frb_eval_template_info extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  @ffi.Uint32()
+  external int context_size;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> kind;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> description;
+}
+
+final class wire_cst_list_frb_eval_template_info extends ffi.Struct {
+  external ffi.Pointer<wire_cst_frb_eval_template_info> ptr;
 
   @ffi.Int32()
   external int len;
@@ -3520,6 +4057,11 @@ final class wire_cst_frb_profile_row extends ffi.Struct {
 
   @ffi.Bool()
   external bool is_multimodal;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> draft_model;
+
+  @ffi.Bool()
+  external bool is_drafter;
 }
 
 final class wire_cst_list_frb_profile_row extends ffi.Struct {
@@ -3550,6 +4092,8 @@ final class wire_cst_frb_run_list_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_frb_tier_info> tier;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> ended_at;
+
+  external ffi.Pointer<ffi.Bool> use_draft;
 }
 
 final class wire_cst_list_frb_run_list_row extends ffi.Struct {
@@ -3730,6 +4274,54 @@ final class wire_cst_frb_download_progress extends ffi.Struct {
 
   @ffi.Bool()
   external bool success;
+}
+
+final class wire_cst_FrbEvalTemplateEvent_Started extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> template_id;
+
+  @ffi.Uint32()
+  external int index;
+
+  @ffi.Uint32()
+  external int total;
+}
+
+final class wire_cst_FrbEvalTemplateEvent_Completed extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> template_id;
+
+  @ffi.Uint32()
+  external int score;
+
+  @ffi.Uint64()
+  external int elapsed_ms;
+}
+
+final class wire_cst_FrbEvalTemplateEvent_Finished extends ffi.Struct {
+  @ffi.Uint32()
+  external int total_score;
+
+  external ffi.Pointer<wire_cst_list_frb_eval_template_item_result> items;
+}
+
+final class wire_cst_FrbEvalTemplateEvent_Log extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> message;
+}
+
+final class FrbEvalTemplateEventKind extends ffi.Union {
+  external wire_cst_FrbEvalTemplateEvent_Started Started;
+
+  external wire_cst_FrbEvalTemplateEvent_Completed Completed;
+
+  external wire_cst_FrbEvalTemplateEvent_Finished Finished;
+
+  external wire_cst_FrbEvalTemplateEvent_Log Log;
+}
+
+final class wire_cst_frb_eval_template_event extends ffi.Struct {
+  @ffi.Int32()
+  external int tag;
+
+  external FrbEvalTemplateEventKind kind;
 }
 
 final class wire_cst_frb_fix_progress extends ffi.Struct {

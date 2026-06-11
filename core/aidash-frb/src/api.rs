@@ -21,8 +21,13 @@ use aidash_core::stats::{ContextPick, ModelStats, OverviewRow, DEFAULT_OVERVIEW_
 use aidash_core::tps_tier::{self, TpsTier};
 use aidash_core::bootstrap::{self, BootstrapEvent};
 use aidash_core::tools;
+use aidash_core::eval_templates::{
+    self, build_prompt_for_template, group_eval_template_history, load_template_set,
+    EvalTemplateHistoryEntry, EvalTemplateItemResult,
+};
 use aidash_core::{
-    find_project_root, profiles_dir, python_adapters_available, python_dir, resolve_file_path,
+    eval_sets_dir, find_project_root, profiles_dir, python_adapters_available, python_dir,
+    resolve_file_path,
 };
 use crate::frb_generated::StreamSink;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -113,6 +118,7 @@ pub struct FrbRunListRow {
     pub peak_phys_footprint_bytes: Option<i64>,
     pub tier: Option<FrbTierInfo>,
     pub ended_at: Option<String>,
+    pub use_draft: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -132,6 +138,7 @@ pub struct FrbCompareRow {
     pub tokens_out: Option<i64>,
     pub measured_at: Option<String>,
     pub hf_url: Option<String>,
+    pub use_draft: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -152,6 +159,8 @@ pub struct FrbProfileRow {
     pub sweep_steps: Vec<u32>,
     pub filename: String,
     pub is_multimodal: bool,
+    pub draft_model: Option<String>,
+    pub is_drafter: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -320,6 +329,52 @@ pub struct FrbDownloadProgress {
     pub percent: Option<f64>,
     pub done: bool,
     pub success: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbEvalTemplateInfo {
+    pub id: String,
+    pub context_size: u32,
+    pub kind: String,
+    pub description: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbEvalTemplateItemResult {
+    pub template_id: String,
+    pub description: String,
+    pub score: u32,
+    pub output_excerpt: String,
+    pub elapsed_ms: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct FrbEvalTemplateHistoryEntry {
+    pub context_size: u32,
+    pub total_score: u32,
+    pub created_at: String,
+    pub items: Vec<FrbEvalTemplateItemResult>,
+}
+
+#[derive(Debug, Clone)]
+pub enum FrbEvalTemplateEvent {
+    Started {
+        template_id: String,
+        index: u32,
+        total: u32,
+    },
+    Completed {
+        template_id: String,
+        score: u32,
+        elapsed_ms: u64,
+    },
+    Finished {
+        total_score: u32,
+        items: Vec<FrbEvalTemplateItemResult>,
+    },
+    Log {
+        message: String,
+    },
 }
 
 // ── 변환 헬퍼 ───────────────────────────────────────────────────────────────
@@ -670,6 +725,7 @@ fn map_run_row(r: RunListRow) -> FrbRunListRow {
         peak_phys_footprint_bytes: r.peak_phys_footprint_bytes,
         tier: r.decode_tps.map(tps_tier::tps_tier).map(tier_info),
         ended_at: r.ended_at,
+        use_draft: r.use_draft,
     }
 }
 
@@ -734,6 +790,7 @@ fn map_compare_row(r: CompareRow) -> FrbCompareRow {
         tokens_out: r.tokens_out,
         measured_at: r.measured_at,
         hf_url: r.hf_url,
+        use_draft: r.use_draft,
     }
 }
 
@@ -763,7 +820,33 @@ fn map_profile_row(row: ProfileListRow, full: &ModelProfile) -> FrbProfileRow {
         sweep_steps: full.context.sweep_steps.clone(),
         filename: row.filename,
         is_multimodal: full.model_type == "multimodal" || full.io.input.contains(&"image".to_string()),
+        draft_model: full.draft_model.clone(),
+        is_drafter: profile::is_drafter_profile(full),
     }
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn list_drafter_profiles() -> Result<Vec<String>, String> {
+    with_state(|s| {
+        profile::list_drafter_profile_ids(&profiles_dir(&s.project_root))
+            .map_err(|e| e.to_string())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn profile_set_draft_model(
+    profile_id: String,
+    draft_model: Option<String>,
+) -> Result<(), String> {
+    with_state(|s| {
+        profile::set_profile_draft_model(
+            &profiles_dir(&s.project_root),
+            &profile_id,
+            draft_model,
+        )
+        .map_err(|e| e.to_string())?;
+        Ok(())
+    })
 }
 
 #[flutter_rust_bridge::frb(sync)]
@@ -799,9 +882,10 @@ pub async fn bench_start(
     audio_path: Option<String>,
     bench_task: Option<String>,
     sweep_steps: Option<Vec<u32>>,
+    use_draft: Option<bool>,
 ) -> Result<i64, String> {
     let arc = state_arc()?;
-    let (root, progress_tx, run_id, model_profile, config, db) = {
+    let (root, progress_tx, run_id, model_profile, config, db, use_draft) = {
         let mut s = arc.lock();
         if s.bench_task.is_some() {
             return Err("bench already running".into());
@@ -812,6 +896,8 @@ pub async fn bench_start(
         let db = s.db.clone();
         let mut model_profile = profile::load_profile_by_id(&profiles_dir(&root), &profile_id)
             .map_err(|e| e.to_string())?;
+        profile::ensure_runnable_profile(&model_profile).map_err(|e| e.to_string())?;
+        let use_draft = use_draft.unwrap_or(model_profile.draft_model.is_some());
         if let Some(ref task) = bench_task {
             if !profile::is_valid_task(task) {
                 return Err(format!("unsupported bench task: {task}"));
@@ -845,9 +931,10 @@ pub async fn bench_start(
             child_spec: None,
             port: None,
             progress_tx: Some(tx.clone()),
+            use_draft,
         };
         let run_id = allocate_bench_run(&db, &config, None)?;
-        (root, tx, run_id, model_profile, config, db)
+        (root, tx, run_id, model_profile, config, db, use_draft)
     };
 
     let arc_task = arc.clone();
@@ -877,6 +964,7 @@ pub async fn bench_start(
                     None,
                     None,
                     Some(progress_tx.clone()),
+                    use_draft,
                 )
                 .await
                 .map(|_| None)
@@ -957,6 +1045,7 @@ pub async fn serve_start(profile_id: String, ctx: u32) -> Result<(), String> {
         let model_profile =
             profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
                 .map_err(|e| e.to_string())?;
+        profile::ensure_runnable_profile(&model_profile).map_err(|e| e.to_string())?;
         let handle = LifecycleHandle::spawn();
         let events_tx = handle.event_tx.clone();
         let start = StartParams {
@@ -1519,5 +1608,190 @@ pub fn profile_generate(repo_id: String) -> Result<String, String> {
         let path = profile::generate_profile_hf(&profiles_dir(&s.project_root), &repo_id)
             .map_err(|e| e.to_string())?;
         Ok(path.display().to_string())
+    })
+}
+
+fn map_eval_item_result(item: &EvalTemplateItemResult) -> FrbEvalTemplateItemResult {
+    FrbEvalTemplateItemResult {
+        template_id: item.template_id.clone(),
+        description: item.description.clone(),
+        score: item.score,
+        output_excerpt: item.output_excerpt.clone(),
+        elapsed_ms: item.elapsed_ms,
+    }
+}
+
+fn map_eval_history(entry: EvalTemplateHistoryEntry) -> FrbEvalTemplateHistoryEntry {
+    FrbEvalTemplateHistoryEntry {
+        context_size: entry.context_size,
+        total_score: entry.total_score,
+        created_at: entry.created_at,
+        items: entry.items.iter().map(map_eval_item_result).collect(),
+    }
+}
+
+fn load_template_set_from_state(state: &AppState) -> Result<eval_templates::EvalTemplateSet, String> {
+    let path = eval_sets_dir(&state.project_root).join("context_templates_ko.json");
+    load_template_set(&path)
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn eval_template_list() -> Result<Vec<FrbEvalTemplateInfo>, String> {
+    with_state(|s| {
+        let set = load_template_set_from_state(s)?;
+        Ok(set
+            .templates
+            .into_iter()
+            .map(|t| FrbEvalTemplateInfo {
+                id: t.id,
+                context_size: t.context_size,
+                kind: t.kind,
+                description: t.description,
+            })
+            .collect())
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn eval_template_measurable_contexts(profile_id: String) -> Result<Vec<u32>, String> {
+    with_state(|s| {
+        let profile =
+            profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
+                .map_err(|e| e.to_string())?;
+        let set = load_template_set_from_state(s)?;
+        Ok(eval_templates::measurable_context_sizes(&profile, &set))
+    })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn eval_template_history(
+    profile_id: String,
+    context_size: Option<u32>,
+) -> Result<Vec<FrbEvalTemplateHistoryEntry>, String> {
+    with_state(|s| {
+        let rows = s
+            .db
+            .list_eval_template_results(&profile_id, context_size)
+            .map_err(|e| e.to_string())?;
+        let grouped = group_eval_template_history(rows);
+        Ok(grouped.into_iter().map(map_eval_history).collect())
+    })
+}
+
+#[flutter_rust_bridge::frb]
+pub async fn eval_template_run(
+    profile_id: String,
+    context_size: u32,
+    sink: StreamSink<FrbEvalTemplateEvent>,
+) -> Result<(), String> {
+    if with_state(|s| Ok(s.bench_task.is_some()))? {
+        return Err("bench already running".into());
+    }
+
+    let (root, db, model_profile, template_set) = with_state(|s| {
+        let model_profile =
+            profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
+                .map_err(|e| e.to_string())?;
+        let set = load_template_set_from_state(s)?;
+        Ok((
+            s.project_root.clone(),
+            s.db.clone(),
+            model_profile,
+            set,
+        ))
+    })?;
+
+    if context_size < model_profile.context.min || context_size > model_profile.context.max {
+        return Err(format!(
+            "context {context_size} out of range {}-{}",
+            model_profile.context.min, model_profile.context.max
+        ));
+    }
+
+    let templates: Vec<_> = template_set
+        .templates
+        .iter()
+        .filter(|t| t.context_size == context_size)
+        .cloned()
+        .collect();
+
+    if templates.len() != 3 {
+        return Err(format!(
+            "expected 3 templates for context {context_size}, got {}",
+            templates.len()
+        ));
+    }
+
+    let (progress_tx, mut progress_rx) = broadcast::channel(64);
+    let sink_task = sink.clone();
+    let listener = tokio::spawn(async move {
+        while let Ok(ev) = progress_rx.recv().await {
+            if let CoreEvent::Log { message, .. } = ev {
+                if message.starts_with("eval_template_start:") {
+                    let parts: Vec<&str> = message.split(':').collect();
+                    if parts.len() >= 3 {
+                        let template_id = parts[1].to_string();
+                        let progress: Vec<&str> = parts[2].split('/').collect();
+                        if progress.len() == 2 {
+                            sink_task.add(FrbEvalTemplateEvent::Started {
+                                template_id,
+                                index: progress[0].parse().unwrap_or(1),
+                                total: progress[1].parse().unwrap_or(3),
+                            });
+                        }
+                    }
+                } else if message.starts_with("eval_template_done:") {
+                    let parts: Vec<&str> = message.split(':').collect();
+                    if parts.len() >= 3 {
+                        sink_task.add(FrbEvalTemplateEvent::Completed {
+                            template_id: parts[1].to_string(),
+                            score: parts[2].parse().unwrap_or(0),
+                            elapsed_ms: 0,
+                        });
+                    }
+                } else {
+                    sink_task.add(FrbEvalTemplateEvent::Log { message });
+                }
+            }
+        }
+    });
+
+    let summary = eval_templates::run_template_eval(
+        &db,
+        model_profile,
+        context_size,
+        &template_set,
+        python_dir(&root),
+        None,
+        None,
+        Some(progress_tx),
+    )
+    .await;
+
+    listener.abort();
+
+    match summary {
+        Ok(summary) => {
+            let items: Vec<_> = summary.items.iter().map(map_eval_item_result).collect();
+            sink.add(FrbEvalTemplateEvent::Finished {
+                total_score: summary.total_score,
+                items,
+            });
+            Ok(())
+        }
+        Err(e) => Err(e),
+    }
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn eval_template_preview_prompt(template_id: String) -> Result<String, String> {
+    with_state(|s| {
+        let set = load_template_set_from_state(s)?;
+        let tpl = set
+            .templates
+            .iter()
+            .find(|t| t.id == template_id)
+            .ok_or_else(|| format!("template not found: {template_id}"))?;
+        build_prompt_for_template(tpl)
     })
 }

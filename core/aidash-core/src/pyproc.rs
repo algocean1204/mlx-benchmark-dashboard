@@ -70,26 +70,98 @@ pub fn build_child_spec(
 
     let uv = tools::resolve_uv().ok_or_else(|| UV_NOT_FOUND_MSG.to_string())?;
 
+    let mut args = vec![
+        "run".into(),
+        "--project".into(),
+        python_dir.display().to_string(),
+        "python".into(),
+        "-m".into(),
+        adapter,
+        "--model-path".into(),
+        profile.model_path().into(),
+        "--context-size".into(),
+        context.to_string(),
+        "--port".into(),
+        port.to_string(),
+        "--profile-json".into(),
+        profile_json,
+    ];
+    if let Some(ref draft_model) = profile.draft_model {
+        args.push("--draft-model-path".into());
+        args.push(draft_model.clone());
+    }
+
     Ok(ChildSpec {
         program: uv.display().to_string(),
-        args: vec![
-            "run".into(),
-            "--project".into(),
-            python_dir.display().to_string(),
-            "python".into(),
-            "-m".into(),
-            adapter,
-            "--model-path".into(),
-            profile.model_path().into(),
-            "--context-size".into(),
-            context.to_string(),
-            "--port".into(),
-            port.to_string(),
-            "--profile-json".into(),
-            profile_json,
-        ],
+        args,
         envs,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::profile::{ModelProfile, ProfileContext, ProfileIo, ProfileSource, TASK_LLM};
+
+    fn fixture_profile(draft_model: Option<&str>) -> ModelProfile {
+        ModelProfile {
+            schema_version: 1,
+            id: "org/main".into(),
+            display_name: "Main".into(),
+            source: ProfileSource {
+                kind: "hf".into(),
+                hf_repo: "org/main".into(),
+                hf_file: String::new(),
+                local_path: String::new(),
+            },
+            model_type: TASK_LLM.into(),
+            backend: "mlx_vlm".into(),
+            io: ProfileIo {
+                input: vec!["chat".into()],
+                output: "text".into(),
+            },
+            context: ProfileContext {
+                min: 512,
+                max: 4096,
+                default: 4096,
+                sweep_steps: vec![4096],
+            },
+            default_params: serde_json::json!({}),
+            quantization: None,
+            load_timeout_sec: 600,
+            notes: String::new(),
+            draft_model: draft_model.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn build_child_spec_omits_draft_arg_without_pairing() {
+        let spec = build_child_spec(
+            std::path::Path::new("/tmp/python"),
+            &fixture_profile(None),
+            4096,
+            18080,
+        )
+        .expect("child spec");
+        assert!(!spec.args.iter().any(|a| a == "--draft-model-path"));
+    }
+
+    #[test]
+    fn build_child_spec_includes_draft_model_path() {
+        let spec = build_child_spec(
+            std::path::Path::new("/tmp/python"),
+            &fixture_profile(Some("org/assistant")),
+            4096,
+            18080,
+        )
+        .expect("child spec");
+        let draft_idx = spec
+            .args
+            .iter()
+            .position(|a| a == "--draft-model-path")
+            .expect("draft arg");
+        assert_eq!(spec.args.get(draft_idx + 1).map(String::as_str), Some("org/assistant"));
+    }
 }
 
 pub fn spawn_child(spec: ChildSpec, port: u16) -> io::Result<SpawnedChild> {

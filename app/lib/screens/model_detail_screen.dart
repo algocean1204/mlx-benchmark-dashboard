@@ -3,6 +3,7 @@ import 'package:app/src/rust/api.dart';
 import 'package:app/task_labels.dart';
 import 'package:app/utils/formatters.dart';
 import 'package:app/theme/app_theme.dart';
+import 'package:app/widgets/draft_badge.dart';
 import 'package:app/widgets/error_card.dart';
 import 'package:app/widgets/metric_label.dart';
 import 'package:app/widgets/tier_badge.dart';
@@ -26,8 +27,20 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
   List<FrbOverviewRow> _models = [];
   String? _selectedId;
   String? _profileTask;
+  String? _linkedDraftModel;
+  List<String> _drafterProfiles = [];
   bool _loading = true;
   String? _error;
+
+  List<int> _measurableContexts = [];
+  int? _selectedEvalContext;
+  bool _evalRunning = false;
+  int _evalProgressIndex = 0;
+  int _evalProgressTotal = 3;
+  int? _evalTotalScore;
+  List<FrbEvalTemplateItemResult> _evalItems = [];
+  List<FrbEvalTemplateHistoryEntry> _evalHistory = [];
+  String? _evalError;
 
   @override
   void initState() {
@@ -59,10 +72,13 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
       final stats = api.statsModel(id: id);
       final runs = api.listRuns(model: id);
       final profiles = api.listProfiles();
+      final drafters = api.listDrafterProfiles();
       final profile = profiles.cast<FrbProfileRow?>().firstWhere(
             (p) => p?.id == id,
             orElse: () => null,
           );
+      final measurable = api.evalTemplateMeasurableContexts(profileId: id);
+      final history = api.evalTemplateHistory(profileId: id);
       if (!mounted) return;
       setState(() {
         _models = overview;
@@ -70,8 +86,19 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
         _stats = stats;
         _runs = runs;
         _profileTask = profile?.modelType;
+        _linkedDraftModel = profile?.draftModel;
+        _drafterProfiles = drafters;
+        _measurableContexts = measurable;
+        _selectedEvalContext = measurable.isNotEmpty
+            ? measurable.firstWhere(
+                (c) => c == 4096,
+                orElse: () => measurable.first,
+              )
+            : null;
+        _evalHistory = history;
         _loading = false;
         _error = null;
+        _evalError = null;
       });
     } catch (e) {
       if (mounted) {
@@ -141,6 +168,34 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
     );
   }
 
+  Future<void> _onDraftModelChanged(String? draftId) async {
+    final id = _selectedId;
+    if (id == null) return;
+    final normalized = draftId == '__none__' ? null : draftId;
+    if (normalized == _linkedDraftModel) return;
+
+    try {
+      context.read<AidashApi>().profileSetDraftModel(
+            profileId: id,
+            draftModel: normalized,
+          );
+      if (!mounted) return;
+      setState(() => _linkedDraftModel = normalized);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            normalized == null
+                ? '보조 모델 연결 해제됨'
+                : '보조 모델 연결됨: $normalized',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
   Future<void> _onTaskChanged(String? newTask) async {
     if (newTask == null || newTask == _profileTask || _selectedId == null) return;
 
@@ -180,6 +235,91 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
+    }
+  }
+
+  bool get _supportsEval {
+    final task = _profileTask;
+    return task == 'llm' || task == 'multimodal';
+  }
+
+  Future<void> _runEval() async {
+    final id = _selectedId;
+    final ctx = _selectedEvalContext;
+    if (id == null || ctx == null || _evalRunning) return;
+
+    if (ctx >= 65536) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          title: const Text('대형 컨텍스트 평가'),
+          content: Text(
+            '${formatContext(ctx)} 컨텍스트 평가는 수 분~수십 분이 걸릴 수 있으며 '
+            '메모리 사용량이 큽니다.'
+            '${ctx >= 524288 ? ' 512K는 수십 분, 1M은 1시간 이상 걸릴 수 있습니다.' : ''} '
+            '계속할까요?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: const Text('실행'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+    }
+
+    setState(() {
+      _evalRunning = true;
+      _evalProgressIndex = 0;
+      _evalProgressTotal = 3;
+      _evalTotalScore = null;
+      _evalItems = [];
+      _evalError = null;
+    });
+
+    final api = context.read<AidashApi>();
+    try {
+      await for (final event in api.evalTemplateRun(
+        profileId: id,
+        contextSize: ctx,
+      )) {
+        if (!mounted) return;
+        event.when(
+          started: (templateId, index, total) {
+            setState(() {
+              _evalProgressIndex = index;
+              _evalProgressTotal = total;
+            });
+          },
+          completed: (templateId, score, elapsedMs) {},
+          finished: (totalScore, items) {
+            setState(() {
+              _evalTotalScore = totalScore;
+              _evalItems = items;
+              _evalRunning = false;
+            });
+          },
+          log: (message) {},
+        );
+      }
+      if (!mounted) return;
+      final history = api.evalTemplateHistory(profileId: id);
+      setState(() {
+        _evalHistory = history;
+        _evalRunning = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _evalRunning = false;
+        _evalError = e.toString();
+      });
     }
   }
 
@@ -278,6 +418,30 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
             ],
           ),
         ],
+        if (_profileTask != null && _profileTask != 'drafter') ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text('보조 모델(drafter)'),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownMenu<String>(
+                  initialSelection: _linkedDraftModel ?? '__none__',
+                  dropdownMenuEntries: [
+                    const DropdownMenuEntry(
+                      value: '__none__',
+                      label: '없음',
+                    ),
+                    ..._drafterProfiles.map(
+                      (id) => DropdownMenuEntry(value: id, label: id),
+                    ),
+                  ],
+                  onSelected: _onDraftModelChanged,
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -332,6 +496,24 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
             ),
           ),
         ),
+        if (_supportsEval && _measurableContexts.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text('성능 평가', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          _EvalSection(
+            contexts: _measurableContexts,
+            selectedContext: _selectedEvalContext,
+            running: _evalRunning,
+            progressIndex: _evalProgressIndex,
+            progressTotal: _evalProgressTotal,
+            totalScore: _evalTotalScore,
+            items: _evalItems,
+            history: _evalHistory,
+            error: _evalError,
+            onContextSelected: (ctx) => setState(() => _selectedEvalContext = ctx),
+            onRun: _runEval,
+          ),
+        ],
         const SizedBox(height: 16),
         Row(
           children: [
@@ -422,6 +604,10 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (run.useDraft == true) ...[
+                          const DraftBadge(),
+                          const SizedBox(width: 4),
+                        ],
                         TierBadge(
                           decodeTps: run.decodeTps,
                           tier: run.tier,
@@ -439,6 +625,164 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _EvalSection extends StatelessWidget {
+  final List<int> contexts;
+  final int? selectedContext;
+  final bool running;
+  final int progressIndex;
+  final int progressTotal;
+  final int? totalScore;
+  final List<FrbEvalTemplateItemResult> items;
+  final List<FrbEvalTemplateHistoryEntry> history;
+  final String? error;
+  final ValueChanged<int> onContextSelected;
+  final VoidCallback onRun;
+
+  const _EvalSection({
+    required this.contexts,
+    required this.selectedContext,
+    required this.running,
+    required this.progressIndex,
+    required this.progressTotal,
+    required this.totalScore,
+    required this.items,
+    required this.history,
+    required this.error,
+    required this.onContextSelected,
+    required this.onRun,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: contexts.map((ctx) {
+                final selected = ctx == selectedContext;
+                return ChoiceChip(
+                  label: Text(formatContext(ctx)),
+                  selected: selected,
+                  onSelected: running
+                      ? null
+                      : (_) => onContextSelected(ctx),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: running || selectedContext == null ? null : onRun,
+                  icon: running
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow, size: 18),
+                  label: Text(running ? '평가 중…' : '평가 실행'),
+                ),
+                if (running) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    '$progressIndex / $progressTotal 프롬프트',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.inkMuted,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            if (totalScore != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$totalScore',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: evalScoreColor(totalScore!),
+                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '/ 100',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.inkMuted,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${item.description} (${item.templateId})',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      Text(
+                        '${item.score}점',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: evalScoreColor(item.score),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (history.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                '이전 평가',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              ...history.take(5).map(
+                    (entry) => ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        '${formatContext(entry.contextSize)} · ${entry.totalScore}점',
+                      ),
+                      subtitle: Text(
+                        entry.items.map((i) => '${i.description} ${i.score}').join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -8,9 +8,9 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `frb_messages_to_client`, `lifecycle_state_str`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
+// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `frb_messages_to_client`, `lifecycle_state_str`, `load_template_set_from_state`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_eval_history`, `map_eval_item_result`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `FrbChatSendResult`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 void init({required String rootPath}) =>
     AidashFrb.instance.api.crateApiInit(rootPath: rootPath);
@@ -47,6 +47,15 @@ List<FrbCompareRow> compare({
 List<FrbProfileRow> listProfiles() =>
     AidashFrb.instance.api.crateApiListProfiles();
 
+List<String> listDrafterProfiles() =>
+    AidashFrb.instance.api.crateApiListDrafterProfiles();
+
+void profileSetDraftModel({required String profileId, String? draftModel}) =>
+    AidashFrb.instance.api.crateApiProfileSetDraftModel(
+      profileId: profileId,
+      draftModel: draftModel,
+    );
+
 void profileSetTask({
   required String profileId,
   required String task,
@@ -69,6 +78,7 @@ Future<PlatformInt64> benchStart({
   String? audioPath,
   String? benchTask,
   Uint32List? sweepSteps,
+  bool? useDraft,
 }) => AidashFrb.instance.api.crateApiBenchStart(
   profileId: profileId,
   ctx: ctx,
@@ -78,6 +88,7 @@ Future<PlatformInt64> benchStart({
   audioPath: audioPath,
   benchTask: benchTask,
   sweepSteps: sweepSteps,
+  useDraft: useDraft,
 );
 
 Stream<FrbBenchEvent> benchEvents() =>
@@ -199,6 +210,35 @@ bool hfDownloadCancel() => AidashFrb.instance.api.crateApiHfDownloadCancel();
 
 String profileGenerate({required String repoId}) =>
     AidashFrb.instance.api.crateApiProfileGenerate(repoId: repoId);
+
+List<FrbEvalTemplateInfo> evalTemplateList() =>
+    AidashFrb.instance.api.crateApiEvalTemplateList();
+
+Uint32List evalTemplateMeasurableContexts({required String profileId}) =>
+    AidashFrb.instance.api.crateApiEvalTemplateMeasurableContexts(
+      profileId: profileId,
+    );
+
+List<FrbEvalTemplateHistoryEntry> evalTemplateHistory({
+  required String profileId,
+  int? contextSize,
+}) => AidashFrb.instance.api.crateApiEvalTemplateHistory(
+  profileId: profileId,
+  contextSize: contextSize,
+);
+
+Stream<FrbEvalTemplateEvent> evalTemplateRun({
+  required String profileId,
+  required int contextSize,
+}) => AidashFrb.instance.api.crateApiEvalTemplateRun(
+  profileId: profileId,
+  contextSize: contextSize,
+);
+
+String evalTemplatePreviewPrompt({required String templateId}) => AidashFrb
+    .instance
+    .api
+    .crateApiEvalTemplatePreviewPrompt(templateId: templateId);
 
 class FrbAuthStatus {
   final List<FrbTokenSourceStatus> sources;
@@ -574,6 +614,7 @@ class FrbCompareRow {
   final PlatformInt64? tokensOut;
   final String? measuredAt;
   final String? hfUrl;
+  final bool? useDraft;
 
   const FrbCompareRow({
     required this.profileId,
@@ -591,6 +632,7 @@ class FrbCompareRow {
     this.tokensOut,
     this.measuredAt,
     this.hfUrl,
+    this.useDraft,
   });
 
   @override
@@ -609,7 +651,8 @@ class FrbCompareRow {
       tokensIn.hashCode ^
       tokensOut.hashCode ^
       measuredAt.hashCode ^
-      hfUrl.hashCode;
+      hfUrl.hashCode ^
+      useDraft.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -630,7 +673,8 @@ class FrbCompareRow {
           tokensIn == other.tokensIn &&
           tokensOut == other.tokensOut &&
           measuredAt == other.measuredAt &&
-          hfUrl == other.hfUrl;
+          hfUrl == other.hfUrl &&
+          useDraft == other.useDraft;
 }
 
 class FrbContextPick {
@@ -839,6 +883,122 @@ class FrbDownloadProgress {
           success == other.success;
 }
 
+@freezed
+sealed class FrbEvalTemplateEvent with _$FrbEvalTemplateEvent {
+  const FrbEvalTemplateEvent._();
+
+  const factory FrbEvalTemplateEvent.started({
+    required String templateId,
+    required int index,
+    required int total,
+  }) = FrbEvalTemplateEvent_Started;
+  const factory FrbEvalTemplateEvent.completed({
+    required String templateId,
+    required int score,
+    required BigInt elapsedMs,
+  }) = FrbEvalTemplateEvent_Completed;
+  const factory FrbEvalTemplateEvent.finished({
+    required int totalScore,
+    required List<FrbEvalTemplateItemResult> items,
+  }) = FrbEvalTemplateEvent_Finished;
+  const factory FrbEvalTemplateEvent.log({required String message}) =
+      FrbEvalTemplateEvent_Log;
+}
+
+class FrbEvalTemplateHistoryEntry {
+  final int contextSize;
+  final int totalScore;
+  final String createdAt;
+  final List<FrbEvalTemplateItemResult> items;
+
+  const FrbEvalTemplateHistoryEntry({
+    required this.contextSize,
+    required this.totalScore,
+    required this.createdAt,
+    required this.items,
+  });
+
+  @override
+  int get hashCode =>
+      contextSize.hashCode ^
+      totalScore.hashCode ^
+      createdAt.hashCode ^
+      items.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbEvalTemplateHistoryEntry &&
+          runtimeType == other.runtimeType &&
+          contextSize == other.contextSize &&
+          totalScore == other.totalScore &&
+          createdAt == other.createdAt &&
+          items == other.items;
+}
+
+class FrbEvalTemplateInfo {
+  final String id;
+  final int contextSize;
+  final String kind;
+  final String description;
+
+  const FrbEvalTemplateInfo({
+    required this.id,
+    required this.contextSize,
+    required this.kind,
+    required this.description,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ contextSize.hashCode ^ kind.hashCode ^ description.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbEvalTemplateInfo &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          contextSize == other.contextSize &&
+          kind == other.kind &&
+          description == other.description;
+}
+
+class FrbEvalTemplateItemResult {
+  final String templateId;
+  final String description;
+  final int score;
+  final String outputExcerpt;
+  final BigInt elapsedMs;
+
+  const FrbEvalTemplateItemResult({
+    required this.templateId,
+    required this.description,
+    required this.score,
+    required this.outputExcerpt,
+    required this.elapsedMs,
+  });
+
+  @override
+  int get hashCode =>
+      templateId.hashCode ^
+      description.hashCode ^
+      score.hashCode ^
+      outputExcerpt.hashCode ^
+      elapsedMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbEvalTemplateItemResult &&
+          runtimeType == other.runtimeType &&
+          templateId == other.templateId &&
+          description == other.description &&
+          score == other.score &&
+          outputExcerpt == other.outputExcerpt &&
+          elapsedMs == other.elapsedMs;
+}
+
 class FrbFixProgress {
   final String line;
   final bool done;
@@ -1018,6 +1178,8 @@ class FrbProfileRow {
   final Uint32List sweepSteps;
   final String filename;
   final bool isMultimodal;
+  final String? draftModel;
+  final bool isDrafter;
 
   const FrbProfileRow({
     required this.id,
@@ -1029,6 +1191,8 @@ class FrbProfileRow {
     required this.sweepSteps,
     required this.filename,
     required this.isMultimodal,
+    this.draftModel,
+    required this.isDrafter,
   });
 
   @override
@@ -1041,7 +1205,9 @@ class FrbProfileRow {
       contextMax.hashCode ^
       sweepSteps.hashCode ^
       filename.hashCode ^
-      isMultimodal.hashCode;
+      isMultimodal.hashCode ^
+      draftModel.hashCode ^
+      isDrafter.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1056,7 +1222,9 @@ class FrbProfileRow {
           contextMax == other.contextMax &&
           sweepSteps == other.sweepSteps &&
           filename == other.filename &&
-          isMultimodal == other.isMultimodal;
+          isMultimodal == other.isMultimodal &&
+          draftModel == other.draftModel &&
+          isDrafter == other.isDrafter;
 }
 
 class FrbResourceSample {
@@ -1121,6 +1289,7 @@ class FrbRunListRow {
   final PlatformInt64? peakPhysFootprintBytes;
   final FrbTierInfo? tier;
   final String? endedAt;
+  final bool? useDraft;
 
   const FrbRunListRow({
     required this.runId,
@@ -1133,6 +1302,7 @@ class FrbRunListRow {
     this.peakPhysFootprintBytes,
     this.tier,
     this.endedAt,
+    this.useDraft,
   });
 
   @override
@@ -1146,7 +1316,8 @@ class FrbRunListRow {
       decodeTps.hashCode ^
       peakPhysFootprintBytes.hashCode ^
       tier.hashCode ^
-      endedAt.hashCode;
+      endedAt.hashCode ^
+      useDraft.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -1162,7 +1333,8 @@ class FrbRunListRow {
           decodeTps == other.decodeTps &&
           peakPhysFootprintBytes == other.peakPhysFootprintBytes &&
           tier == other.tier &&
-          endedAt == other.endedAt;
+          endedAt == other.endedAt &&
+          useDraft == other.useDraft;
 }
 
 class FrbTierInfo {

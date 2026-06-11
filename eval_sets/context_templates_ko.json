@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "templates": [
+    {
+      "id": "ctx1k-1",
+      "context_size": 1024,
+      "kind": "direct",
+      "description": "지식 QA — 한국 수도",
+      "prompt": "한국의 수도는 어디인가요? 한 단어로만 답하세요.",
+      "scoring": {"type": "keyword", "keywords": ["서울"], "weights": [100]}
+    },
+    {
+      "id": "ctx1k-2",
+      "context_size": 1024,
+      "kind": "direct",
+      "description": "추론 — 역산",
+      "prompt": "어떤 수에 7을 곱하면 56이 됩니까? 숫자만 답하세요.",
+      "scoring": {"type": "keyword", "keywords": ["8"], "weights": [100]}
+    },
+    {
+      "id": "ctx1k-3",
+      "context_size": 1024,
+      "kind": "direct",
+      "description": "지시 이행 — 목록 형식",
+      "prompt": "태양계에서 지구보다 안쪽에 있는 행성 3개를 나열하세요. 각 항목은 반드시 '- '로 시작해야 합니다.",
+      "scoring": {"type": "keyword", "keywords": ["- ", "수성", "금성", "화성"], "weights": [40, 20, 20, 20]}
+    },
+    {
+      "id": "ctx4k-1",
+      "context_size": 4096,
+      "kind": "direct",
+      "description": "지식 QA — 화학식",
+      "prompt": "물의 화학식은 무엇입니까? (예: H2O 형식으로 답하세요)",
+      "scoring": {"type": "keyword", "keywords": ["H2O"], "weights": [100]}
+    },
+    {
+      "id": "ctx4k-2",
+      "context_size": 4096,
+      "kind": "direct",
+      "description": "추론 — 일수 계산",
+      "prompt": "3월 1일부터 3월 15일까지 며칠입니까? 숫자만 답하세요.",
+      "scoring": {"type": "keyword", "keywords": ["15"], "weights": [100]}
+    },
+    {
+      "id": "ctx4k-3",
+      "context_size": 4096,
+      "kind": "direct",
+      "description": "지시 이행 — 3색 나열",
+      "prompt": "무지개의 기본 색 3가지를 나열하세요. 각 항목은 '- '로 시작하고 한국어 색 이름만 쓰세요.",
+      "scoring": {"type": "keyword", "keywords": ["- ", "빨강", "노랑", "파랑"], "weights": [40, 20, 20, 20]}
+    },
+    {
+      "id": "ctx16k-1",
+      "context_size": 16384,
+      "kind": "needle",
+      "description": "단일 needle — 비밀 코드",
+      "needles": [{"text": "비밀 코드는 SAFFRON-7214이다.", "depth_pct": 50}],
+      "question": "위 문서에 숨겨진 비밀 코드는 무엇입니까?",
+      "scoring": {"type": "keyword", "keywords": ["SAFFRON-7214"], "weights": [100]}
+    },
+    {
+      "id": "ctx16k-2",
+      "context_size": 16384,
+      "kind": "needle",
+      "description": "이중 needle — 담당자",
+      "needles": [
+        {"text": "프로젝트 알파의 담당자는 김민수이다.", "depth_pct": 30},
+        {"text": "프로젝트 베타의 담당자는 이지연이다.", "depth_pct": 70}
+      ],
+      "question": "프로젝트 알파와 베타의 담당자는 각각 누구입니까?",
+      "scoring": {"type": "keyword", "keywords": ["김민수", "이지연"], "weights": [50, 50]}
+    },
+    {
+      "id": "ctx16k-3",
+      "context_size": 16384,
+      "kind": "needle",
+      "description": "구조 이해 — 이야기 인물",
+      "needles": [
+        {"text": "옛 마을에는 목수 한서준이 살았다. 한서준은 매일 새벽 숲으로 들어가 나무를 베었다. 어느 날 숲에서 은빛 여우를 만났고, 여우는 그에게 '달빛 나무'를 찾아달라고 부탁했다. 한서준은 일주일 동안 산을 넘고 강을 건너 달빛 나무를 찾아 마을로 돌아왔다.", "depth_pct": 50}
+      ],
+      "question": "이 이야기의 주인공 이름은 무엇이며, 여우가 부탁한 것은 무엇입니까?",
+      "scoring": {"type": "keyword", "keywords": ["한서준", "달빛 나무"], "weights": [50, 50]}
+    },
+    {
+      "id": "ctx32k-1",
+      "context_size": 32768,
+      "kind": "needle",
+      "description": "단일 needle — 깊은 위치",
+      "needles": [{"text": "회의실 예약 코드는 MEET-9042이다.", "depth_pct": 75}],
+      "question": "문서에 기록된 회의실 예약 코드는?",
+      "scoring": {"type": "keyword", "keywords": ["MEET-9042"], "weights": [100]}
+    },
+    {
+      "id": "ctx32k-2",
+      "context_size": 32768,
+      "kind": "needle",
+      "description": "이중 needle — 연락처",
+      "needles": [
+        {"text": "담당 엔지니어 박도현의 내선번호는 3847이다.", "depth_pct": 25},
+        {"text": "담당 디자이너 최유나의 내선번호는 5192이다.", "depth_pct": 65}
+      ],
+      "question": "박도현과 최유나의 내선번호를 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["3847", "5192"], "weights": [50, 50]}
+    },
+    {
+      "id": "ctx32k-3",
+      "context_size": 32768,
+      "kind": "needle",
+      "description": "구조 이해 — 사건 순서",
+      "needles": [
+        {"text": "2024년 3월, 연구소에서 프로젝트 오로라가 시작되었다. 팀장 이수진이 이끄는 팀은 첫 달에 프로토타입을 완성했고, 6월에 베타 테스트를 진행했다. 9월 정식 출시 후 사용자 수는 10만 명을 돌파했다.", "depth_pct": 45}
+      ],
+      "question": "프로젝트 오로라의 팀장 이름과 정식 출시 시기는?",
+      "scoring": {"type": "keyword", "keywords": ["이수진", "9월"], "weights": [50, 50]}
+    },
+    {
+      "id": "ctx64k-1",
+      "context_size": 65536,
+      "kind": "needle",
+      "description": "삼중 needle — 시작/중간/끝",
+      "needles": [
+        {"text": "구역 A 식별자: ZONE-ALPHA-11", "depth_pct": 10},
+        {"text": "구역 B 식별자: ZONE-BETA-22", "depth_pct": 50},
+        {"text": "구역 C 식별자: ZONE-GAMMA-33", "depth_pct": 90}
+      ],
+      "question": "구역 A, B, C의 식별자를 모두 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["ZONE-ALPHA-11", "ZONE-BETA-22", "ZONE-GAMMA-33"], "weights": [34, 33, 33]}
+    },
+    {
+      "id": "ctx64k-2",
+      "context_size": 65536,
+      "kind": "needle",
+      "description": "단일 needle — 매우 깊은 위치",
+      "needles": [{"text": "최종 승인 코드는 FINAL-APPROVE-5581이다.", "depth_pct": 85}],
+      "question": "문서에 숨겨진 최종 승인 코드는?",
+      "scoring": {"type": "keyword", "keywords": ["FINAL-APPROVE-5581"], "weights": [100]}
+    },
+    {
+      "id": "ctx64k-3",
+      "context_size": 65536,
+      "kind": "needle",
+      "description": "관계 추론 — 가족 비밀번호",
+      "needles": [
+        {"text": "A의 비밀번호는 NEBULA-8831이다.", "depth_pct": 20},
+        {"text": "B는 A의 동생이다.", "depth_pct": 60}
+      ],
+      "question": "B의 형/누나의 비밀번호는 무엇입니까?",
+      "scoring": {"type": "keyword", "keywords": ["NEBULA-8831"], "weights": [100]}
+    },
+    {
+      "id": "ctx128k-1",
+      "context_size": 131072,
+      "kind": "needle",
+      "description": "삼중 needle — 시작/중간/끝",
+      "needles": [
+        {"text": "서버 EAST-01의 IP는 10.0.1.15이다.", "depth_pct": 10},
+        {"text": "서버 CENTRAL-02의 IP는 10.0.2.28이다.", "depth_pct": 50},
+        {"text": "서버 WEST-03의 IP는 10.0.3.41이다.", "depth_pct": 90}
+      ],
+      "question": "EAST-01, CENTRAL-02, WEST-03 서버의 IP 주소를 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["10.0.1.15", "10.0.2.28", "10.0.3.41"], "weights": [34, 33, 33]}
+    },
+    {
+      "id": "ctx128k-2",
+      "context_size": 131072,
+      "kind": "needle",
+      "description": "단일 needle — 92% 깊이",
+      "needles": [{"text": "비상 연락망 코드는 EMERGENCY-7743이다.", "depth_pct": 92}],
+      "question": "비상 연락망 코드는 무엇입니까?",
+      "scoring": {"type": "keyword", "keywords": ["EMERGENCY-7743"], "weights": [100]}
+    },
+    {
+      "id": "ctx128k-3",
+      "context_size": 131072,
+      "kind": "needle",
+      "description": "관계 추론 — 상사 보고",
+      "needles": [
+        {"text": "팀장 정하늘의 사원번호는 EMP-2048이다.", "depth_pct": 15},
+        {"text": "인턴 강민재는 정하늘 팀장에게 직접 보고한다.", "depth_pct": 55}
+      ],
+      "question": "강민재가 직접 보고하는 상사의 사원번호는?",
+      "scoring": {"type": "keyword", "keywords": ["EMP-2048"], "weights": [100]}
+    },
+    {
+      "id": "ctx256k-1",
+      "context_size": 262144,
+      "kind": "needle",
+      "description": "삼중 needle — 시작/중간/끝",
+      "needles": [
+        {"text": "데이터센터 북부 랙 ID: RACK-N-101", "depth_pct": 10},
+        {"text": "데이터센터 중부 랙 ID: RACK-M-202", "depth_pct": 50},
+        {"text": "데이터센터 남부 랙 ID: RACK-S-303", "depth_pct": 90}
+      ],
+      "question": "북부, 중부, 남부 데이터센터 랙 ID를 모두 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["RACK-N-101", "RACK-M-202", "RACK-S-303"], "weights": [34, 33, 33]}
+    },
+    {
+      "id": "ctx256k-2",
+      "context_size": 262144,
+      "kind": "needle",
+      "description": "단일 needle — 95% 깊이",
+      "needles": [{"text": "마스터 키 시퀀스는 MASTER-KEY-9901이다.", "depth_pct": 95}],
+      "question": "문서 말미에 숨겨진 마스터 키 시퀀스는?",
+      "scoring": {"type": "keyword", "keywords": ["MASTER-KEY-9901"], "weights": [100]}
+    },
+    {
+      "id": "ctx256k-3",
+      "context_size": 262144,
+      "kind": "needle",
+      "description": "관계 추론 — 조직 계층",
+      "needles": [
+        {"text": "본부장 윤태영의 보안카드 번호는 SEC-7712이다.", "depth_pct": 12},
+        {"text": "과장 송미래는 윤태영 본부장 소속이며, 대리 오준혁은 송미래에게 보고한다.", "depth_pct": 58}
+      ],
+      "question": "오준혁이 보고하는 상사의 상사(본부장)의 보안카드 번호는?",
+      "scoring": {"type": "keyword", "keywords": ["SEC-7712"], "weights": [100]}
+    },
+    {
+      "id": "ctx512k-1",
+      "context_size": 524288,
+      "kind": "needle",
+      "description": "삼중 needle — 시작/중간/끝",
+      "needles": [
+        {"text": "클러스터 알파 노드 ID: CLUSTER-A-7101", "depth_pct": 10},
+        {"text": "클러스터 베타 노드 ID: CLUSTER-B-8202", "depth_pct": 50},
+        {"text": "클러스터 감마 노드 ID: CLUSTER-C-9303", "depth_pct": 90}
+      ],
+      "question": "알파, 베타, 감마 클러스터 노드 ID를 모두 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["CLUSTER-A-7101", "CLUSTER-B-8202", "CLUSTER-C-9303"], "weights": [34, 33, 33]}
+    },
+    {
+      "id": "ctx512k-2",
+      "context_size": 524288,
+      "kind": "needle",
+      "description": "단일 needle — 75% 깊이",
+      "needles": [{"text": "루트 접근 토큰은 ROOT-ACCESS-4456이다.", "depth_pct": 75}],
+      "question": "문서에 기록된 루트 접근 토큰은?",
+      "scoring": {"type": "keyword", "keywords": ["ROOT-ACCESS-4456"], "weights": [100]}
+    },
+    {
+      "id": "ctx512k-3",
+      "context_size": 524288,
+      "kind": "needle",
+      "description": "관계 추론 — 감사 보고 체계",
+      "needles": [
+        {"text": "수석 감사관 한도윤의 승인 코드는 AUDIT-CHIEF-3310이다.", "depth_pct": 18},
+        {"text": "주임 감사관 서지아는 한도윤 수석 감사관에게 직접 보고한다.", "depth_pct": 62}
+      ],
+      "question": "서지아가 직접 보고하는 상사의 승인 코드는?",
+      "scoring": {"type": "keyword", "keywords": ["AUDIT-CHIEF-3310"], "weights": [100]}
+    },
+    {
+      "id": "ctx1m-1",
+      "context_size": 1048576,
+      "kind": "needle",
+      "description": "삼중 needle — 시작/중간/끝",
+      "needles": [
+        {"text": "궤도 정거장 동쪽 게이트: ORBIT-EAST-1109", "depth_pct": 10},
+        {"text": "궤도 정거장 중앙 게이트: ORBIT-CORE-2218", "depth_pct": 50},
+        {"text": "궤도 정거장 서쪽 게이트: ORBIT-WEST-3327", "depth_pct": 90}
+      ],
+      "question": "동쪽, 중앙, 서쪽 궤도 정거장 게이트 코드를 모두 알려주세요.",
+      "scoring": {"type": "keyword", "keywords": ["ORBIT-EAST-1109", "ORBIT-CORE-2218", "ORBIT-WEST-3327"], "weights": [34, 33, 33]}
+    },
+    {
+      "id": "ctx1m-2",
+      "context_size": 1048576,
+      "kind": "needle",
+      "description": "단일 needle — 78% 깊이",
+      "needles": [{"text": "비밀 프로토콜 키는 PROTO-KEY-6672이다.", "depth_pct": 78}],
+      "question": "문서에 숨겨진 비밀 프로토콜 키는?",
+      "scoring": {"type": "keyword", "keywords": ["PROTO-KEY-6672"], "weights": [100]}
+    },
+    {
+      "id": "ctx1m-3",
+      "context_size": 1048576,
+      "kind": "needle",
+      "description": "관계 추론 — 연구소 계층",
+      "needles": [
+        {"text": "연구소장 류세진의 인증 PIN은 LAB-DIR-8890이다.", "depth_pct": 14},
+        {"text": "선임 연구원 오하늘은 류세진 소장 산하이며, 연구원 임채원은 오하늘에게 보고한다.", "depth_pct": 57}
+      ],
+      "question": "임채원이 보고하는 상사의 상사(연구소장)의 인증 PIN은?",
+      "scoring": {"type": "keyword", "keywords": ["LAB-DIR-8890"], "weights": [100]}
+    }
+  ]
+}

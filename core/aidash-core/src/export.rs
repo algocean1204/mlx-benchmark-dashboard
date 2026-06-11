@@ -332,6 +332,7 @@ mod tests {
             quantization: None,
             load_timeout_sec: 60,
             notes: String::new(),
+            draft_model: None,
         };
         let model_id = db.upsert_model(&profile).expect("upsert");
         let run_id = db

@@ -3,6 +3,7 @@ import 'package:app/screens/bench_screen.dart';
 import 'package:app/screens/chat_screen.dart';
 import 'package:app/screens/compare_screen.dart';
 import 'package:app/screens/dashboard_screen.dart';
+import 'package:app/screens/model_detail_screen.dart';
 import 'package:app/screens/model_manage_screen.dart';
 import 'package:app/screens/onboarding_screen.dart';
 import 'dart:typed_data';
@@ -13,6 +14,7 @@ import 'package:app/widgets/metric_label.dart';
 import 'package:app/services/config_service.dart';
 import 'package:app/theme/app_theme.dart';
 import 'package:app/widgets/doctor_badge.dart';
+import 'package:app/widgets/draft_badge.dart';
 import 'package:app/widgets/tier_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -201,6 +203,8 @@ void main() {
           ]),
           filename: 'mlx-community-qwen3.6-35b-a3b-optiq-4bit.json',
           isMultimodal: false,
+          draftModel: null,
+          isDrafter: false,
         ),
       ],
     );
@@ -231,6 +235,8 @@ void main() {
           sweepSteps: Uint32List.fromList(<int>[4096]),
           filename: 'org-whisper-test.json',
           isMultimodal: false,
+          draftModel: null,
+          isDrafter: false,
         ),
       ],
     );
@@ -266,6 +272,8 @@ void main() {
           sweepSteps: Uint32List.fromList(<int>[4096]),
           filename: 'org-whisper-test.json',
           isMultimodal: false,
+          draftModel: null,
+          isDrafter: false,
         ),
       ],
     );
@@ -305,6 +313,109 @@ void main() {
       find.text('이전 대화가 요약·압축되었습니다 — 토큰 절약'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('모델 상세 성능 평가 섹션이 표시된다', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const ModelDetailScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('성능 평가'), findsOneWidget);
+    expect(find.text('평가 실행'), findsOneWidget);
+    expect(find.text('4K'), findsWidgets);
+    expect(find.text('이전 평가'), findsOneWidget);
+    expect(find.textContaining('72점'), findsOneWidget);
+  });
+
+  testWidgets('DraftBadge가 draft 가속 라벨을 표시한다', (tester) async {
+    await tester.pumpWidget(_wrap(const DraftBadge()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('draft 가속'), findsOneWidget);
+  });
+
+  testWidgets('벤치 화면에 speculative 토글이 표시된다', (tester) async {
+    await tester.pumpWidget(_wrap(const BenchScreen()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('보조 모델 가속(speculative) 사용'),
+      findsOneWidget,
+    );
+    expect(find.byType(SwitchListTile), findsOneWidget);
+  });
+
+  testWidgets('모델 상세에 보조 모델(drafter) 드롭다운이 표시된다', (tester) async {
+    await tester.pumpWidget(_wrap(const ModelDetailScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('보조 모델(drafter)'), findsOneWidget);
+    expect(find.text('없음'), findsWidgets);
+  });
+
+  testWidgets('모델 관리 다운로드 완료 시 프로파일 자동 생성 스낵바가 표시된다', (tester) async {
+    await tester.pumpWidget(_wrap(const ModelManageScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'gpt2');
+    await tester.tap(find.text('검색'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('hf-internal-testing/tiny-random-gpt2'));
+    await tester.pumpAndSettle();
+
+    final installButton = find.text('설치');
+    await tester.ensureVisible(installButton);
+    await tester.pumpAndSettle();
+    await tester.tap(installButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('프로파일 자동 생성됨 — 최대 컨텍스트 1M 감지'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('1M 프로파일 모델 상세에 512K·1M 평가 칩이 표시된다', (tester) async {
+    final api = MockAidashApi(
+      profiles: [
+        FrbProfileRow(
+          id: 'mlx-community/Qwen2.5-7B-Instruct-4bit',
+          backend: 'vllm_mlx',
+          modelType: 'llm',
+          contextDefault: 4096,
+          contextMin: 1024,
+          contextMax: 1048576,
+          sweepSteps: Uint32List.fromList(<int>[
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            1048576,
+          ]),
+          filename: 'mlx-community-Qwen2.5-7B-Instruct-4bit.json',
+          isMultimodal: false,
+          draftModel: null,
+          isDrafter: false,
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      _wrap(const ModelDetailScreen(), api: api),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('512K'), findsWidgets);
+    expect(find.text('1M'), findsWidgets);
   });
 
   testWidgets('DoctorBadge가 3가지 상태를 올바르게 표시한다', (tester) async {

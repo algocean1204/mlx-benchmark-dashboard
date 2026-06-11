@@ -677,4 +677,456 @@ as String,
 
 }
 
+/// @nodoc
+mixin _$FrbEvalTemplateEvent {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FrbEvalTemplateEvent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'FrbEvalTemplateEvent()';
+}
+
+
+}
+
+/// @nodoc
+class $FrbEvalTemplateEventCopyWith<$Res>  {
+$FrbEvalTemplateEventCopyWith(FrbEvalTemplateEvent _, $Res Function(FrbEvalTemplateEvent) __);
+}
+
+
+/// Adds pattern-matching-related methods to [FrbEvalTemplateEvent].
+extension FrbEvalTemplateEventPatterns on FrbEvalTemplateEvent {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( FrbEvalTemplateEvent_Started value)?  started,TResult Function( FrbEvalTemplateEvent_Completed value)?  completed,TResult Function( FrbEvalTemplateEvent_Finished value)?  finished,TResult Function( FrbEvalTemplateEvent_Log value)?  log,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started() when started != null:
+return started(_that);case FrbEvalTemplateEvent_Completed() when completed != null:
+return completed(_that);case FrbEvalTemplateEvent_Finished() when finished != null:
+return finished(_that);case FrbEvalTemplateEvent_Log() when log != null:
+return log(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( FrbEvalTemplateEvent_Started value)  started,required TResult Function( FrbEvalTemplateEvent_Completed value)  completed,required TResult Function( FrbEvalTemplateEvent_Finished value)  finished,required TResult Function( FrbEvalTemplateEvent_Log value)  log,}){
+final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started():
+return started(_that);case FrbEvalTemplateEvent_Completed():
+return completed(_that);case FrbEvalTemplateEvent_Finished():
+return finished(_that);case FrbEvalTemplateEvent_Log():
+return log(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( FrbEvalTemplateEvent_Started value)?  started,TResult? Function( FrbEvalTemplateEvent_Completed value)?  completed,TResult? Function( FrbEvalTemplateEvent_Finished value)?  finished,TResult? Function( FrbEvalTemplateEvent_Log value)?  log,}){
+final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started() when started != null:
+return started(_that);case FrbEvalTemplateEvent_Completed() when completed != null:
+return completed(_that);case FrbEvalTemplateEvent_Finished() when finished != null:
+return finished(_that);case FrbEvalTemplateEvent_Log() when log != null:
+return log(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String templateId,  int index,  int total)?  started,TResult Function( String templateId,  int score,  BigInt elapsedMs)?  completed,TResult Function( int totalScore,  List<FrbEvalTemplateItemResult> items)?  finished,TResult Function( String message)?  log,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started() when started != null:
+return started(_that.templateId,_that.index,_that.total);case FrbEvalTemplateEvent_Completed() when completed != null:
+return completed(_that.templateId,_that.score,_that.elapsedMs);case FrbEvalTemplateEvent_Finished() when finished != null:
+return finished(_that.totalScore,_that.items);case FrbEvalTemplateEvent_Log() when log != null:
+return log(_that.message);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String templateId,  int index,  int total)  started,required TResult Function( String templateId,  int score,  BigInt elapsedMs)  completed,required TResult Function( int totalScore,  List<FrbEvalTemplateItemResult> items)  finished,required TResult Function( String message)  log,}) {final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started():
+return started(_that.templateId,_that.index,_that.total);case FrbEvalTemplateEvent_Completed():
+return completed(_that.templateId,_that.score,_that.elapsedMs);case FrbEvalTemplateEvent_Finished():
+return finished(_that.totalScore,_that.items);case FrbEvalTemplateEvent_Log():
+return log(_that.message);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String templateId,  int index,  int total)?  started,TResult? Function( String templateId,  int score,  BigInt elapsedMs)?  completed,TResult? Function( int totalScore,  List<FrbEvalTemplateItemResult> items)?  finished,TResult? Function( String message)?  log,}) {final _that = this;
+switch (_that) {
+case FrbEvalTemplateEvent_Started() when started != null:
+return started(_that.templateId,_that.index,_that.total);case FrbEvalTemplateEvent_Completed() when completed != null:
+return completed(_that.templateId,_that.score,_that.elapsedMs);case FrbEvalTemplateEvent_Finished() when finished != null:
+return finished(_that.totalScore,_that.items);case FrbEvalTemplateEvent_Log() when log != null:
+return log(_that.message);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class FrbEvalTemplateEvent_Started extends FrbEvalTemplateEvent {
+  const FrbEvalTemplateEvent_Started({required this.templateId, required this.index, required this.total}): super._();
+  
+
+ final  String templateId;
+ final  int index;
+ final  int total;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FrbEvalTemplateEvent_StartedCopyWith<FrbEvalTemplateEvent_Started> get copyWith => _$FrbEvalTemplateEvent_StartedCopyWithImpl<FrbEvalTemplateEvent_Started>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FrbEvalTemplateEvent_Started&&(identical(other.templateId, templateId) || other.templateId == templateId)&&(identical(other.index, index) || other.index == index)&&(identical(other.total, total) || other.total == total));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,templateId,index,total);
+
+@override
+String toString() {
+  return 'FrbEvalTemplateEvent.started(templateId: $templateId, index: $index, total: $total)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FrbEvalTemplateEvent_StartedCopyWith<$Res> implements $FrbEvalTemplateEventCopyWith<$Res> {
+  factory $FrbEvalTemplateEvent_StartedCopyWith(FrbEvalTemplateEvent_Started value, $Res Function(FrbEvalTemplateEvent_Started) _then) = _$FrbEvalTemplateEvent_StartedCopyWithImpl;
+@useResult
+$Res call({
+ String templateId, int index, int total
+});
+
+
+
+
+}
+/// @nodoc
+class _$FrbEvalTemplateEvent_StartedCopyWithImpl<$Res>
+    implements $FrbEvalTemplateEvent_StartedCopyWith<$Res> {
+  _$FrbEvalTemplateEvent_StartedCopyWithImpl(this._self, this._then);
+
+  final FrbEvalTemplateEvent_Started _self;
+  final $Res Function(FrbEvalTemplateEvent_Started) _then;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? templateId = null,Object? index = null,Object? total = null,}) {
+  return _then(FrbEvalTemplateEvent_Started(
+templateId: null == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
+as int,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FrbEvalTemplateEvent_Completed extends FrbEvalTemplateEvent {
+  const FrbEvalTemplateEvent_Completed({required this.templateId, required this.score, required this.elapsedMs}): super._();
+  
+
+ final  String templateId;
+ final  int score;
+ final  BigInt elapsedMs;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FrbEvalTemplateEvent_CompletedCopyWith<FrbEvalTemplateEvent_Completed> get copyWith => _$FrbEvalTemplateEvent_CompletedCopyWithImpl<FrbEvalTemplateEvent_Completed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FrbEvalTemplateEvent_Completed&&(identical(other.templateId, templateId) || other.templateId == templateId)&&(identical(other.score, score) || other.score == score)&&(identical(other.elapsedMs, elapsedMs) || other.elapsedMs == elapsedMs));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,templateId,score,elapsedMs);
+
+@override
+String toString() {
+  return 'FrbEvalTemplateEvent.completed(templateId: $templateId, score: $score, elapsedMs: $elapsedMs)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FrbEvalTemplateEvent_CompletedCopyWith<$Res> implements $FrbEvalTemplateEventCopyWith<$Res> {
+  factory $FrbEvalTemplateEvent_CompletedCopyWith(FrbEvalTemplateEvent_Completed value, $Res Function(FrbEvalTemplateEvent_Completed) _then) = _$FrbEvalTemplateEvent_CompletedCopyWithImpl;
+@useResult
+$Res call({
+ String templateId, int score, BigInt elapsedMs
+});
+
+
+
+
+}
+/// @nodoc
+class _$FrbEvalTemplateEvent_CompletedCopyWithImpl<$Res>
+    implements $FrbEvalTemplateEvent_CompletedCopyWith<$Res> {
+  _$FrbEvalTemplateEvent_CompletedCopyWithImpl(this._self, this._then);
+
+  final FrbEvalTemplateEvent_Completed _self;
+  final $Res Function(FrbEvalTemplateEvent_Completed) _then;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? templateId = null,Object? score = null,Object? elapsedMs = null,}) {
+  return _then(FrbEvalTemplateEvent_Completed(
+templateId: null == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
+as String,score: null == score ? _self.score : score // ignore: cast_nullable_to_non_nullable
+as int,elapsedMs: null == elapsedMs ? _self.elapsedMs : elapsedMs // ignore: cast_nullable_to_non_nullable
+as BigInt,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FrbEvalTemplateEvent_Finished extends FrbEvalTemplateEvent {
+  const FrbEvalTemplateEvent_Finished({required this.totalScore, required final  List<FrbEvalTemplateItemResult> items}): _items = items,super._();
+  
+
+ final  int totalScore;
+ final  List<FrbEvalTemplateItemResult> _items;
+ List<FrbEvalTemplateItemResult> get items {
+  if (_items is EqualUnmodifiableListView) return _items;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_items);
+}
+
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FrbEvalTemplateEvent_FinishedCopyWith<FrbEvalTemplateEvent_Finished> get copyWith => _$FrbEvalTemplateEvent_FinishedCopyWithImpl<FrbEvalTemplateEvent_Finished>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FrbEvalTemplateEvent_Finished&&(identical(other.totalScore, totalScore) || other.totalScore == totalScore)&&const DeepCollectionEquality().equals(other._items, _items));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,totalScore,const DeepCollectionEquality().hash(_items));
+
+@override
+String toString() {
+  return 'FrbEvalTemplateEvent.finished(totalScore: $totalScore, items: $items)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FrbEvalTemplateEvent_FinishedCopyWith<$Res> implements $FrbEvalTemplateEventCopyWith<$Res> {
+  factory $FrbEvalTemplateEvent_FinishedCopyWith(FrbEvalTemplateEvent_Finished value, $Res Function(FrbEvalTemplateEvent_Finished) _then) = _$FrbEvalTemplateEvent_FinishedCopyWithImpl;
+@useResult
+$Res call({
+ int totalScore, List<FrbEvalTemplateItemResult> items
+});
+
+
+
+
+}
+/// @nodoc
+class _$FrbEvalTemplateEvent_FinishedCopyWithImpl<$Res>
+    implements $FrbEvalTemplateEvent_FinishedCopyWith<$Res> {
+  _$FrbEvalTemplateEvent_FinishedCopyWithImpl(this._self, this._then);
+
+  final FrbEvalTemplateEvent_Finished _self;
+  final $Res Function(FrbEvalTemplateEvent_Finished) _then;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? totalScore = null,Object? items = null,}) {
+  return _then(FrbEvalTemplateEvent_Finished(
+totalScore: null == totalScore ? _self.totalScore : totalScore // ignore: cast_nullable_to_non_nullable
+as int,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
+as List<FrbEvalTemplateItemResult>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class FrbEvalTemplateEvent_Log extends FrbEvalTemplateEvent {
+  const FrbEvalTemplateEvent_Log({required this.message}): super._();
+  
+
+ final  String message;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FrbEvalTemplateEvent_LogCopyWith<FrbEvalTemplateEvent_Log> get copyWith => _$FrbEvalTemplateEvent_LogCopyWithImpl<FrbEvalTemplateEvent_Log>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FrbEvalTemplateEvent_Log&&(identical(other.message, message) || other.message == message));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message);
+
+@override
+String toString() {
+  return 'FrbEvalTemplateEvent.log(message: $message)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FrbEvalTemplateEvent_LogCopyWith<$Res> implements $FrbEvalTemplateEventCopyWith<$Res> {
+  factory $FrbEvalTemplateEvent_LogCopyWith(FrbEvalTemplateEvent_Log value, $Res Function(FrbEvalTemplateEvent_Log) _then) = _$FrbEvalTemplateEvent_LogCopyWithImpl;
+@useResult
+$Res call({
+ String message
+});
+
+
+
+
+}
+/// @nodoc
+class _$FrbEvalTemplateEvent_LogCopyWithImpl<$Res>
+    implements $FrbEvalTemplateEvent_LogCopyWith<$Res> {
+  _$FrbEvalTemplateEvent_LogCopyWithImpl(this._self, this._then);
+
+  final FrbEvalTemplateEvent_Log _self;
+  final $Res Function(FrbEvalTemplateEvent_Log) _then;
+
+/// Create a copy of FrbEvalTemplateEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(FrbEvalTemplateEvent_Log(
+message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
 // dart format on

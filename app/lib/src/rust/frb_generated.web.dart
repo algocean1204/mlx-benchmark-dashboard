@@ -41,6 +41,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   dco_decode_StreamSink_frb_download_progress_Dco(dynamic raw);
 
   @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  dco_decode_StreamSink_frb_eval_template_event_Dco(dynamic raw);
+
+  @protected
   RustStreamSink<FrbFixProgress> dco_decode_StreamSink_frb_fix_progress_Dco(
     dynamic raw,
   );
@@ -146,6 +150,22 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   FrbDownloadProgress dco_decode_frb_download_progress(dynamic raw);
 
   @protected
+  FrbEvalTemplateEvent dco_decode_frb_eval_template_event(dynamic raw);
+
+  @protected
+  FrbEvalTemplateHistoryEntry dco_decode_frb_eval_template_history_entry(
+    dynamic raw,
+  );
+
+  @protected
+  FrbEvalTemplateInfo dco_decode_frb_eval_template_info(dynamic raw);
+
+  @protected
+  FrbEvalTemplateItemResult dco_decode_frb_eval_template_item_result(
+    dynamic raw,
+  );
+
+  @protected
   FrbFixProgress dco_decode_frb_fix_progress(dynamic raw);
 
   @protected
@@ -201,6 +221,18 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   List<FrbDoctorItem> dco_decode_list_frb_doctor_item(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  dco_decode_list_frb_eval_template_history_entry(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateInfo> dco_decode_list_frb_eval_template_info(dynamic raw);
+
+  @protected
+  List<FrbEvalTemplateItemResult> dco_decode_list_frb_eval_template_item_result(
+    dynamic raw,
+  );
 
   @protected
   List<FrbHfSearchResult> dco_decode_list_frb_hf_search_result(dynamic raw);
@@ -294,6 +326,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(SseDeserializer deserializer);
+
+  @protected
+  RustStreamSink<FrbEvalTemplateEvent>
+  sse_decode_StreamSink_frb_eval_template_event_Dco(
+    SseDeserializer deserializer,
+  );
 
   @protected
   RustStreamSink<FrbFixProgress> sse_decode_StreamSink_frb_fix_progress_Dco(
@@ -425,6 +463,26 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  FrbEvalTemplateEvent sse_decode_frb_eval_template_event(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateHistoryEntry sse_decode_frb_eval_template_history_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateInfo sse_decode_frb_eval_template_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FrbEvalTemplateItemResult sse_decode_frb_eval_template_item_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FrbFixProgress sse_decode_frb_fix_progress(SseDeserializer deserializer);
 
   @protected
@@ -498,6 +556,20 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   List<FrbDoctorItem> sse_decode_list_frb_doctor_item(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbEvalTemplateHistoryEntry>
+  sse_decode_list_frb_eval_template_history_entry(SseDeserializer deserializer);
+
+  @protected
+  List<FrbEvalTemplateInfo> sse_decode_list_frb_eval_template_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FrbEvalTemplateItemResult> sse_decode_list_frb_eval_template_item_result(
     SseDeserializer deserializer,
   );
 
@@ -648,6 +720,21 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       raw.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_download_progress,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
+  String cst_encode_StreamSink_frb_eval_template_event_Dco(
+    RustStreamSink<FrbEvalTemplateEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_eval_template_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -931,6 +1018,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_opt_box_autoadd_i_64(raw.tokensOut),
       cst_encode_opt_String(raw.measuredAt),
       cst_encode_opt_String(raw.hfUrl),
+      cst_encode_opt_box_autoadd_bool(raw.useDraft),
     ].jsify()!;
   }
 
@@ -1010,6 +1098,77 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  JSAny cst_encode_frb_eval_template_event(FrbEvalTemplateEvent raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    if (raw is FrbEvalTemplateEvent_Started) {
+      return [
+        0,
+        cst_encode_String(raw.templateId),
+        cst_encode_u_32(raw.index),
+        cst_encode_u_32(raw.total),
+      ].jsify()!;
+    }
+    if (raw is FrbEvalTemplateEvent_Completed) {
+      return [
+        1,
+        cst_encode_String(raw.templateId),
+        cst_encode_u_32(raw.score),
+        cst_encode_u_64(raw.elapsedMs),
+      ].jsify()!;
+    }
+    if (raw is FrbEvalTemplateEvent_Finished) {
+      return [
+        2,
+        cst_encode_u_32(raw.totalScore),
+        cst_encode_list_frb_eval_template_item_result(raw.items),
+      ].jsify()!;
+    }
+    if (raw is FrbEvalTemplateEvent_Log) {
+      return [3, cst_encode_String(raw.message)].jsify()!;
+    }
+
+    throw Exception('unreachable');
+  }
+
+  @protected
+  JSAny cst_encode_frb_eval_template_history_entry(
+    FrbEvalTemplateHistoryEntry raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_u_32(raw.contextSize),
+      cst_encode_u_32(raw.totalScore),
+      cst_encode_String(raw.createdAt),
+      cst_encode_list_frb_eval_template_item_result(raw.items),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_eval_template_info(FrbEvalTemplateInfo raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_String(raw.id),
+      cst_encode_u_32(raw.contextSize),
+      cst_encode_String(raw.kind),
+      cst_encode_String(raw.description),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_eval_template_item_result(
+    FrbEvalTemplateItemResult raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_String(raw.templateId),
+      cst_encode_String(raw.description),
+      cst_encode_u_32(raw.score),
+      cst_encode_String(raw.outputExcerpt),
+      cst_encode_u_64(raw.elapsedMs),
+    ].jsify()!;
+  }
+
+  @protected
   JSAny cst_encode_frb_fix_progress(FrbFixProgress raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return [
@@ -1078,6 +1237,8 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_list_prim_u_32_strict(raw.sweepSteps),
       cst_encode_String(raw.filename),
       cst_encode_bool(raw.isMultimodal),
+      cst_encode_opt_String(raw.draftModel),
+      cst_encode_bool(raw.isDrafter),
     ].jsify()!;
   }
 
@@ -1111,6 +1272,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_opt_box_autoadd_i_64(raw.peakPhysFootprintBytes),
       cst_encode_opt_box_autoadd_frb_tier_info(raw.tier),
       cst_encode_opt_String(raw.endedAt),
+      cst_encode_opt_box_autoadd_bool(raw.useDraft),
     ].jsify()!;
   }
 
@@ -1186,6 +1348,31 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   JSAny cst_encode_list_frb_doctor_item(List<FrbDoctorItem> raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw.map(cst_encode_frb_doctor_item).toList().jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_list_frb_eval_template_history_entry(
+    List<FrbEvalTemplateHistoryEntry> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw
+        .map(cst_encode_frb_eval_template_history_entry)
+        .toList()
+        .jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_list_frb_eval_template_info(List<FrbEvalTemplateInfo> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw.map(cst_encode_frb_eval_template_info).toList().jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_list_frb_eval_template_item_result(
+    List<FrbEvalTemplateItemResult> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw.map(cst_encode_frb_eval_template_item_result).toList().jsify()!;
   }
 
   @protected
@@ -1369,6 +1556,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_frb_eval_template_event_Dco(
+    RustStreamSink<FrbEvalTemplateEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_frb_fix_progress_Dco(
     RustStreamSink<FrbFixProgress> self,
     SseSerializer serializer,
@@ -1531,6 +1724,30 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_frb_eval_template_event(
+    FrbEvalTemplateEvent self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_history_entry(
+    FrbEvalTemplateHistoryEntry self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_info(
+    FrbEvalTemplateInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_eval_template_item_result(
+    FrbEvalTemplateItemResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_frb_fix_progress(
     FrbFixProgress self,
     SseSerializer serializer,
@@ -1623,6 +1840,24 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_list_frb_doctor_item(
     List<FrbDoctorItem> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_history_entry(
+    List<FrbEvalTemplateHistoryEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_info(
+    List<FrbEvalTemplateInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_frb_eval_template_item_result(
+    List<FrbEvalTemplateItemResult> self,
     SseSerializer serializer,
   );
 
@@ -1770,6 +2005,7 @@ class AidashFrbWire implements BaseWire {
     String? audio_path,
     String? bench_task,
     JSAny? sweep_steps,
+    bool? use_draft,
   ) => wasmModule.wire__crate__api__bench_start(
     port_,
     profile_id,
@@ -1780,6 +2016,7 @@ class AidashFrbWire implements BaseWire {
     audio_path,
     bench_task,
     sweep_steps,
+    use_draft,
   );
 
   void wire__crate__api__cache_delete(NativePortType port_, String repo_id) =>
@@ -1865,6 +2102,41 @@ class AidashFrbWire implements BaseWire {
       wasmModule.wire__crate__api__env_bootstrap(port_, sink);
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_history(
+    String profile_id,
+    int? context_size,
+  ) => wasmModule.wire__crate__api__eval_template_history(
+    profile_id,
+    context_size,
+  );
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_list() =>
+      wasmModule.wire__crate__api__eval_template_list();
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_measurable_contexts(String profile_id) =>
+      wasmModule.wire__crate__api__eval_template_measurable_contexts(
+        profile_id,
+      );
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_preview_prompt(String template_id) =>
+      wasmModule.wire__crate__api__eval_template_preview_prompt(template_id);
+
+  void wire__crate__api__eval_template_run(
+    NativePortType port_,
+    String profile_id,
+    int context_size,
+    String sink,
+  ) => wasmModule.wire__crate__api__eval_template_run(
+    port_,
+    profile_id,
+    context_size,
+    sink,
+  );
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__get_project_root() =>
       wasmModule.wire__crate__api__get_project_root();
 
@@ -1893,6 +2165,10 @@ class AidashFrbWire implements BaseWire {
       wasmModule.wire__crate__api__is_bundle_deploy_mode();
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__list_drafter_profiles() =>
+      wasmModule.wire__crate__api__list_drafter_profiles();
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__list_profiles() =>
       wasmModule.wire__crate__api__list_profiles();
 
@@ -1903,6 +2179,15 @@ class AidashFrbWire implements BaseWire {
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_generate(String repo_id) =>
       wasmModule.wire__crate__api__profile_generate(repo_id);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__profile_set_draft_model(
+    String profile_id,
+    String? draft_model,
+  ) => wasmModule.wire__crate__api__profile_set_draft_model(
+    profile_id,
+    draft_model,
+  );
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_set_task(
@@ -1996,6 +2281,7 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
     String? audio_path,
     String? bench_task,
     JSAny? sweep_steps,
+    bool? use_draft,
   );
 
   external void wire__crate__api__cache_delete(
@@ -2065,6 +2351,25 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
   );
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_history(String profile_id, int? context_size);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_list();
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_measurable_contexts(String profile_id);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__eval_template_preview_prompt(String template_id);
+
+  external void wire__crate__api__eval_template_run(
+    NativePortType port_,
+    String profile_id,
+    int context_size,
+    String sink,
+  );
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__get_project_root();
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
@@ -2090,6 +2395,9 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
   wire__crate__api__is_bundle_deploy_mode();
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__list_drafter_profiles();
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__list_profiles();
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
@@ -2097,6 +2405,12 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_generate(String repo_id);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__profile_set_draft_model(
+    String profile_id,
+    String? draft_model,
+  );
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_set_task(

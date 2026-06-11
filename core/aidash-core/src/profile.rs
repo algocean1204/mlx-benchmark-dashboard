@@ -63,6 +63,9 @@ pub struct ModelProfile {
     pub load_timeout_sec: u64,
     #[serde(default)]
     pub notes: String,
+    /// HF repo id of the paired speculative drafter (MTP assistant), if any.
+    #[serde(default)]
+    pub draft_model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -424,6 +427,10 @@ pub const TASK_ASR: &str = "asr";
 pub const TASK_TTS: &str = "tts";
 pub const TASK_IMAGE_GEN: &str = "image_gen";
 pub const TASK_VIDEO_GEN: &str = "video_gen";
+pub const TASK_DRAFTER: &str = "drafter";
+
+pub const DRAFTER_STANDALONE_ERROR: &str =
+    "이 모델은 단독 실행용이 아닙니다 — 메인 모델의 보조로 사용됩니다";
 
 pub const ALL_TASKS: &[&str] = &[
     TASK_LLM,
@@ -442,6 +449,7 @@ pub fn task_label_ko(task: &str) -> &'static str {
         TASK_TTS => "텍스트→음성(TTS)",
         TASK_IMAGE_GEN => "이미지 생성",
         TASK_VIDEO_GEN => "동영상 생성",
+        TASK_DRAFTER => "보조(drafter) 모델",
         _ => "알 수 없음",
     }
 }
@@ -460,6 +468,132 @@ pub fn task_badge_short(task: &str) -> Option<&'static str> {
 
 pub fn is_valid_task(task: &str) -> bool {
     ALL_TASKS.contains(&task)
+}
+
+pub fn is_drafter_profile(profile: &ModelProfile) -> bool {
+    profile.model_type == TASK_DRAFTER
+}
+
+pub fn ensure_runnable_profile(profile: &ModelProfile) -> Result<(), ProfileError> {
+    if is_drafter_profile(profile) {
+        return Err(ProfileError::Validation(DRAFTER_STANDALONE_ERROR.into()));
+    }
+    Ok(())
+}
+
+const DRAFTER_MODEL_TYPES: &[&str] = &[
+    "gemma4_assistant",
+    "gemma4_unified_assistant",
+    "qwen3_5_mtp",
+    "deepseek_v4_mtp",
+    "eagle3",
+];
+
+fn is_drafter_config(config: &serde_json::Value, repo_id: &str) -> bool {
+    let repo_lower = repo_id.to_lowercase();
+    if repo_lower.contains("-assistant-") {
+        return true;
+    }
+
+    let model_type = config
+        .get("model_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if DRAFTER_MODEL_TYPES
+        .iter()
+        .any(|t| model_type.contains(t))
+    {
+        return true;
+    }
+    if model_type.contains("mtp") && model_type.contains("assistant") {
+        return true;
+    }
+
+    let archs: Vec<String> = config
+        .get("architectures")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_lowercase()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if archs.iter().any(|a| {
+        a.contains("assistant") || a.contains("mtp") || a.contains("drafter")
+    }) {
+        return true;
+    }
+
+    config
+        .pointer("/speculative_config/draft_kind")
+        .and_then(|v| v.as_str())
+        .is_some()
+        || config.get("draft").is_some()
+}
+
+/// Profile clone for adapter spawn; strips draft pairing when bench disables speculative mode.
+pub fn profile_for_spawn(profile: &ModelProfile, use_draft: bool) -> ModelProfile {
+    let mut p = profile.clone();
+    if !use_draft {
+        p.draft_model = None;
+    }
+    p
+}
+
+fn repo_cached(repo_id: &str) -> bool {
+    find_config_json_in_cache(repo_id).is_ok()
+}
+
+/// Suggest a cached assistant drafter for a main model (e.g. gemma `-qat-assistant-` variant).
+pub fn find_matching_assistant_drafter(main_repo_id: &str) -> Option<String> {
+    if !is_valid_hf_repo_id(main_repo_id) {
+        return None;
+    }
+    let (org, name) = main_repo_id.split_once('/')?;
+    if name.contains("-assistant-") {
+        return None;
+    }
+
+    if let Some(idx) = name.rfind("-qat-") {
+        let prefix = &name[..idx + 5];
+        let suffix = &name[idx + 5..];
+        let candidate = format!("{org}/{prefix}assistant-{suffix}");
+        if repo_cached(&candidate) {
+            return Some(candidate);
+        }
+    }
+
+    let cache_root = hf_cache_dir();
+    let org_prefix = format!("models--{}--", org.replace('/', "--"));
+    let name_lower = name.to_lowercase();
+    let Ok(entries) = std::fs::read_dir(&cache_root) else {
+        return None;
+    };
+    let mut matches = Vec::new();
+    for entry in entries.flatten() {
+        let dir_name = entry.file_name().to_string_lossy().into_owned();
+        if !dir_name.starts_with(&org_prefix) {
+            continue;
+        }
+        let assistant_name = dir_name
+            .strip_prefix(&org_prefix)
+            .unwrap_or("")
+            .replace("--", "-");
+        let assistant_lower = assistant_name.to_lowercase();
+        if !assistant_lower.contains("-assistant-") {
+            continue;
+        }
+        if !assistant_lower.starts_with(&name_lower) {
+            continue;
+        }
+        let repo_id = format!("{org}/{assistant_name}");
+        if repo_cached(&repo_id) {
+            matches.push(repo_id);
+        }
+    }
+    matches.sort();
+    matches.into_iter().next()
 }
 
 pub fn infer_backend(model_type: &str, repo_id: &str) -> String {
@@ -498,18 +632,89 @@ fn infer_quantization(config: &serde_json::Value, repo_id: &str) -> Option<Strin
     None
 }
 
-fn infer_context_max(config: &serde_json::Value) -> u32 {
+fn read_max_position_embeddings(config: &serde_json::Value) -> Option<u64> {
     config
         .get("max_position_embeddings")
         .and_then(|v| v.as_u64())
         .or_else(|| {
             config
-                .get("text_config")
-                .and_then(|tc| tc.get("max_position_embeddings"))
+                .pointer("/text_config/max_position_embeddings")
                 .and_then(|v| v.as_u64())
         })
+}
+
+fn read_rope_scaling(config: &serde_json::Value) -> Option<&serde_json::Value> {
+    config
+        .get("rope_scaling")
+        .or_else(|| config.pointer("/text_config/rope_scaling"))
+}
+
+fn rope_scaling_type(rope: &serde_json::Value) -> Option<&str> {
+    rope.get("rope_type")
+        .or_else(|| rope.get("type"))
+        .and_then(|v| v.as_str())
+}
+
+fn is_known_rope_scaling_type(rope_type: &str) -> bool {
+    matches!(
+        rope_type.to_ascii_lowercase().as_str(),
+        "yarn" | "linear" | "dynamic" | "longrope"
+    )
+}
+
+fn clamp_u32_from_f64(v: f64) -> u32 {
+    if !v.is_finite() || v <= 0.0 {
+        return 0;
+    }
+    v.min(u32::MAX as f64) as u32
+}
+
+/// rope_scaling 규칙을 반영한 유효 최대 컨텍스트와 미해석 타입 메모.
+pub fn infer_context_max_with_notes(config: &serde_json::Value) -> (u32, Option<String>) {
+    let base = read_max_position_embeddings(config)
         .map(|v| v.min(u32::MAX as u64) as u32)
-        .unwrap_or(4096)
+        .unwrap_or(4096);
+
+    let Some(rope) = read_rope_scaling(config) else {
+        return (base, None);
+    };
+
+    let original = rope
+        .get("original_max_position_embeddings")
+        .and_then(|v| v.as_u64())
+        .map(|v| v.min(u32::MAX as u64) as u32);
+
+    // Case 1: max가 original보다 크면 이미 확장된 값 — 그대로 사용
+    if let Some(orig) = original {
+        if base > orig {
+            return (base, None);
+        }
+    }
+
+    let factor = rope.get("factor").and_then(|v| v.as_f64()).unwrap_or(1.0);
+    if factor <= 1.0 {
+        return (base, None);
+    }
+
+    let rope_type = rope_scaling_type(rope).unwrap_or("");
+    if !is_known_rope_scaling_type(rope_type) {
+        let note = if rope_type.is_empty() {
+            "rope_scaling 미해석: (type 없음)".into()
+        } else {
+            format!("rope_scaling 미해석: {rope_type}")
+        };
+        return (base, Some(note));
+    }
+
+    // Case 2: factor 적용 — original 없거나 max == original
+    if original.is_none() || base == original.unwrap_or(0) {
+        let scaled = clamp_u32_from_f64(base as f64 * factor);
+        if scaled > 0 {
+            return (scaled, None);
+        }
+    }
+
+    (base, None)
 }
 
 fn infer_display_name(repo_id: &str) -> String {
@@ -537,9 +742,22 @@ pub fn draft_from_config(
     let contents = std::fs::read_to_string(config_path)?;
     let config: serde_json::Value = serde_json::from_str(&contents)?;
 
-    let model_type = infer_model_type(&config, id);
-    let backend = infer_backend(&model_type, id);
-    let context_max = infer_context_max(&config);
+    let underlying_type = infer_model_type(&config, id);
+    let is_drafter = is_drafter_config(&config, id);
+    let model_type = if is_drafter {
+        TASK_DRAFTER.into()
+    } else {
+        underlying_type.clone()
+    };
+    let backend = infer_backend(
+        if is_drafter {
+            underlying_type.as_str()
+        } else {
+            model_type.as_str()
+        },
+        id,
+    );
+    let (context_max, rope_note) = infer_context_max_with_notes(&config);
     let context_default = context_max.min(4096).max(512);
 
     let (input, output) = match model_type.as_str() {
@@ -566,7 +784,7 @@ pub fn draft_from_config(
         }
     };
 
-    Ok(ModelProfile {
+    let mut profile = ModelProfile {
         schema_version: 1,
         id: id.into(),
         display_name: infer_display_name(id),
@@ -587,8 +805,23 @@ pub fn draft_from_config(
         }),
         quantization: infer_quantization(&config, id),
         load_timeout_sec: 600,
-        notes: "auto-generated draft — review and edit before use".into(),
-    })
+        notes: {
+            let mut notes =
+                "auto-generated draft — review and edit before use".to_string();
+            if let Some(note) = rope_note {
+                notes.push_str("; ");
+                notes.push_str(&note);
+            }
+            notes
+        },
+        draft_model: None,
+    };
+
+    if !is_drafter {
+        profile.draft_model = find_matching_assistant_drafter(id);
+    }
+
+    Ok(profile)
 }
 
 pub fn generate_profile_hf(profiles_dir: &Path, repo_id: &str) -> Result<PathBuf, ProfileError> {
@@ -680,6 +913,48 @@ fn io_for_task(task: &str) -> (Vec<String>, String) {
         TASK_MULTIMODAL => (vec!["chat".into(), "image".into()], "text".into()),
         _ => (vec!["chat".into()], "text".into()),
     }
+}
+
+pub fn set_profile_draft_model(
+    profiles_dir: &Path,
+    profile_id: &str,
+    draft_model: Option<String>,
+) -> Result<ModelProfile, ProfileError> {
+    if let Some(ref draft_id) = draft_model {
+        if !is_valid_hf_repo_id(draft_id) {
+            return Err(ProfileError::Validation(format!(
+                "invalid drafter HF repo id: {draft_id}"
+            )));
+        }
+        let draft_profile = load_profile_by_id(profiles_dir, draft_id)?;
+        if !is_drafter_profile(&draft_profile) {
+            return Err(ProfileError::Validation(format!(
+                "selected model is not a drafter profile: {draft_id}"
+            )));
+        }
+    }
+
+    let mut profile = load_profile_by_id(profiles_dir, profile_id)?;
+    if is_drafter_profile(&profile) {
+        return Err(ProfileError::Validation(
+            "drafter profiles cannot link another drafter".into(),
+        ));
+    }
+    profile.draft_model = draft_model;
+
+    let filename = profile_filename_from_id(profile_id);
+    let path = profiles_dir.join(&filename);
+    let json = serde_json::to_string_pretty(&profile)?;
+    std::fs::write(&path, json)?;
+    Ok(profile)
+}
+
+pub fn list_drafter_profile_ids(profiles_dir: &Path) -> Result<Vec<String>, ProfileError> {
+    Ok(list_profiles(profiles_dir)?
+        .into_iter()
+        .filter(|row| row.model_type == TASK_DRAFTER)
+        .map(|row| row.id)
+        .collect())
 }
 
 pub fn set_profile_task(
@@ -843,6 +1118,7 @@ mod tests {
             quantization: None,
             load_timeout_sec: 600,
             notes: String::new(),
+            draft_model: None,
         };
         write_profile_draft(dir.path(), &profile).expect("write draft");
 
@@ -869,6 +1145,71 @@ mod tests {
                 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144
             ]
         );
+        assert_eq!(
+            generate_sweep_steps(1_048_576),
+            vec![
+                1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288,
+                1_048_576
+            ]
+        );
+    }
+
+    #[test]
+    fn infer_context_max_scaled_in_place_qwen_style() {
+        let cfg = serde_json::json!({ "max_position_embeddings": 262144 });
+        let (max, note) = infer_context_max_with_notes(&cfg);
+        assert_eq!(max, 262144);
+        assert!(note.is_none());
+    }
+
+    #[test]
+    fn infer_context_max_rope_factor_style() {
+        let cfg = serde_json::json!({
+            "max_position_embeddings": 32768,
+            "rope_scaling": { "type": "yarn", "factor": 4.0 }
+        });
+        let (max, note) = infer_context_max_with_notes(&cfg);
+        assert_eq!(max, 131072);
+        assert!(note.is_none());
+    }
+
+    #[test]
+    fn infer_context_max_rope_original_already_scaled() {
+        let cfg = serde_json::json!({
+            "max_position_embeddings": 131072,
+            "rope_scaling": {
+                "original_max_position_embeddings": 32768,
+                "type": "yarn",
+                "factor": 4.0
+            }
+        });
+        let (max, note) = infer_context_max_with_notes(&cfg);
+        assert_eq!(max, 131072);
+        assert!(note.is_none());
+    }
+
+    #[test]
+    fn infer_context_max_unknown_rope_type_is_conservative() {
+        let cfg = serde_json::json!({
+            "max_position_embeddings": 32768,
+            "rope_scaling": { "type": "supertrope", "factor": 8.0 }
+        });
+        let (max, note) = infer_context_max_with_notes(&cfg);
+        assert_eq!(max, 32768);
+        assert_eq!(note.as_deref(), Some("rope_scaling 미해석: supertrope"));
+    }
+
+    #[test]
+    fn infer_context_max_text_config_rope_scaling() {
+        let cfg = serde_json::json!({
+            "text_config": {
+                "max_position_embeddings": 8192,
+                "rope_scaling": { "rope_type": "linear", "factor": 2.0 }
+            }
+        });
+        let (max, note) = infer_context_max_with_notes(&cfg);
+        assert_eq!(max, 16384);
+        assert!(note.is_none());
     }
 
     #[test]
@@ -916,7 +1257,132 @@ mod tests {
     fn task_label_ko_mappings() {
         assert_eq!(task_label_ko(TASK_LLM), "텍스트 생성");
         assert_eq!(task_label_ko(TASK_VIDEO_GEN), "동영상 생성");
+        assert_eq!(task_label_ko(TASK_DRAFTER), "보조(drafter) 모델");
         assert_eq!(task_badge_short(TASK_ASR), Some("STT"));
         assert_eq!(task_badge_short(TASK_LLM), None);
+    }
+
+    #[test]
+    fn legacy_profile_without_draft_model_deserializes() {
+        let json = r#"{
+            "schema_version": 1,
+            "id": "org/model",
+            "display_name": "Legacy",
+            "source": { "kind": "hf", "hf_repo": "org/model" },
+            "model_type": "llm",
+            "backend": "vllm_mlx",
+            "io": { "input": ["chat"], "output": "text" },
+            "context": { "min": 512, "max": 4096, "default": 4096 },
+            "default_params": {},
+            "quantization": null,
+            "load_timeout_sec": 600
+        }"#;
+        let profile: ModelProfile = serde_json::from_str(json).expect("parse legacy profile");
+        assert!(profile.draft_model.is_none());
+    }
+
+    #[test]
+    fn drafter_detection_by_repo_and_config() {
+        let assistant_cfg = serde_json::json!({
+            "model_type": "gemma4_assistant",
+            "architectures": ["Gemma4AssistantForCausalLM"]
+        });
+        assert!(is_drafter_config(
+            &assistant_cfg,
+            "mlx-community/gemma-4-26B-A4B-it-qat-assistant-5bit"
+        ));
+
+        let main_cfg = serde_json::json!({
+            "model_type": "gemma4_unified",
+            "vision_config": {"hidden_size": 1152}
+        });
+        assert!(!is_drafter_config(
+            &main_cfg,
+            "mlx-community/gemma-4-26B-A4B-it-qat-5bit"
+        ));
+    }
+
+    #[test]
+    fn profile_for_spawn_strips_draft_when_disabled() {
+        let profile = ModelProfile {
+            schema_version: 1,
+            id: "org/main".into(),
+            display_name: "Main".into(),
+            source: ProfileSource {
+                kind: "hf".into(),
+                hf_repo: "org/main".into(),
+                hf_file: String::new(),
+                local_path: String::new(),
+            },
+            model_type: TASK_LLM.into(),
+            backend: "mlx_vlm".into(),
+            io: ProfileIo {
+                input: vec!["chat".into()],
+                output: "text".into(),
+            },
+            context: ProfileContext {
+                min: 512,
+                max: 4096,
+                default: 4096,
+                sweep_steps: vec![4096],
+            },
+            default_params: serde_json::json!({}),
+            quantization: None,
+            load_timeout_sec: 600,
+            notes: String::new(),
+            draft_model: Some("org/assistant".into()),
+        };
+        let spawned = profile_for_spawn(&profile, false);
+        assert!(spawned.draft_model.is_none());
+        let spawned_on = profile_for_spawn(&profile, true);
+        assert_eq!(spawned_on.draft_model.as_deref(), Some("org/assistant"));
+    }
+
+    #[test]
+    fn ensure_runnable_profile_rejects_drafter() {
+        let drafter = ModelProfile {
+            schema_version: 1,
+            id: "org/assistant".into(),
+            display_name: "Assistant".into(),
+            source: ProfileSource {
+                kind: "hf".into(),
+                hf_repo: "org/assistant".into(),
+                hf_file: String::new(),
+                local_path: String::new(),
+            },
+            model_type: TASK_DRAFTER.into(),
+            backend: "mlx_vlm".into(),
+            io: ProfileIo {
+                input: vec!["chat".into()],
+                output: "text".into(),
+            },
+            context: ProfileContext {
+                min: 512,
+                max: 4096,
+                default: 4096,
+                sweep_steps: vec![4096],
+            },
+            default_params: serde_json::json!({}),
+            quantization: None,
+            load_timeout_sec: 600,
+            notes: String::new(),
+            draft_model: None,
+        };
+        assert!(ensure_runnable_profile(&drafter).is_err());
+    }
+
+    #[test]
+    fn suggest_assistant_drafter_inserts_qat_assistant_segment() {
+        let candidate = {
+            let name = "gemma-4-26B-A4B-it-qat-5bit";
+            let idx = name.rfind("-qat-").unwrap();
+            let prefix = &name[..idx + 5];
+            let suffix = &name[idx + 5..];
+            format!("mlx-community/{prefix}assistant-{suffix}")
+        };
+        assert_eq!(
+            candidate,
+            "mlx-community/gemma-4-26B-A4B-it-qat-assistant-5bit"
+        );
     }
 }
