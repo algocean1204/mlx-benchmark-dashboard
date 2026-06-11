@@ -51,12 +51,15 @@ Hugging Face 모델을 한국어 태스크 라벨과 함께 검색하고, 클릭
 
 ## 설치
 
-### 방법 1 — .dmg (간편)
+### 방법 1 — .dmg (배포받은 경우)
 
-1. [Releases](../../releases)에서 `AI_Dashboard-x.y.z.dmg`를 받아 엽니다.
-2. `app.app`을 Applications 폴더로 드래그합니다.
-3. 처음 열 때 macOS가 차단하면: 시스템 설정 → 개인정보 보호 및 보안 → "확인 없이 열기" (서명만 된 비공증 앱입니다).
-4. 모델 추론에는 Python 환경이 필요합니다 — [uv](https://docs.astral.sh/uv/)를 설치하세요 (`brew install uv`). 앱의 **환경 점검** 탭이 부족한 것을 알려줍니다.
+`AI_Dashboard-x.y.z.dmg`를 전달받았다면:
+
+1. dmg를 열고 `app.app`을 Applications 폴더로 드래그합니다.
+2. 처음 열 때 macOS가 차단하면: 시스템 설정 → 개인정보 보호 및 보안 → "확인 없이 열기" (서명만 된 비공증 앱입니다).
+3. 모델 추론에는 Python 환경이 필요합니다 — [uv](https://docs.astral.sh/uv/)를 설치하세요 (`brew install uv`). 앱의 **환경 점검** 탭이 부족한 것을 알려줍니다.
+
+.dmg는 소스에서 직접 만들 수도 있습니다 (아래 `scripts/package_dmg.sh`).
 
 ### 방법 2 — 소스 빌드
 
@@ -111,3 +114,7 @@ Python 어댑터 (mlx-lm · mlx-vlm · mlx-whisper · mlx-audio · mflux · llam
 
 - macOS (Apple Silicon 전용 — MLX 기반)
 - 메모리는 모델 크기에 따라: 4B 4bit ≈ 3GB, 12B 4bit ≈ 14GB, 27B 4bit ≈ 20GB (실측 Peak 기준)
+
+## 라이선스
+
+[Apache License 2.0](LICENSE)
