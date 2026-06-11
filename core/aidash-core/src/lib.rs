@@ -1,6 +1,7 @@
 pub mod api;
 pub mod auth;
 pub mod bench;
+pub mod bootstrap;
 pub mod client;
 pub mod db;
 pub mod env_detect;
@@ -14,6 +15,7 @@ pub mod sys_memory;
 pub mod profile;
 pub mod pyproc;
 pub mod stats;
+pub mod tools;
 pub mod tps_tier;
 pub mod watchdog;
 
@@ -96,10 +98,20 @@ pub fn python_dir(root: &Path) -> PathBuf {
     if dev_python.join("adapters").is_dir() {
         return dev_python;
     }
-    if let Some(bundle_python) = macos_bundle_python_dir() {
-        return bundle_python;
+    if macos_bundle_python_dir().is_some() {
+        if let Some(support) = app_support_dir() {
+            return support.join("python");
+        }
     }
     dev_python
+}
+
+/// python 어댑터가 존재하는지 확인한다 (App Support 또는 번들 리소스).
+pub fn python_adapters_available(root: &Path) -> bool {
+    python_dir(root).join("adapters").is_dir()
+        || macos_bundle_python_dir()
+            .map(|p| p.join("adapters").is_dir())
+            .unwrap_or(false)
 }
 
 pub fn eval_sets_dir(root: &Path) -> PathBuf {
@@ -177,6 +189,28 @@ mod project_root_tests {
         let dev_python = root.join("python");
         std::fs::create_dir_all(dev_python.join("adapters")).expect("adapters");
         assert_eq!(python_dir(root), dev_python);
+    }
+
+    #[test]
+    fn python_dir_bundle_mode_uses_app_support() {
+        let _guard = env_lock();
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let support = tmp.path().join("AI_Dashboard");
+        std::fs::create_dir_all(&support).expect("support");
+        let prev_home = std::env::var("HOME").ok();
+        std::env::set_var("HOME", tmp.path());
+        // dev python 없음 → App Support/python 반환 (번들 모드 시뮬레이션은 macos_bundle_python_dir 필요)
+        let expected = support.join("python");
+        // 번들이 없으면 dev_python 폴백
+        if macos_bundle_python_dir().is_none() {
+            assert_eq!(python_dir(&support), support.join("python"));
+        } else {
+            assert_eq!(python_dir(&support), expected);
+        }
+        match prev_home {
+            Some(v) => std::env::set_var("HOME", v),
+            None => std::env::remove_var("HOME"),
+        }
     }
 
     #[test]

@@ -32,6 +32,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw);
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   dco_decode_StreamSink_frb_download_progress_Dco(dynamic raw);
 
@@ -88,6 +92,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbBenchResult dco_decode_frb_bench_result(dynamic raw);
+
+  @protected
+  FrbBootstrapEvent dco_decode_frb_bootstrap_event(dynamic raw);
 
   @protected
   FrbCacheDeleteResult dco_decode_frb_cache_delete_result(dynamic raw);
@@ -257,6 +264,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer);
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(SseDeserializer deserializer);
 
@@ -319,6 +330,11 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbBenchResult sse_decode_frb_bench_result(SseDeserializer deserializer);
+
+  @protected
+  FrbBootstrapEvent sse_decode_frb_bootstrap_event(
+    SseDeserializer deserializer,
+  );
 
   @protected
   FrbCacheDeleteResult sse_decode_frb_cache_delete_result(
@@ -547,6 +563,21 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  String cst_encode_StreamSink_frb_bootstrap_event_Dco(
+    RustStreamSink<FrbBootstrapEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_bootstrap_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
   String cst_encode_StreamSink_frb_download_progress_Dco(
     RustStreamSink<FrbDownloadProgress> raw,
   ) {
@@ -721,6 +752,17 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_u_64(raw.peakPhysFootprintBytes),
       cst_encode_u_64(raw.peakMlxActiveBytes),
       cst_encode_opt_String(raw.errorMessage),
+    ].jsify()!;
+  }
+
+  @protected
+  JSAny cst_encode_frb_bootstrap_event(FrbBootstrapEvent raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return [
+      cst_encode_String(raw.step),
+      cst_encode_String(raw.kind),
+      cst_encode_String(raw.message),
+      cst_encode_opt_box_autoadd_bool(raw.success),
     ].jsify()!;
   }
 
@@ -1185,6 +1227,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_frb_bootstrap_event_Dco(
+    RustStreamSink<FrbBootstrapEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_frb_download_progress_Dco(
     RustStreamSink<FrbDownloadProgress> self,
     SseSerializer serializer,
@@ -1259,6 +1307,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_frb_bench_result(
     FrbBenchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_bootstrap_event(
+    FrbBootstrapEvent self,
     SseSerializer serializer,
   );
 
@@ -1590,6 +1644,9 @@ class AidashFrbWire implements BaseWire {
   void wire__crate__api__doctor_report(NativePortType port_) =>
       wasmModule.wire__crate__api__doctor_report(port_);
 
+  void wire__crate__api__env_bootstrap(NativePortType port_, String sink) =>
+      wasmModule.wire__crate__api__env_bootstrap(port_, sink);
+
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__get_project_root() =>
       wasmModule.wire__crate__api__get_project_root();
@@ -1613,6 +1670,10 @@ class AidashFrbWire implements BaseWire {
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__init(String root_path) =>
       wasmModule.wire__crate__api__init(root_path);
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__is_bundle_deploy_mode() =>
+      wasmModule.wire__crate__api__is_bundle_deploy_mode();
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__list_profiles() =>
@@ -1749,6 +1810,11 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__doctor_report(NativePortType port_);
 
+  external void wire__crate__api__env_bootstrap(
+    NativePortType port_,
+    String sink,
+  );
+
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__get_project_root();
 
@@ -1770,6 +1836,9 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__init(String root_path);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__is_bundle_deploy_mode();
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__list_profiles();

@@ -10,6 +10,7 @@ use tokio::process::Command as TokioCommand;
 
 use crate::auth;
 use crate::python_dir;
+use crate::tools::{self, UV_NOT_FOUND_MSG};
 
 const DISK_RESERVE_GB: u64 = 10;
 const DISK_SIZE_MULTIPLIER: f64 = 1.2;
@@ -101,6 +102,14 @@ impl std::fmt::Display for HfCacheError {
 
 impl std::error::Error for HfCacheError {}
 
+fn map_uv_spawn_error(e: std::io::Error) -> HfCacheError {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        HfCacheError::Api(UV_NOT_FOUND_MSG.to_string())
+    } else {
+        HfCacheError::Api(format!("uv 실행 실패: {e}"))
+    }
+}
+
 fn hf_cache_script(project_root: &Path) -> PathBuf {
     project_root.join("python/tools/hf_cache.py")
 }
@@ -109,8 +118,9 @@ async fn run_hf_cache_json(
     project_root: &Path,
     args: &[&str],
 ) -> Result<serde_json::Value, HfCacheError> {
+    let uv = tools::resolve_uv().ok_or_else(|| HfCacheError::Api(UV_NOT_FOUND_MSG.to_string()))?;
     let script = hf_cache_script(project_root);
-    let mut cmd = TokioCommand::new("uv");
+    let mut cmd = TokioCommand::new(&uv);
     cmd.arg("run")
         .arg("python")
         .arg(&script)
@@ -119,7 +129,7 @@ async fn run_hf_cache_json(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let output = cmd.output().await.map_err(HfCacheError::Io)?;
+    let output = cmd.output().await.map_err(map_uv_spawn_error)?;
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
@@ -344,7 +354,8 @@ pub async fn hf_download<F>(
 where
     F: FnMut(DownloadProgress),
 {
-    let mut cmd = TokioCommand::new("uv");
+    let uv = tools::resolve_uv().ok_or_else(|| HfCacheError::Api(UV_NOT_FOUND_MSG.to_string()))?;
+    let mut cmd = TokioCommand::new(&uv);
     cmd.arg("run")
         .arg("hf")
         .arg("download")
@@ -357,7 +368,7 @@ where
         cmd.env("HF_TOKEN", token);
     }
 
-    let mut child = cmd.spawn().map_err(HfCacheError::Io)?;
+    let mut child = cmd.spawn().map_err(map_uv_spawn_error)?;
 
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
@@ -512,5 +523,72 @@ mod tests {
     #[test]
     fn parse_download_percent_from_line() {
         assert_eq!(parse_download_percent("  45% downloaded"), Some(45.0));
+    }
+
+    #[test]
+    fn uv_not_found_message_is_user_friendly() {
+        let err = map_uv_spawn_error(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No such file or directory",
+        ));
+        assert!(matches!(err, HfCacheError::Api(msg) if msg == UV_NOT_FOUND_MSG));
+    }
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use std::sync::{Mutex, MutexGuard};
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn env_lock() -> MutexGuard<'static, ()> {
+        ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    #[tokio::test]
+    async fn cache_scan_with_blocked_path_finds_uv() {
+        let _guard = env_lock();
+        let home = std::env::var("HOME").expect("HOME");
+        let local_uv = std::path::PathBuf::from(&home).join(".local/bin/uv");
+        if !local_uv.is_file() {
+            eprintln!("skip: ~/.local/bin/uv not present");
+            return;
+        }
+
+        let root = std::env::var("AIDASH_ROOT")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| {
+                std::env::current_dir()
+                    .expect("cwd")
+                    .ancestors()
+                    .find(|p| p.join("python/adapters").is_dir())
+                    .expect("project root")
+                    .to_path_buf()
+            });
+
+        let prev_path = std::env::var("PATH").ok();
+        std::env::remove_var("AIDASH_UV");
+        std::env::set_var("PATH", "/usr/bin:/bin");
+
+        let result = cache_scan(&root).await;
+
+        match prev_path {
+            Some(v) => std::env::set_var("PATH", v),
+            None => std::env::remove_var("PATH"),
+        }
+
+        match result {
+            Ok(scan) => {
+                println!("repo_count={}", scan.repo_count);
+                assert!(scan.repo_count > 0 || scan.cache_dir.contains("huggingface"));
+            }
+            Err(HfCacheError::Api(msg)) if msg == UV_NOT_FOUND_MSG => {
+                panic!("uv should resolve via ~/.local/bin with blocked PATH");
+            }
+            Err(e) => {
+                eprintln!("cache_scan returned: {e}");
+            }
+        }
     }
 }

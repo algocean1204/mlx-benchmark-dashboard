@@ -65,12 +65,12 @@ class AidashFrb
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 143281862;
+  int get rustContentHash => -2030387005;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
         stem: 'aidash_frb',
-        ioDirectory: 'core/target/release/',
+        ioDirectory: '../core/aidash-frb/target/release/',
         webPrefix: 'pkg/',
         wasmBindgenName: 'wasm_bindgen',
       );
@@ -125,6 +125,8 @@ abstract class AidashFrbApi extends BaseApi {
 
   Future<FrbDoctorReport> crateApiDoctorReport();
 
+  Stream<FrbBootstrapEvent> crateApiEnvBootstrap();
+
   String crateApiGetProjectRoot();
 
   bool crateApiHfDownloadCancel();
@@ -136,6 +138,8 @@ abstract class AidashFrbApi extends BaseApi {
   Future<List<FrbHfSearchResult>> crateApiHfSearch({required String query});
 
   void crateApiInit({required String rootPath});
+
+  bool crateApiIsBundleDeployMode();
 
   List<FrbProfileRow> crateApiListProfiles();
 
@@ -609,6 +613,32 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       const TaskConstMeta(debugName: "doctor_report", argNames: []);
 
   @override
+  Stream<FrbBootstrapEvent> crateApiEnvBootstrap() {
+    final sink = RustStreamSink<FrbBootstrapEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            var arg0 = cst_encode_StreamSink_frb_bootstrap_event_Dco(sink);
+            return wire.wire__crate__api__env_bootstrap(port_, arg0);
+          },
+          codec: DcoCodec(
+            decodeSuccessData: dco_decode_unit,
+            decodeErrorData: dco_decode_String,
+          ),
+          constMeta: kCrateApiEnvBootstrapConstMeta,
+          argValues: [sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiEnvBootstrapConstMeta =>
+      const TaskConstMeta(debugName: "env_bootstrap", argNames: ["sink"]);
+
+  @override
   String crateApiGetProjectRoot() {
     return handler.executeSync(
       SyncTask(
@@ -746,6 +776,27 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
 
   TaskConstMeta get kCrateApiInitConstMeta =>
       const TaskConstMeta(debugName: "init", argNames: ["rootPath"]);
+
+  @override
+  bool crateApiIsBundleDeployMode() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          return wire.wire__crate__api__is_bundle_deploy_mode();
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiIsBundleDeployModeConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiIsBundleDeployModeConstMeta =>
+      const TaskConstMeta(debugName: "is_bundle_deploy_mode", argNames: []);
 
   @override
   List<FrbProfileRow> crateApiListProfiles() {
@@ -1098,6 +1149,13 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   dco_decode_StreamSink_frb_download_progress_Dco(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -1262,6 +1320,20 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       peakPhysFootprintBytes: dco_decode_u_64(arr[6]),
       peakMlxActiveBytes: dco_decode_u_64(arr[7]),
       errorMessage: dco_decode_opt_String(arr[8]),
+    );
+  }
+
+  @protected
+  FrbBootstrapEvent dco_decode_frb_bootstrap_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return FrbBootstrapEvent(
+      step: dco_decode_String(arr[0]),
+      kind: dco_decode_String(arr[1]),
+      message: dco_decode_String(arr[2]),
+      success: dco_decode_opt_box_autoadd_bool(arr[3]),
     );
   }
 
@@ -1805,6 +1877,13 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(
     SseDeserializer deserializer,
@@ -1993,6 +2072,23 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       peakPhysFootprintBytes: var_peakPhysFootprintBytes,
       peakMlxActiveBytes: var_peakMlxActiveBytes,
       errorMessage: var_errorMessage,
+    );
+  }
+
+  @protected
+  FrbBootstrapEvent sse_decode_frb_bootstrap_event(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_step = sse_decode_String(deserializer);
+    var var_kind = sse_decode_String(deserializer);
+    var var_message = sse_decode_String(deserializer);
+    var var_success = sse_decode_opt_box_autoadd_bool(deserializer);
+    return FrbBootstrapEvent(
+      step: var_step,
+      kind: var_kind,
+      message: var_message,
+      success: var_success,
     );
   }
 
@@ -2787,6 +2883,23 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   }
 
   @protected
+  void sse_encode_StreamSink_frb_bootstrap_event_Dco(
+    RustStreamSink<FrbBootstrapEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_bootstrap_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_StreamSink_frb_download_progress_Dco(
     RustStreamSink<FrbDownloadProgress> self,
     SseSerializer serializer,
@@ -2990,6 +3103,18 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_u_64(self.peakPhysFootprintBytes, serializer);
     sse_encode_u_64(self.peakMlxActiveBytes, serializer);
     sse_encode_opt_String(self.errorMessage, serializer);
+  }
+
+  @protected
+  void sse_encode_frb_bootstrap_event(
+    FrbBootstrapEvent self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.step, serializer);
+    sse_encode_String(self.kind, serializer);
+    sse_encode_String(self.message, serializer);
+    sse_encode_opt_box_autoadd_bool(self.success, serializer);
   }
 
   @protected

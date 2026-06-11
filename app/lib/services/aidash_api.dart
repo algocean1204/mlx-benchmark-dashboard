@@ -12,6 +12,10 @@ abstract class AidashApi {
 
   Future<FrbDoctorReport> doctorReport();
 
+  bool isBundleDeployMode();
+
+  Stream<FrbBootstrapEvent> envBootstrap();
+
   List<FrbOverviewRow> statsOverview({int? ctx});
 
   FrbModelStats statsModel({required String id});
@@ -285,6 +289,19 @@ class MockAidashApi implements AidashApi {
 
   @override
   Future<FrbDoctorReport> doctorReport() async => report;
+
+  @override
+  bool isBundleDeployMode() => false;
+
+  @override
+  Stream<FrbBootstrapEvent> envBootstrap() async* {
+    yield const FrbBootstrapEvent(
+      step: 'uv',
+      kind: 'step_done',
+      message: 'mock bootstrap complete',
+      success: true,
+    );
+  }
 
   @override
   List<FrbOverviewRow> statsOverview({int? ctx}) => overviewRows;

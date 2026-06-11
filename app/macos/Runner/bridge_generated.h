@@ -264,6 +264,13 @@ typedef struct wire_cst_frb_bench_event {
   union FrbBenchEventKind kind;
 } wire_cst_frb_bench_event;
 
+typedef struct wire_cst_frb_bootstrap_event {
+  struct wire_cst_list_prim_u_8_strict *step;
+  struct wire_cst_list_prim_u_8_strict *kind;
+  struct wire_cst_list_prim_u_8_strict *message;
+  bool *success;
+} wire_cst_frb_bootstrap_event;
+
 typedef struct wire_cst_frb_cache_delete_result {
   struct wire_cst_list_prim_u_8_strict *repo_id;
   bool deleted;
@@ -378,6 +385,9 @@ void frbgen_app_wire__crate__api__disk_usage(int64_t port_);
 
 void frbgen_app_wire__crate__api__doctor_report(int64_t port_);
 
+void frbgen_app_wire__crate__api__env_bootstrap(int64_t port_,
+                                                struct wire_cst_list_prim_u_8_strict *sink);
+
 WireSyncRust2DartDco frbgen_app_wire__crate__api__get_project_root(void);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__hf_download_cancel(void);
@@ -393,6 +403,8 @@ void frbgen_app_wire__crate__api__hf_search(int64_t port_,
                                             struct wire_cst_list_prim_u_8_strict *query);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__init(struct wire_cst_list_prim_u_8_strict *root_path);
+
+WireSyncRust2DartDco frbgen_app_wire__crate__api__is_bundle_deploy_mode(void);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__list_profiles(void);
 
@@ -510,12 +522,14 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__device_label);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__disk_usage);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__doctor_report);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__env_bootstrap);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__get_project_root);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_download_cancel);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_download_start);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_model_size);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__hf_search);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__init);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__is_bundle_deploy_mode);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_profiles);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_runs);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_generate);

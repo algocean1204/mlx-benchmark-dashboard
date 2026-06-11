@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 143281862;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2030387005;
 
 // Section: executor
 
@@ -421,6 +421,32 @@ fn wire__crate__api__doctor_report_impl(port_: flutter_rust_bridge::for_generate
         },
     )
 }
+fn wire__crate__api__env_bootstrap_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    sink: impl CstDecode<
+        StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+    >,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "env_bootstrap",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_sink = sink.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::env_bootstrap(api_sink).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__get_project_root_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
@@ -543,6 +569,22 @@ fn wire__crate__api__init_impl(
             let api_root_path = root_path.cst_decode();
             transform_result_dco::<_, _, String>((move || {
                 let output_ok = crate::api::init(api_root_path)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__is_bundle_deploy_mode_impl(
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "is_bundle_deploy_mode",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            transform_result_dco::<_, _, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::is_bundle_deploy_mode())?;
                 Ok(output_ok)
             })())
         },
@@ -917,6 +959,16 @@ impl SseDecode
 }
 
 impl SseDecode
+    for StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
     for StreamSink<crate::api::FrbDownloadProgress, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -1082,6 +1134,22 @@ impl SseDecode for crate::api::FrbBenchResult {
             peak_phys_footprint_bytes: var_peakPhysFootprintBytes,
             peak_mlx_active_bytes: var_peakMlxActiveBytes,
             error_message: var_errorMessage,
+        };
+    }
+}
+
+impl SseDecode for crate::api::FrbBootstrapEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_step = <String>::sse_decode(deserializer);
+        let mut var_kind = <String>::sse_decode(deserializer);
+        let mut var_message = <String>::sse_decode(deserializer);
+        let mut var_success = <Option<bool>>::sse_decode(deserializer);
+        return crate::api::FrbBootstrapEvent {
+            step: var_step,
+            kind: var_kind,
+            message: var_message,
+            success: var_success,
         };
     }
 }
@@ -1927,6 +1995,26 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbBenchResult> for crate::ap
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::FrbBootstrapEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.step.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.message.into_into_dart().into_dart(),
+            self.success.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::FrbBootstrapEvent {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::FrbBootstrapEvent>
+    for crate::api::FrbBootstrapEvent
+{
+    fn into_into_dart(self) -> crate::api::FrbBootstrapEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::FrbCacheDeleteResult {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2394,6 +2482,15 @@ impl SseEncode
 }
 
 impl SseEncode
+    for StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
     for StreamSink<crate::api::FrbDownloadProgress, flutter_rust_bridge::for_generated::DcoCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -2530,6 +2627,16 @@ impl SseEncode for crate::api::FrbBenchResult {
         <u64>::sse_encode(self.peak_phys_footprint_bytes, serializer);
         <u64>::sse_encode(self.peak_mlx_active_bytes, serializer);
         <Option<String>>::sse_encode(self.error_message, serializer);
+    }
+}
+
+impl SseEncode for crate::api::FrbBootstrapEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.step, serializer);
+        <String>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.message, serializer);
+        <Option<bool>>::sse_encode(self.success, serializer);
     }
 }
 
@@ -3099,6 +3206,20 @@ mod io {
     }
     impl
         CstDecode<
+            StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+        > for *mut wire_cst_list_prim_u_8_strict
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            let raw: String = self.cst_decode();
+            StreamSink::deserialize(raw)
+        }
+    }
+    impl
+        CstDecode<
             StreamSink<
                 crate::api::FrbDownloadProgress,
                 flutter_rust_bridge::for_generated::DcoCodec,
@@ -3274,6 +3395,17 @@ mod io {
                 peak_phys_footprint_bytes: self.peak_phys_footprint_bytes.cst_decode(),
                 peak_mlx_active_bytes: self.peak_mlx_active_bytes.cst_decode(),
                 error_message: self.error_message.cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbBootstrapEvent> for wire_cst_frb_bootstrap_event {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbBootstrapEvent {
+            crate::api::FrbBootstrapEvent {
+                step: self.step.cst_decode(),
+                kind: self.kind.cst_decode(),
+                message: self.message.cst_decode(),
+                success: self.success.cst_decode(),
             }
         }
     }
@@ -3727,6 +3859,21 @@ mod io {
         }
     }
     impl Default for wire_cst_frb_bench_result {
+        fn default() -> Self {
+            Self::new_with_null_ptr()
+        }
+    }
+    impl NewWithNullPtr for wire_cst_frb_bootstrap_event {
+        fn new_with_null_ptr() -> Self {
+            Self {
+                step: core::ptr::null_mut(),
+                kind: core::ptr::null_mut(),
+                message: core::ptr::null_mut(),
+                success: core::ptr::null_mut(),
+            }
+        }
+    }
+    impl Default for wire_cst_frb_bootstrap_event {
         fn default() -> Self {
             Self::new_with_null_ptr()
         }
@@ -4219,6 +4366,14 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__env_bootstrap(
+        port_: i64,
+        sink: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__env_bootstrap_impl(port_, sink)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__get_project_root(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__get_project_root_impl()
@@ -4260,6 +4415,12 @@ mod io {
         root_path: *mut wire_cst_list_prim_u_8_strict,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__init_impl(root_path)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__is_bundle_deploy_mode(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__is_bundle_deploy_mode_impl()
     }
 
     #[unsafe(no_mangle)]
@@ -4662,6 +4823,14 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_frb_bootstrap_event {
+        step: *mut wire_cst_list_prim_u_8_strict,
+        kind: *mut wire_cst_list_prim_u_8_strict,
+        message: *mut wire_cst_list_prim_u_8_strict,
+        success: *mut bool,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_frb_cache_delete_result {
         repo_id: *mut wire_cst_list_prim_u_8_strict,
         deleted: bool,
@@ -5001,6 +5170,19 @@ mod web {
     }
     impl
         CstDecode<
+            StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+        > for String
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            StreamSink::deserialize(self)
+        }
+    }
+    impl
+        CstDecode<
             StreamSink<
                 crate::api::FrbDownloadProgress,
                 flutter_rust_bridge::for_generated::DcoCodec,
@@ -5128,6 +5310,28 @@ mod web {
                 peak_phys_footprint_bytes: self_.get(6).cst_decode(),
                 peak_mlx_active_bytes: self_.get(7).cst_decode(),
                 error_message: self_.get(8).cst_decode(),
+            }
+        }
+    }
+    impl CstDecode<crate::api::FrbBootstrapEvent>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::FrbBootstrapEvent {
+            let self_ = self
+                .dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap();
+            assert_eq!(
+                self_.length(),
+                4,
+                "Expected 4 elements, got {}",
+                self_.length()
+            );
+            crate::api::FrbBootstrapEvent {
+                step: self_.get(0).cst_decode(),
+                kind: self_.get(1).cst_decode(),
+                message: self_.get(2).cst_decode(),
+                success: self_.get(3).cst_decode(),
             }
         }
     }
@@ -5825,6 +6029,19 @@ mod web {
     }
     impl
         CstDecode<
+            StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>,
+        > for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(
+            self,
+        ) -> StreamSink<crate::api::FrbBootstrapEvent, flutter_rust_bridge::for_generated::DcoCodec>
+        {
+            StreamSink::deserialize(self.as_string().expect("should be a string"))
+        }
+    }
+    impl
+        CstDecode<
             StreamSink<
                 crate::api::FrbDownloadProgress,
                 flutter_rust_bridge::for_generated::DcoCodec,
@@ -6068,6 +6285,14 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__env_bootstrap(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        sink: String,
+    ) {
+        wire__crate__api__env_bootstrap_impl(port_, sink)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__get_project_root(
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__get_project_root_impl()
@@ -6109,6 +6334,12 @@ mod web {
         root_path: String,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__init_impl(root_path)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__is_bundle_deploy_mode(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__is_bundle_deploy_mode_impl()
     }
 
     #[wasm_bindgen]

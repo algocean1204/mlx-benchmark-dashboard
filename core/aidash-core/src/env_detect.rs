@@ -9,6 +9,7 @@ use sysinfo::{Disks, System};
 use crate::auth;
 use crate::profile;
 use crate::sys_memory;
+use crate::tools::{self, BOOTSTRAP_FIX_ACTION};
 use crate::{profiles_dir, python_dir};
 
 const DISK_WARN_BYTES: u64 = 20 * 1024 * 1024 * 1024;
@@ -223,14 +224,28 @@ fn scan_system(items: &mut Vec<DoctorItem>) {
     });
 }
 
-fn scan_tools(items: &mut Vec<DoctorItem>) {
-    match run_command_version("uv", &["--version"]) {
+fn bundle_fix_or_dev(dev_action: &str) -> String {
+    if tools::is_bundle_deploy_mode() {
+        BOOTSTRAP_FIX_ACTION.into()
+    } else {
+        dev_action.into()
+    }
+}
+
+fn scan_tools(items: &mut Vec<DoctorItem>, python_dir: &Path) {
+    let uv_path = tools::resolve_uv();
+    match uv_path.as_ref().and_then(|p| run_command_version(p.to_str()?, &["--version"])) {
         Some(version) => {
+            let detail = if let Some(path) = uv_path {
+                format!("{version} ({})", path.display())
+            } else {
+                version
+            };
             items.push(DoctorItem {
                 category: "tools".into(),
                 name: "uv".into(),
                 status: DoctorStatus::Ok,
-                detail: version,
+                detail,
                 fix_action: None,
             });
         }
@@ -240,13 +255,14 @@ fn scan_tools(items: &mut Vec<DoctorItem>) {
                 name: "uv".into(),
                 status: DoctorStatus::Missing,
                 detail: "not found".into(),
-                fix_action: Some("brew install uv".into()),
+                fix_action: Some(bundle_fix_or_dev("brew install uv")),
             });
         }
     }
 
-    match run_command_version("python3", &["--version"]) {
-        Some(version) => {
+    let venv_python = python_dir.join(".venv/bin/python");
+    if venv_python.is_file() {
+        if let Some(version) = run_command_version(venv_python.to_str().unwrap_or("python3"), &["--version"]) {
             let (major, minor) = parse_python_version(&version).unwrap_or((0, 0));
             let ok = major > 3 || (major == 3 && minor >= 12);
             items.push(DoctorItem {
@@ -257,23 +273,40 @@ fn scan_tools(items: &mut Vec<DoctorItem>) {
                 } else {
                     DoctorStatus::Missing
                 },
-                detail: version,
+                detail: format!("{version} (venv)"),
                 fix_action: if ok {
                     None
                 } else {
-                    Some("Install Python 3.12+: brew install python@3.12".into())
+                    Some(bundle_fix_or_dev("cd python && uv sync"))
                 },
             });
         }
-        None => {
-            items.push(DoctorItem {
-                category: "tools".into(),
-                name: "python3".into(),
-                status: DoctorStatus::Missing,
-                detail: "not found".into(),
-                fix_action: Some("brew install python@3.12".into()),
-            });
-        }
+    } else {
+        items.push(DoctorItem {
+            category: "tools".into(),
+            name: "python3".into(),
+            status: DoctorStatus::Missing,
+            detail: "venv not configured".into(),
+            fix_action: Some(bundle_fix_or_dev("cd python && uv sync")),
+        });
+    }
+
+    if let Some(version) = run_command_version("python3", &["--version"]) {
+        items.push(DoctorItem {
+            category: "tools".into(),
+            name: "python3 (system)".into(),
+            status: DoctorStatus::Info,
+            detail: version,
+            fix_action: None,
+        });
+    } else {
+        items.push(DoctorItem {
+            category: "tools".into(),
+            name: "python3 (system)".into(),
+            status: DoctorStatus::Info,
+            detail: "not found".into(),
+            fix_action: None,
+        });
     }
 }
 
@@ -301,13 +334,14 @@ fn scan_backends(items: &mut Vec<DoctorItem>, python_dir: &Path) {
     let venv_python = venv.join("bin/python");
 
     if !venv_python.is_file() {
+        let fix = bundle_fix_or_dev("cd python && uv sync");
         for backend in BACKENDS {
             items.push(DoctorItem {
                 category: "backend".into(),
                 name: backend.name.into(),
                 status: DoctorStatus::Missing,
                 detail: "venv not found".into(),
-                fix_action: Some("cd python && uv sync".into()),
+                fix_action: Some(fix.clone()),
             });
         }
         return;
@@ -330,10 +364,11 @@ fn scan_backends(items: &mut Vec<DoctorItem>, python_dir: &Path) {
                     name: backend.name.into(),
                     status: DoctorStatus::Missing,
                     detail: "not installed".into(),
-                    fix_action: Some(format!(
-                        "cd python && uv sync --extra {}",
-                        backend.extra
-                    )),
+                    fix_action: Some(if tools::is_bundle_deploy_mode() {
+                    BOOTSTRAP_FIX_ACTION.into()
+                } else {
+                    format!("cd python && uv sync --extra {}", backend.extra)
+                }),
                 });
             }
         }
@@ -534,7 +569,7 @@ pub fn scan_environment(project_root: &Path) -> DoctorReport {
 
     let mut items = Vec::new();
     scan_system(&mut items);
-    scan_tools(&mut items);
+    scan_tools(&mut items, &py_dir);
     scan_backends(&mut items, &py_dir);
     scan_external_installs(&mut items);
     scan_models(&mut items, &prof_dir);

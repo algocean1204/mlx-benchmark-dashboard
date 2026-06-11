@@ -8,11 +8,17 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `lifecycle_state_str`, `map_auth_status`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `sample_to_frb`, `tier_info`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `lifecycle_state_str`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 void init({required String rootPath}) =>
     AidashFrb.instance.api.crateApiInit(rootPath: rootPath);
+
+bool isBundleDeployMode() =>
+    AidashFrb.instance.api.crateApiIsBundleDeployMode();
+
+Stream<FrbBootstrapEvent> envBootstrap() =>
+    AidashFrb.instance.api.crateApiEnvBootstrap();
 
 Future<FrbDoctorReport> doctorReport() =>
     AidashFrb.instance.api.crateApiDoctorReport();
@@ -258,6 +264,34 @@ class FrbBenchResult {
           peakPhysFootprintBytes == other.peakPhysFootprintBytes &&
           peakMlxActiveBytes == other.peakMlxActiveBytes &&
           errorMessage == other.errorMessage;
+}
+
+class FrbBootstrapEvent {
+  final String step;
+  final String kind;
+  final String message;
+  final bool? success;
+
+  const FrbBootstrapEvent({
+    required this.step,
+    required this.kind,
+    required this.message,
+    this.success,
+  });
+
+  @override
+  int get hashCode =>
+      step.hashCode ^ kind.hashCode ^ message.hashCode ^ success.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrbBootstrapEvent &&
+          runtimeType == other.runtimeType &&
+          step == other.step &&
+          kind == other.kind &&
+          message == other.message &&
+          success == other.success;
 }
 
 class FrbCacheDeleteResult {

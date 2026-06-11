@@ -17,6 +17,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::auth;
 use crate::profile::ModelProfile;
+use crate::tools::{self, UV_NOT_FOUND_MSG};
 
 #[derive(Debug, Clone)]
 pub struct ChildSpec {
@@ -67,8 +68,10 @@ pub fn build_child_spec(
         envs.push(("HF_TOKEN".into(), token));
     }
 
+    let uv = tools::resolve_uv().ok_or_else(|| UV_NOT_FOUND_MSG.to_string())?;
+
     Ok(ChildSpec {
-        program: "uv".into(),
+        program: uv.display().to_string(),
         args: vec![
             "run".into(),
             "--project".into(),

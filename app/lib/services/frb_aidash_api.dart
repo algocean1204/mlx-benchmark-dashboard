@@ -11,6 +11,12 @@ class FrbAidashApi implements AidashApi {
   Future<frb.FrbDoctorReport> doctorReport() => frb.doctorReport();
 
   @override
+  bool isBundleDeployMode() => frb.isBundleDeployMode();
+
+  @override
+  Stream<frb.FrbBootstrapEvent> envBootstrap() => frb.envBootstrap();
+
+  @override
   List<frb.FrbOverviewRow> statsOverview({int? ctx}) =>
       frb.statsOverview(ctx: ctx == null ? null : toPlatformInt64(ctx));
 

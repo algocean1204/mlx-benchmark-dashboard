@@ -8,6 +8,9 @@ import 'package:app/widgets/doctor_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+/// Rust `tools::BOOTSTRAP_FIX_ACTION`와 동일한 doctor fix_action 마커
+const _bootstrapFixAction = '자동 설정 실행';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -25,6 +28,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _verifying = false;
   final Map<String, List<String>> _fixLogs = {};
   final Set<String> _fixing = {};
+  final List<String> _bootstrapLogs = [];
+  bool _bootstrapping = false;
+  final ScrollController _bootstrapScroll = ScrollController();
 
   @override
   void initState() {
@@ -37,7 +43,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _tokenController.dispose();
     _rootController.dispose();
+    _bootstrapScroll.dispose();
     super.dispose();
+  }
+
+  bool get _isBundleMode => context.read<AidashApi>().isBundleDeployMode();
+
+  bool get _needsBootstrap {
+    if (_report == null) return false;
+    return _report!.items.any(
+      (item) =>
+          item.fixAction == _bootstrapFixAction ||
+          (item.category == 'tools' && item.status == 'missing') ||
+          (item.category == 'backend' && item.status == 'missing'),
+    );
+  }
+
+  void _appendBootstrapLog(String line) {
+    setState(() => _bootstrapLogs.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_bootstrapScroll.hasClients) {
+        _bootstrapScroll.animateTo(
+          _bootstrapScroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _runBootstrap() async {
+    if (_bootstrapping) return;
+    final api = context.read<AidashApi>();
+    setState(() {
+      _bootstrapping = true;
+      _bootstrapLogs.clear();
+    });
+    _appendBootstrapLog('자동 설정을 시작합니다…');
+    try {
+      await for (final ev in api.envBootstrap()) {
+        if (!mounted) return;
+        final prefix = ev.step.isNotEmpty ? '[${ev.step}] ' : '';
+        if (ev.kind == 'step_start') {
+          _appendBootstrapLog('$prefix${ev.message}');
+        } else if (ev.kind == 'step_done') {
+          final mark = ev.success == true ? '✓' : '✗';
+          _appendBootstrapLog('$prefix$mark ${ev.message}');
+        } else {
+          _appendBootstrapLog('$prefix${ev.message}');
+        }
+      }
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('자동 설정이 완료되었습니다.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _appendBootstrapLog('오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('자동 설정 실패: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _bootstrapping = false);
+    }
   }
 
   Future<void> _load() async {
@@ -130,6 +199,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _runFix(FrbDoctorItem item) async {
     final cmd = item.fixAction;
     if (cmd == null) return;
+    if (cmd == _bootstrapFixAction) {
+      await _runBootstrap();
+      return;
+    }
     final api = context.read<AidashApi>();
     setState(() => _fixing.add(item.name));
     _fixLogs[item.name] = [];
@@ -298,6 +371,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 20),
         Text('환경 점검 (doctor)', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
+        if (_isBundleMode || _needsBootstrap) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '앱 내 자동 환경 구성',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '최초 1회, 수 GB 다운로드가 필요할 수 있습니다 (uv, Python 3.12, 백엔드 의존성).',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.inkMuted,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: _bootstrapping ? null : _runBootstrap,
+                    icon: _bootstrapping
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_fix_high),
+                    label: Text(_bootstrapping ? '설정 중…' : '자동 설정'),
+                  ),
+                  if (_bootstrapLogs.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 160,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.paper,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Scrollbar(
+                        child: ListView.builder(
+                          controller: _bootstrapScroll,
+                          itemCount: _bootstrapLogs.length,
+                          itemBuilder: (_, i) => Text(
+                            _bootstrapLogs[i],
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (_report == null)
           const Center(child: CircularProgressIndicator())
         else
@@ -324,16 +457,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   trailing: item.fixAction != null
                       ? FilledButton.tonal(
-                          onPressed: _fixing.contains(item.name)
+                          onPressed: (_fixing.contains(item.name) || _bootstrapping)
                               ? null
                               : () => _runFix(item),
-                          child: _fixing.contains(item.name)
+                          child: (_fixing.contains(item.name) ||
+                                  (item.fixAction == _bootstrapFixAction &&
+                                      _bootstrapping))
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('고치기'),
+                              : Text(
+                                  item.fixAction == _bootstrapFixAction
+                                      ? '자동 설정'
+                                      : '고치기',
+                                ),
                         )
                       : DoctorBadge(status: item.status),
                 );

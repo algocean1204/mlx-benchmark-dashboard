@@ -19,7 +19,11 @@ use aidash_core::sys_memory;
 use aidash_core::profile::{self, ModelProfile, ProfileListRow};
 use aidash_core::stats::{ContextPick, ModelStats, OverviewRow, DEFAULT_OVERVIEW_CONTEXT};
 use aidash_core::tps_tier::{self, TpsTier};
-use aidash_core::{find_project_root, profiles_dir, python_dir, resolve_file_path};
+use aidash_core::bootstrap::{self, BootstrapEvent};
+use aidash_core::tools;
+use aidash_core::{
+    find_project_root, profiles_dir, python_adapters_available, python_dir, resolve_file_path,
+};
 use crate::frb_generated::StreamSink;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
@@ -227,6 +231,14 @@ pub struct FrbFixProgress {
 }
 
 #[derive(Debug, Clone)]
+pub struct FrbBootstrapEvent {
+    pub step: String,
+    pub kind: String,
+    pub message: String,
+    pub success: Option<bool>,
+}
+
+#[derive(Debug, Clone)]
 pub struct FrbCacheRepoEntry {
     pub repo_id: String,
     pub size_bytes: u64,
@@ -369,8 +381,8 @@ fn profile_max_tokens(profile: &ModelProfile) -> u32 {
 #[flutter_rust_bridge::frb(sync)]
 pub fn init(root_path: String) -> Result<(), String> {
     let root = resolve_effective_project_root(&root_path)?;
-    let py = python_dir(&root);
-    if !py.join("adapters").is_dir() {
+    if !python_adapters_available(&root) {
+        let py = python_dir(&root);
         return Err(format!(
             "python adapters not found (expected {}): {}",
             py.display(),
@@ -400,6 +412,47 @@ fn resolve_effective_project_root(root_path: &str) -> Result<PathBuf, String> {
             }
         )
     })
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn is_bundle_deploy_mode() -> bool {
+    tools::is_bundle_deploy_mode()
+}
+
+fn map_bootstrap_event(ev: BootstrapEvent) -> FrbBootstrapEvent {
+    match ev {
+        BootstrapEvent::StepStart { step, message } => FrbBootstrapEvent {
+            step,
+            kind: "step_start".into(),
+            message,
+            success: None,
+        },
+        BootstrapEvent::StepDone {
+            step,
+            success,
+            message,
+        } => FrbBootstrapEvent {
+            step,
+            kind: "step_done".into(),
+            message,
+            success: Some(success),
+        },
+        BootstrapEvent::Log { line } => FrbBootstrapEvent {
+            step: String::new(),
+            kind: "log".into(),
+            message: line,
+            success: None,
+        },
+    }
+}
+
+#[flutter_rust_bridge::frb]
+pub async fn env_bootstrap(sink: StreamSink<FrbBootstrapEvent>) -> Result<(), String> {
+    let root = with_state(|s| Ok(s.project_root.clone()))?;
+    bootstrap::env_bootstrap(&root, |ev| {
+        sink.add(map_bootstrap_event(ev));
+    })
+    .await
 }
 
 #[flutter_rust_bridge::frb]

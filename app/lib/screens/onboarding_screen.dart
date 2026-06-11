@@ -6,6 +6,8 @@ import 'package:app/widgets/doctor_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+const _bootstrapFixAction = '자동 설정 실행';
+
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
 
@@ -53,9 +55,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _countByStatus(String status) =>
       _report?.items.where((i) => i.status == status).length ?? 0;
 
+  Future<void> _runBootstrap() async {
+    setState(() => _fixing.add('bootstrap'));
+    _fixLogs['bootstrap'] = [];
+    final api = context.read<AidashApi>();
+    try {
+      await for (final ev in api.envBootstrap()) {
+        if (!mounted) return;
+        setState(() => _fixLogs['bootstrap']!.add(ev.message));
+      }
+      await _runDoctor();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _fixLogs['bootstrap']!.add('오류: $e'));
+    } finally {
+      if (mounted) setState(() => _fixing.remove('bootstrap'));
+    }
+  }
+
   Future<void> _runFix(FrbDoctorItem item) async {
     final cmd = item.fixAction;
     if (cmd == null || cmd.isEmpty) return;
+    if (cmd == _bootstrapFixAction) {
+      await _runBootstrap();
+      return;
+    }
     setState(() => _fixing.add(item.name));
     final api = context.read<AidashApi>();
     _fixLogs[item.name] = [];

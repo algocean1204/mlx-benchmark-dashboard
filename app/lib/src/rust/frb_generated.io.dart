@@ -30,6 +30,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  dco_decode_StreamSink_frb_bootstrap_event_Dco(dynamic raw);
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   dco_decode_StreamSink_frb_download_progress_Dco(dynamic raw);
 
@@ -86,6 +90,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbBenchResult dco_decode_frb_bench_result(dynamic raw);
+
+  @protected
+  FrbBootstrapEvent dco_decode_frb_bootstrap_event(dynamic raw);
 
   @protected
   FrbCacheDeleteResult dco_decode_frb_cache_delete_result(dynamic raw);
@@ -255,6 +262,10 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  RustStreamSink<FrbBootstrapEvent>
+  sse_decode_StreamSink_frb_bootstrap_event_Dco(SseDeserializer deserializer);
+
+  @protected
   RustStreamSink<FrbDownloadProgress>
   sse_decode_StreamSink_frb_download_progress_Dco(SseDeserializer deserializer);
 
@@ -317,6 +328,11 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   FrbBenchResult sse_decode_frb_bench_result(SseDeserializer deserializer);
+
+  @protected
+  FrbBootstrapEvent sse_decode_frb_bootstrap_event(
+    SseDeserializer deserializer,
+  );
 
   @protected
   FrbCacheDeleteResult sse_decode_frb_cache_delete_result(
@@ -541,6 +557,22 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       raw.setupAndSerialize(
         codec: DcoCodec(
           decodeSuccessData: dco_decode_frb_bench_event,
+          decodeErrorData: dco_decode_AnyhowException,
+        ),
+      ),
+    );
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_prim_u_8_strict>
+  cst_encode_StreamSink_frb_bootstrap_event_Dco(
+    RustStreamSink<FrbBootstrapEvent> raw,
+  ) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_String(
+      raw.setupAndSerialize(
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_frb_bootstrap_event,
           decodeErrorData: dco_decode_AnyhowException,
         ),
       ),
@@ -1000,6 +1032,17 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  void cst_api_fill_to_wire_frb_bootstrap_event(
+    FrbBootstrapEvent apiObj,
+    wire_cst_frb_bootstrap_event wireObj,
+  ) {
+    wireObj.step = cst_encode_String(apiObj.step);
+    wireObj.kind = cst_encode_String(apiObj.kind);
+    wireObj.message = cst_encode_String(apiObj.message);
+    wireObj.success = cst_encode_opt_box_autoadd_bool(apiObj.success);
+  }
+
+  @protected
   void cst_api_fill_to_wire_frb_cache_delete_result(
     FrbCacheDeleteResult apiObj,
     wire_cst_frb_cache_delete_result wireObj,
@@ -1332,6 +1375,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_frb_bootstrap_event_Dco(
+    RustStreamSink<FrbBootstrapEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_frb_download_progress_Dco(
     RustStreamSink<FrbDownloadProgress> self,
     SseSerializer serializer,
@@ -1406,6 +1455,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   @protected
   void sse_encode_frb_bench_result(
     FrbBenchResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_frb_bootstrap_event(
+    FrbBootstrapEvent self,
     SseSerializer serializer,
   );
 
@@ -2004,6 +2059,28 @@ class AidashFrbWire implements BaseWire {
   late final _wire__crate__api__doctor_report =
       _wire__crate__api__doctor_reportPtr.asFunction<void Function(int)>();
 
+  void wire__crate__api__env_bootstrap(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> sink,
+  ) {
+    return _wire__crate__api__env_bootstrap(port_, sink);
+  }
+
+  late final _wire__crate__api__env_bootstrapPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(
+            ffi.Int64,
+            ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          )
+        >
+      >('frbgen_app_wire__crate__api__env_bootstrap');
+  late final _wire__crate__api__env_bootstrap =
+      _wire__crate__api__env_bootstrapPtr
+          .asFunction<
+            void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)
+          >();
+
   WireSyncRust2DartDco wire__crate__api__get_project_root() {
     return _wire__crate__api__get_project_root();
   }
@@ -2119,6 +2196,18 @@ class AidashFrbWire implements BaseWire {
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
         )
       >();
+
+  WireSyncRust2DartDco wire__crate__api__is_bundle_deploy_mode() {
+    return _wire__crate__api__is_bundle_deploy_mode();
+  }
+
+  late final _wire__crate__api__is_bundle_deploy_modePtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function()>>(
+        'frbgen_app_wire__crate__api__is_bundle_deploy_mode',
+      );
+  late final _wire__crate__api__is_bundle_deploy_mode =
+      _wire__crate__api__is_bundle_deploy_modePtr
+          .asFunction<WireSyncRust2DartDco Function()>();
 
   WireSyncRust2DartDco wire__crate__api__list_profiles() {
     return _wire__crate__api__list_profiles();
@@ -3114,6 +3203,16 @@ final class wire_cst_frb_bench_event extends ffi.Struct {
   external int tag;
 
   external FrbBenchEventKind kind;
+}
+
+final class wire_cst_frb_bootstrap_event extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> step;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> kind;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> message;
+
+  external ffi.Pointer<ffi.Bool> success;
 }
 
 final class wire_cst_frb_cache_delete_result extends ffi.Struct {
