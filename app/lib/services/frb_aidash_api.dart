@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:app/services/aidash_api.dart';
 import 'package:app/src/rust/api.dart' as frb;
 
@@ -58,6 +60,7 @@ class FrbAidashApi implements AidashApi {
     String? imagePath,
     String? audioPath,
     String? benchTask,
+    List<int>? sweepSteps,
   }) async {
     final id = await frb.benchStart(
       profileId: profileId,
@@ -67,6 +70,9 @@ class FrbAidashApi implements AidashApi {
       imagePath: imagePath,
       audioPath: audioPath,
       benchTask: benchTask,
+      sweepSteps: sweepSteps == null
+          ? null
+          : Uint32List.fromList(sweepSteps),
     );
     return id.toInt();
   }

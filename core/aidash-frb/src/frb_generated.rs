@@ -200,6 +200,7 @@ fn wire__crate__api__bench_start_impl(
     image_path: impl CstDecode<Option<String>>,
     audio_path: impl CstDecode<Option<String>>,
     bench_task: impl CstDecode<Option<String>>,
+    sweep_steps: impl CstDecode<Option<Vec<u32>>>,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
@@ -215,6 +216,7 @@ fn wire__crate__api__bench_start_impl(
             let api_image_path = image_path.cst_decode();
             let api_audio_path = audio_path.cst_decode();
             let api_bench_task = bench_task.cst_decode();
+            let api_sweep_steps = sweep_steps.cst_decode();
             move |context| async move {
                 transform_result_dco::<_, _, String>(
                     (move || async move {
@@ -226,6 +228,7 @@ fn wire__crate__api__bench_start_impl(
                             api_image_path,
                             api_audio_path,
                             api_bench_task,
+                            api_sweep_steps,
                         )
                         .await?;
                         Ok(output_ok)
@@ -1276,6 +1279,7 @@ impl SseDecode for crate::api::FrbContextStatsRow {
         let mut var_ttftAvgMs = <f64>::sse_decode(deserializer);
         let mut var_runCount = <i64>::sse_decode(deserializer);
         let mut var_peakPhysFootprintBytes = <i64>::sse_decode(deserializer);
+        let mut var_peakPhysAvgBytes = <i64>::sse_decode(deserializer);
         return crate::api::FrbContextStatsRow {
             context_size: var_contextSize,
             decode_tps_min: var_decodeTpsMin,
@@ -1284,6 +1288,7 @@ impl SseDecode for crate::api::FrbContextStatsRow {
             ttft_avg_ms: var_ttftAvgMs,
             run_count: var_runCount,
             peak_phys_footprint_bytes: var_peakPhysFootprintBytes,
+            peak_phys_avg_bytes: var_peakPhysAvgBytes,
         };
     }
 }
@@ -1512,6 +1517,7 @@ impl SseDecode for crate::api::FrbRunListRow {
         let mut var_decodeTps = <Option<f64>>::sse_decode(deserializer);
         let mut var_peakPhysFootprintBytes = <Option<i64>>::sse_decode(deserializer);
         let mut var_tier = <Option<crate::api::FrbTierInfo>>::sse_decode(deserializer);
+        let mut var_endedAt = <Option<String>>::sse_decode(deserializer);
         return crate::api::FrbRunListRow {
             run_id: var_runId,
             profile_id: var_profileId,
@@ -1522,6 +1528,7 @@ impl SseDecode for crate::api::FrbRunListRow {
             decode_tps: var_decodeTps,
             peak_phys_footprint_bytes: var_peakPhysFootprintBytes,
             tier: var_tier,
+            ended_at: var_endedAt,
         };
     }
 }
@@ -1806,6 +1813,17 @@ impl SseDecode for Option<u64> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<u64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<Vec<u32>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<u32>>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -2153,6 +2171,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbContextStatsRow {
             self.ttft_avg_ms.into_into_dart().into_dart(),
             self.run_count.into_into_dart().into_dart(),
             self.peak_phys_footprint_bytes.into_into_dart().into_dart(),
+            self.peak_phys_avg_bytes.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2408,6 +2427,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::FrbRunListRow {
             self.decode_tps.into_into_dart().into_dart(),
             self.peak_phys_footprint_bytes.into_into_dart().into_dart(),
             self.tier.into_into_dart().into_dart(),
+            self.ended_at.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2718,6 +2738,7 @@ impl SseEncode for crate::api::FrbContextStatsRow {
         <f64>::sse_encode(self.ttft_avg_ms, serializer);
         <i64>::sse_encode(self.run_count, serializer);
         <i64>::sse_encode(self.peak_phys_footprint_bytes, serializer);
+        <i64>::sse_encode(self.peak_phys_avg_bytes, serializer);
     }
 }
 
@@ -2862,6 +2883,7 @@ impl SseEncode for crate::api::FrbRunListRow {
         <Option<f64>>::sse_encode(self.decode_tps, serializer);
         <Option<i64>>::sse_encode(self.peak_phys_footprint_bytes, serializer);
         <Option<crate::api::FrbTierInfo>>::sse_encode(self.tier, serializer);
+        <Option<String>>::sse_encode(self.ended_at, serializer);
     }
 }
 
@@ -3103,6 +3125,16 @@ impl SseEncode for Option<u64> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <u64>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<Vec<u32>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<u32>>::sse_encode(value, serializer);
         }
     }
 }
@@ -3494,6 +3526,7 @@ mod io {
                 ttft_avg_ms: self.ttft_avg_ms.cst_decode(),
                 run_count: self.run_count.cst_decode(),
                 peak_phys_footprint_bytes: self.peak_phys_footprint_bytes.cst_decode(),
+                peak_phys_avg_bytes: self.peak_phys_avg_bytes.cst_decode(),
             }
         }
     }
@@ -3650,6 +3683,7 @@ mod io {
                 decode_tps: self.decode_tps.cst_decode(),
                 peak_phys_footprint_bytes: self.peak_phys_footprint_bytes.cst_decode(),
                 tier: self.tier.cst_decode(),
+                ended_at: self.ended_at.cst_decode(),
             }
         }
     }
@@ -3986,6 +4020,7 @@ mod io {
                 ttft_avg_ms: Default::default(),
                 run_count: Default::default(),
                 peak_phys_footprint_bytes: Default::default(),
+                peak_phys_avg_bytes: Default::default(),
             }
         }
     }
@@ -4190,6 +4225,7 @@ mod io {
                 decode_tps: core::ptr::null_mut(),
                 peak_phys_footprint_bytes: core::ptr::null_mut(),
                 tier: core::ptr::null_mut(),
+                ended_at: core::ptr::null_mut(),
             }
         }
     }
@@ -4298,9 +4334,18 @@ mod io {
         image_path: *mut wire_cst_list_prim_u_8_strict,
         audio_path: *mut wire_cst_list_prim_u_8_strict,
         bench_task: *mut wire_cst_list_prim_u_8_strict,
+        sweep_steps: *mut wire_cst_list_prim_u_32_strict,
     ) {
         wire__crate__api__bench_start_impl(
-            port_, profile_id, ctx, mode, prompt, image_path, audio_path, bench_task,
+            port_,
+            profile_id,
+            ctx,
+            mode,
+            prompt,
+            image_path,
+            audio_path,
+            bench_task,
+            sweep_steps,
         )
     }
 
@@ -4895,6 +4940,7 @@ mod io {
         ttft_avg_ms: f64,
         run_count: i64,
         peak_phys_footprint_bytes: i64,
+        peak_phys_avg_bytes: i64,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5015,6 +5061,7 @@ mod io {
         decode_tps: *mut f64,
         peak_phys_footprint_bytes: *mut i64,
         tier: *mut wire_cst_frb_tier_info,
+        ended_at: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5485,8 +5532,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                7,
-                "Expected 7 elements, got {}",
+                8,
+                "Expected 8 elements, got {}",
                 self_.length()
             );
             crate::api::FrbContextStatsRow {
@@ -5497,6 +5544,7 @@ mod web {
                 ttft_avg_ms: self_.get(4).cst_decode(),
                 run_count: self_.get(5).cst_decode(),
                 peak_phys_footprint_bytes: self_.get(6).cst_decode(),
+                peak_phys_avg_bytes: self_.get(7).cst_decode(),
             }
         }
     }
@@ -5771,8 +5819,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                9,
-                "Expected 9 elements, got {}",
+                10,
+                "Expected 10 elements, got {}",
                 self_.length()
             );
             crate::api::FrbRunListRow {
@@ -5785,6 +5833,7 @@ mod web {
                 decode_tps: self_.get(6).cst_decode(),
                 peak_phys_footprint_bytes: self_.get(7).cst_decode(),
                 tier: self_.get(8).cst_decode(),
+                ended_at: self_.get(9).cst_decode(),
             }
         }
     }
@@ -5975,6 +6024,12 @@ mod web {
     impl CstDecode<Option<String>> for Option<String> {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Option<String> {
+            self.map(CstDecode::cst_decode)
+        }
+    }
+    impl CstDecode<Option<Vec<u32>>> for Option<Box<[u32]>> {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Option<Vec<u32>> {
             self.map(CstDecode::cst_decode)
         }
     }
@@ -6217,9 +6272,18 @@ mod web {
         image_path: Option<String>,
         audio_path: Option<String>,
         bench_task: Option<String>,
+        sweep_steps: Option<Box<[u32]>>,
     ) {
         wire__crate__api__bench_start_impl(
-            port_, profile_id, ctx, mode, prompt, image_path, audio_path, bench_task,
+            port_,
+            profile_id,
+            ctx,
+            mode,
+            prompt,
+            image_path,
+            audio_path,
+            bench_task,
+            sweep_steps,
         )
     }
 

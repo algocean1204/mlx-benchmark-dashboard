@@ -84,6 +84,7 @@ pub struct FrbContextStatsRow {
     pub ttft_avg_ms: f64,
     pub run_count: i64,
     pub peak_phys_footprint_bytes: i64,
+    pub peak_phys_avg_bytes: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -111,6 +112,7 @@ pub struct FrbRunListRow {
     pub decode_tps: Option<f64>,
     pub peak_phys_footprint_bytes: Option<i64>,
     pub tier: Option<FrbTierInfo>,
+    pub ended_at: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -535,6 +537,7 @@ fn map_model_stats(s: ModelStats) -> FrbModelStats {
                 ttft_avg_ms: c.ttft_avg_ms,
                 run_count: c.run_count,
                 peak_phys_footprint_bytes: c.peak_phys_footprint_bytes,
+                peak_phys_avg_bytes: c.peak_phys_avg_bytes,
             })
             .collect(),
     }
@@ -633,6 +636,7 @@ fn map_run_row(r: RunListRow) -> FrbRunListRow {
         decode_tps: r.decode_tps,
         peak_phys_footprint_bytes: r.peak_phys_footprint_bytes,
         tier: r.decode_tps.map(tps_tier::tps_tier).map(tier_info),
+        ended_at: r.ended_at,
     }
 }
 
@@ -761,6 +765,7 @@ pub async fn bench_start(
     image_path: Option<String>,
     audio_path: Option<String>,
     bench_task: Option<String>,
+    sweep_steps: Option<Vec<u32>>,
 ) -> Result<i64, String> {
     let arc = state_arc()?;
     let (root, progress_tx, run_id, model_profile, config, db) = {
@@ -819,10 +824,15 @@ pub async fn bench_start(
                 .await
                 .map(Some),
             FrbBenchMode::Sweep => {
-                let steps = if model_profile.context.sweep_steps.is_empty() {
-                    vec![ctx]
-                } else {
-                    model_profile.context.sweep_steps.clone()
+                let steps = match sweep_steps {
+                    Some(s) if !s.is_empty() => s,
+                    _ => {
+                        if model_profile.context.sweep_steps.is_empty() {
+                            vec![ctx]
+                        } else {
+                            model_profile.context.sweep_steps.clone()
+                        }
+                    }
                 };
                 run_context_sweep(
                     &db,

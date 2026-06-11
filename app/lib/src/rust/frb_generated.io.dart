@@ -229,6 +229,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
+  Uint32List? dco_decode_opt_list_prim_u_32_strict(dynamic raw);
+
+  @protected
   (BigInt, BigInt, BigInt, double) dco_decode_record_u_64_u_64_u_64_f_64(
     dynamic raw,
   );
@@ -505,6 +508,11 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  Uint32List? sse_decode_opt_list_prim_u_32_strict(
+    SseDeserializer deserializer,
+  );
 
   @protected
   (BigInt, BigInt, BigInt, double) sse_decode_record_u_64_u_64_u_64_f_64(
@@ -901,6 +909,13 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   }
 
   @protected
+  ffi.Pointer<wire_cst_list_prim_u_32_strict>
+  cst_encode_opt_list_prim_u_32_strict(Uint32List? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? ffi.nullptr : cst_encode_list_prim_u_32_strict(raw);
+  }
+
+  @protected
   int cst_encode_u_64(BigInt raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw.toSigned(64).toInt();
@@ -1134,6 +1149,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
     wireObj.peak_phys_footprint_bytes = cst_encode_i_64(
       apiObj.peakPhysFootprintBytes,
     );
+    wireObj.peak_phys_avg_bytes = cst_encode_i_64(apiObj.peakPhysAvgBytes);
   }
 
   @protected
@@ -1302,6 +1318,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       apiObj.peakPhysFootprintBytes,
     );
     wireObj.tier = cst_encode_opt_box_autoadd_frb_tier_info(apiObj.tier);
+    wireObj.ended_at = cst_encode_opt_String(apiObj.endedAt);
   }
 
   @protected
@@ -1687,6 +1704,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_list_prim_u_32_strict(
+    Uint32List? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_record_u_64_u_64_u_64_f_64(
     (BigInt, BigInt, BigInt, double) self,
     SseSerializer serializer,
@@ -1863,6 +1886,7 @@ class AidashFrbWire implements BaseWire {
     ffi.Pointer<wire_cst_list_prim_u_8_strict> image_path,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> audio_path,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> bench_task,
+    ffi.Pointer<wire_cst_list_prim_u_32_strict> sweep_steps,
   ) {
     return _wire__crate__api__bench_start(
       port_,
@@ -1873,6 +1897,7 @@ class AidashFrbWire implements BaseWire {
       image_path,
       audio_path,
       bench_task,
+      sweep_steps,
     );
   }
 
@@ -1888,6 +1913,7 @@ class AidashFrbWire implements BaseWire {
             ffi.Pointer<wire_cst_list_prim_u_8_strict>,
             ffi.Pointer<wire_cst_list_prim_u_8_strict>,
             ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+            ffi.Pointer<wire_cst_list_prim_u_32_strict>,
           )
         >
       >('frbgen_app_wire__crate__api__bench_start');
@@ -1902,6 +1928,7 @@ class AidashFrbWire implements BaseWire {
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
           ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+          ffi.Pointer<wire_cst_list_prim_u_32_strict>,
         )
       >();
 
@@ -2806,6 +2833,13 @@ final class wire_cst_list_prim_u_8_strict extends ffi.Struct {
   external int len;
 }
 
+final class wire_cst_list_prim_u_32_strict extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint32> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
 final class wire_cst_frb_chat_message extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> role;
 
@@ -2965,6 +2999,9 @@ final class wire_cst_frb_context_stats_row extends ffi.Struct {
 
   @ffi.Int64()
   external int peak_phys_footprint_bytes;
+
+  @ffi.Int64()
+  external int peak_phys_avg_bytes;
 }
 
 final class wire_cst_list_frb_context_stats_row extends ffi.Struct {
@@ -3053,13 +3090,6 @@ final class wire_cst_list_frb_overview_row extends ffi.Struct {
   external int len;
 }
 
-final class wire_cst_list_prim_u_32_strict extends ffi.Struct {
-  external ffi.Pointer<ffi.Uint32> ptr;
-
-  @ffi.Int32()
-  external int len;
-}
-
 final class wire_cst_frb_profile_row extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
 
@@ -3110,6 +3140,8 @@ final class wire_cst_frb_run_list_row extends ffi.Struct {
   external ffi.Pointer<ffi.Int64> peak_phys_footprint_bytes;
 
   external ffi.Pointer<wire_cst_frb_tier_info> tier;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> ended_at;
 }
 
 final class wire_cst_list_frb_run_list_row extends ffi.Struct {

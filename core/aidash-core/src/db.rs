@@ -176,6 +176,7 @@ pub struct RunListRow {
     pub status: String,
     pub decode_tps: Option<f64>,
     pub peak_phys_footprint_bytes: Option<i64>,
+    pub ended_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -576,7 +577,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let sql = if model_profile_id.is_some() {
             "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes
+                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
@@ -584,7 +585,7 @@ impl Database {
              ORDER BY r.id DESC"
         } else {
             "SELECT r.id, m.profile_id, m.display_name, r.kind, r.context_size, r.status,
-                    res.decode_tps, res.peak_phys_footprint_bytes
+                    res.decode_tps, res.peak_phys_footprint_bytes, r.ended_at
              FROM runs r
              JOIN models m ON r.model_id = m.id
              LEFT JOIN results res ON res.run_id = r.id
@@ -1034,6 +1035,7 @@ fn map_run_list_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<RunListRow> {
         status: row.get(5)?,
         decode_tps: row.get(6)?,
         peak_phys_footprint_bytes: row.get(7)?,
+        ended_at: row.get(8)?,
     })
 }
 

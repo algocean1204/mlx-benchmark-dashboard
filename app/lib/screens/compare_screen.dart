@@ -16,15 +16,35 @@ class CompareScreen extends StatefulWidget {
   State<CompareScreen> createState() => _CompareScreenState();
 }
 
+class _ContextCompareRow {
+  final int contextSize;
+  final double? decodeTps;
+  final double ttftAvgMs;
+  final int peakRamBytes;
+  final String? measuredAt;
+
+  const _ContextCompareRow({
+    required this.contextSize,
+    required this.decodeTps,
+    required this.ttftAvgMs,
+    required this.peakRamBytes,
+    required this.measuredAt,
+  });
+}
+
 class _CompareScreenState extends State<CompareScreen> {
   List<FrbOverviewRow> _models = [];
   final Set<String> _selected = {};
   int _context = 4096;
   List<FrbCompareRow> _rows = [];
+  List<_ContextCompareRow> _contextRows = [];
+  String? _contextCompareModel;
   bool _loading = false;
   String? _error;
 
   static const _contextOptions = [2048, 4096, 8192, 16384, 32768];
+
+  bool get _isContextCompareMode => _selected.length == 1;
 
   @override
   void initState() {
@@ -49,17 +69,82 @@ class _CompareScreenState extends State<CompareScreen> {
   }
 
   Future<void> _refreshCompare() async {
-    if (_selected.length < 2) {
+    if (_selected.isEmpty) {
       setState(() {
         _rows = [];
+        _contextRows = [];
+        _contextCompareModel = null;
         _loading = false;
         _error = null;
       });
       return;
     }
+
+    if (_isContextCompareMode) {
+      final modelId = _selected.first;
+      setState(() {
+        _loading = true;
+        _error = null;
+        _rows = [];
+      });
+      final api = context.read<AidashApi>();
+      try {
+        final stats = api.statsModel(id: modelId);
+        final runs = api.listRuns(model: modelId);
+        final latestByContext = <int, FrbRunListRow>{};
+        for (final run in runs) {
+          if (run.contextSize == null || run.status != 'completed') continue;
+          final ctx = platformIntToInt(run.contextSize!);
+          final existing = latestByContext[ctx];
+          if (existing == null ||
+              platformIntToInt(run.runId) > platformIntToInt(existing.runId)) {
+            latestByContext[ctx] = run;
+          }
+        }
+        final contextRows = stats.byContext.map((row) {
+          final ctx = platformIntToInt(row.contextSize);
+          final latest = latestByContext[ctx];
+          return _ContextCompareRow(
+            contextSize: ctx,
+            decodeTps: row.decodeTpsAvg,
+            ttftAvgMs: row.ttftAvgMs,
+            peakRamBytes: platformIntToInt(row.peakPhysAvgBytes),
+            measuredAt: latest?.endedAt,
+          );
+        }).toList()
+          ..sort((a, b) => a.contextSize.compareTo(b.contextSize));
+        if (!mounted) return;
+        setState(() {
+          _contextRows = contextRows;
+          _contextCompareModel = stats.displayName;
+          _loading = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = e.toString();
+        });
+      }
+      return;
+    }
+
+    if (_selected.length < 2) {
+      setState(() {
+        _rows = [];
+        _contextRows = [];
+        _contextCompareModel = null;
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
+      _contextRows = [];
+      _contextCompareModel = null;
     });
     final api = context.read<AidashApi>();
     try {
@@ -125,7 +210,7 @@ class _CompareScreenState extends State<CompareScreen> {
                 (c) => ChoiceChip(
                   label: Text('$c'),
                   selected: _context == c,
-                  onSelected: (_) => _setContext(c),
+                  onSelected: _isContextCompareMode ? null : (_) => _setContext(c),
                 ),
               )
               .toList(),
@@ -157,11 +242,30 @@ class _CompareScreenState extends State<CompareScreen> {
           const SizedBox(height: 16),
           ErrorCard(message: _error!, onRetry: _refreshCompare),
         ],
-        if (_selected.length < 2 && !_loading) ...[
+        if (_isContextCompareMode && !_loading) ...[
           const SizedBox(height: 16),
           Text(
-            '2개 이상의 모델을 선택하면 자동으로 비교됩니다.',
+            '같은 모델의 컨텍스트별 측정 비교입니다.',
             style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.inkMuted),
+          ),
+        ],
+        if (_selected.isEmpty && !_loading) ...[
+          const SizedBox(height: 16),
+          Text(
+            '모델을 선택하면 비교됩니다. 2개 이상은 모델 간, 1개는 컨텍스트별 비교입니다.',
+            style: theme.textTheme.bodySmall?.copyWith(color: AppTheme.inkMuted),
+          ),
+        ],
+        if (_contextRows.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          if (_contextCompareModel != null)
+            Text(
+              _contextCompareModel!,
+              style: theme.textTheme.titleMedium,
+            ),
+          const SizedBox(height: 8),
+          Card(
+            child: _ContextCompareTable(rows: _contextRows),
           ),
         ],
         if (_rows.isNotEmpty) ...[
@@ -484,6 +588,41 @@ class _CompareChart extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ContextCompareTable extends StatelessWidget {
+  final List<_ContextCompareRow> rows;
+
+  const _ContextCompareTable({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('컨텍스트')),
+          DataColumn(label: MetricLabel(term: 'TPS')),
+          DataColumn(label: MetricLabel(term: 'TTFT')),
+          DataColumn(label: MetricLabel(term: 'Peak RAM')),
+          DataColumn(label: Text('측정일')),
+        ],
+        rows: rows
+            .map(
+              (r) => DataRow(
+                cells: [
+                  DataCell(Text('${r.contextSize}')),
+                  DataCell(Text(r.decodeTps?.toStringAsFixed(1) ?? '—')),
+                  DataCell(Text('${r.ttftAvgMs.toStringAsFixed(0)} ms')),
+                  DataCell(Text(formatBytesInt(r.peakRamBytes))),
+                  DataCell(Text(_StatCards.formatMeasuredAt(r.measuredAt))),
+                ],
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 }

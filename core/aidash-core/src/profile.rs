@@ -126,10 +126,53 @@ impl From<serde_json::Error> for ProfileError {
     }
 }
 
+/// context.max까지 2배수 단계 생성. max가 2^n이 아니면 마지막에 max 포함.
+pub fn generate_sweep_steps(context_max: u32) -> Vec<u32> {
+    let mut steps = Vec::new();
+    let mut step = 1024u32;
+    while step <= context_max {
+        steps.push(step);
+        if step == context_max {
+            break;
+        }
+        let next = step.saturating_mul(2);
+        if next > context_max {
+            if steps.last().copied() != Some(context_max) {
+                steps.push(context_max);
+            }
+            break;
+        }
+        step = next;
+    }
+    steps
+}
+
+/// 기존 프로파일 sweep_steps를 context.max까지 메모리상 확장.
+pub fn extend_sweep_steps(steps: &[u32], context_max: u32) -> Vec<u32> {
+    let expected = generate_sweep_steps(context_max);
+    if steps.is_empty() {
+        return expected;
+    }
+    if steps.last().copied().unwrap_or(0) >= context_max {
+        return steps.to_vec();
+    }
+    let mut merged = steps.to_vec();
+    for s in expected {
+        if !merged.contains(&s) {
+            merged.push(s);
+        }
+    }
+    merged.sort_unstable();
+    merged.dedup();
+    merged
+}
+
 pub fn load_profile_file(path: &Path) -> Result<ModelProfile, ProfileError> {
     let contents = std::fs::read_to_string(path)?;
-    let profile: ModelProfile = serde_json::from_str(&contents)?;
+    let mut profile: ModelProfile = serde_json::from_str(&contents)?;
     validate_profile(&profile)?;
+    profile.context.sweep_steps =
+        extend_sweep_steps(&profile.context.sweep_steps, profile.context.max);
     Ok(profile)
 }
 
@@ -535,10 +578,7 @@ pub fn draft_from_config(
             min: 512,
             max: context_max,
             default: context_default,
-            sweep_steps: vec![1024, 2048, 4096, 8192, 16384, 32768]
-                .into_iter()
-                .filter(|&s| s <= context_max)
-                .collect(),
+            sweep_steps: generate_sweep_steps(context_max),
         },
         default_params: serde_json::json!({
             "max_tokens": 512,
@@ -815,6 +855,61 @@ mod tests {
 
         let reloaded = load_profile_by_id(dir.path(), "org/test-model").expect("reload");
         assert_eq!(reloaded.model_type, TASK_ASR);
+    }
+
+    #[test]
+    fn generate_sweep_steps_up_to_max() {
+        assert_eq!(
+            generate_sweep_steps(32768),
+            vec![1024, 2048, 4096, 8192, 16384, 32768]
+        );
+        assert_eq!(
+            generate_sweep_steps(262144),
+            vec![
+                1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144
+            ]
+        );
+    }
+
+    #[test]
+    fn generate_sweep_steps_non_power_of_two_max() {
+        assert_eq!(
+            generate_sweep_steps(200_000),
+            vec![1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 200_000]
+        );
+    }
+
+    #[test]
+    fn extend_sweep_steps_migrates_legacy_profile() {
+        let legacy = vec![1024, 2048, 4096, 8192, 16384, 32768];
+        let extended = extend_sweep_steps(&legacy, 262144);
+        assert!(extended.contains(&65536));
+        assert!(extended.contains(&131072));
+        assert!(extended.contains(&262144));
+        assert_eq!(extended.len(), 9);
+    }
+
+    #[test]
+    fn extend_sweep_steps_noop_when_complete() {
+        let full = generate_sweep_steps(4096);
+        assert_eq!(extend_sweep_steps(&full, 4096), full);
+    }
+
+    #[test]
+    fn load_profile_extends_sweep_steps_to_context_max() {
+        let root = std::env::var("AIDASH_ROOT")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| {
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+            });
+        let path = root.join("profiles/qwen3.6-35b-a3b-optiq-4bit.json");
+        if !path.is_file() {
+            return;
+        }
+        let profile = load_profile_file(&path).expect("load 35B profile");
+        assert_eq!(profile.context.max, 262144);
+        assert!(profile.context.sweep_steps.contains(&262144));
+        assert!(profile.context.sweep_steps.contains(&65536));
     }
 
     #[test]

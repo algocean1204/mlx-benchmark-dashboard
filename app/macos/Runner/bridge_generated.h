@@ -19,6 +19,11 @@ typedef struct wire_cst_list_prim_u_8_strict {
   int32_t len;
 } wire_cst_list_prim_u_8_strict;
 
+typedef struct wire_cst_list_prim_u_32_strict {
+  uint32_t *ptr;
+  int32_t len;
+} wire_cst_list_prim_u_32_strict;
+
 typedef struct wire_cst_frb_chat_message {
   struct wire_cst_list_prim_u_8_strict *role;
   struct wire_cst_list_prim_u_8_strict *content;
@@ -107,6 +112,7 @@ typedef struct wire_cst_frb_context_stats_row {
   double ttft_avg_ms;
   int64_t run_count;
   int64_t peak_phys_footprint_bytes;
+  int64_t peak_phys_avg_bytes;
 } wire_cst_frb_context_stats_row;
 
 typedef struct wire_cst_list_frb_context_stats_row {
@@ -163,11 +169,6 @@ typedef struct wire_cst_list_frb_overview_row {
   int32_t len;
 } wire_cst_list_frb_overview_row;
 
-typedef struct wire_cst_list_prim_u_32_strict {
-  uint32_t *ptr;
-  int32_t len;
-} wire_cst_list_prim_u_32_strict;
-
 typedef struct wire_cst_frb_profile_row {
   struct wire_cst_list_prim_u_8_strict *id;
   struct wire_cst_list_prim_u_8_strict *backend;
@@ -195,6 +196,7 @@ typedef struct wire_cst_frb_run_list_row {
   double *decode_tps;
   int64_t *peak_phys_footprint_bytes;
   struct wire_cst_frb_tier_info *tier;
+  struct wire_cst_list_prim_u_8_strict *ended_at;
 } wire_cst_frb_run_list_row;
 
 typedef struct wire_cst_list_frb_run_list_row {
@@ -360,7 +362,8 @@ void frbgen_app_wire__crate__api__bench_start(int64_t port_,
                                               struct wire_cst_list_prim_u_8_strict *prompt,
                                               struct wire_cst_list_prim_u_8_strict *image_path,
                                               struct wire_cst_list_prim_u_8_strict *audio_path,
-                                              struct wire_cst_list_prim_u_8_strict *bench_task);
+                                              struct wire_cst_list_prim_u_8_strict *bench_task,
+                                              struct wire_cst_list_prim_u_32_strict *sweep_steps);
 
 void frbgen_app_wire__crate__api__cache_delete(int64_t port_,
                                                struct wire_cst_list_prim_u_8_strict *repo_id);

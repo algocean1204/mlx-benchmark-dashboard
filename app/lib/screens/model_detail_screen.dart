@@ -373,6 +373,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
               DataColumn(label: Text('TPS avg')),
               DataColumn(label: Text('TPS max')),
               DataColumn(label: Text('TTFT avg')),
+              DataColumn(label: MetricLabel(term: 'Peak RAM')),
               DataColumn(label: Text('런 수')),
             ],
             rows: stats.byContext
@@ -384,6 +385,13 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                       DataCell(Text(r.decodeTpsAvg.toStringAsFixed(1))),
                       DataCell(Text(r.decodeTpsMax.toStringAsFixed(1))),
                       DataCell(Text('${r.ttftAvgMs.toStringAsFixed(0)} ms')),
+                      DataCell(
+                        Text(
+                          formatBytesInt(
+                            platformIntToInt(r.peakPhysAvgBytes),
+                          ),
+                        ),
+                      ),
                       DataCell(Text('${platformIntToInt(r.runCount)}')),
                     ],
                   ),

@@ -6,7 +6,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex as StdMutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -58,6 +58,23 @@ fn clear_bench_abort_tx() {
 pub const TTS_BENCH_PROMPT: &str = "Hello, benchmark test.";
 pub const IMAGE_GEN_BENCH_PROMPT: &str = "A simple red circle on white background.";
 pub const MULTIMODAL_BENCH_PROMPT: &str = "Describe this image briefly.";
+
+/// 측정 전체 타임아웃: 60s + ceil(context/100) (4096→101s, 262144→2682s).
+const MEASURE_TIMEOUT_BASE_SECS: u64 = 60;
+/// HTTP 클라이언트 타임아웃 = 측정 타임아웃 + 여유.
+const HTTP_TIMEOUT_BUFFER_SECS: u64 = 120;
+/// 토큰/샘플 이벤트가 이 시간 동안 없으면 무진행으로 중단.
+const NO_PROGRESS_TIMEOUT_SECS: u64 = 300;
+/// 스윕 단계 시작 전 최소 가용 메모리 (GiB).
+const SWEEP_MIN_AVAILABLE_GIB: f64 = 8.0;
+
+pub fn measure_timeout_secs(context_size: u32) -> u64 {
+    MEASURE_TIMEOUT_BASE_SECS.saturating_add((context_size as u64).div_ceil(100))
+}
+
+pub fn http_timeout_secs(context_size: u32) -> u64 {
+    measure_timeout_secs(context_size).saturating_add(HTTP_TIMEOUT_BUFFER_SECS)
+}
 
 const FILLER_TEXT: &str = "\
 인공지능 모델의 성능을 측정하기 위해 충분한 길이의 컨텍스트를 채워야 한다. \
@@ -606,8 +623,9 @@ async fn execute_cycle(
             });
         }
 
+        let http_timeout = Duration::from_secs(http_timeout_secs(config.context));
         let http = Client::builder()
-            .timeout(Duration::from_secs(300))
+            .timeout(http_timeout)
             .build()
             .map_err(|e| e.to_string())?;
 
@@ -669,14 +687,30 @@ async fn execute_cycle(
             }
         });
 
-        let measure_deadline = Duration::from_secs(60);
+        let measure_deadline = Duration::from_secs(measure_timeout_secs(config.context));
+        let no_progress_limit = Duration::from_secs(NO_PROGRESS_TIMEOUT_SECS);
+        let mut last_progress = Instant::now();
+        let mut stall_check = tokio::time::interval(Duration::from_secs(15));
+        stall_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let measure_result = timeout(measure_deadline, async {
             loop {
                 tokio::select! {
+                    _ = stall_check.tick() => {
+                        if last_progress.elapsed() >= no_progress_limit {
+                            measure_task.abort();
+                            return Err(format!(
+                                "no measurement progress for {}s",
+                                no_progress_limit.as_secs()
+                            ));
+                        }
+                    }
                     event = progress_events.recv() => {
                         match event {
                             Ok(ev) => {
                                 relay_event(&config.progress_tx, &ev);
+                                if matches!(ev, CoreEvent::Token { .. } | CoreEvent::Sample(_)) {
+                                    last_progress = Instant::now();
+                                }
                                 if matches!(ev, CoreEvent::WatchdogKill) {
                                     saw_watchdog_kill = true;
                                     measure_task.abort();
@@ -819,6 +853,22 @@ pub async fn run_bench_single(
     run_single(db, config, prompt_file).await
 }
 
+pub fn sweep_skip_reason_for_available(avail_bytes: u64) -> Option<String> {
+    let min_bytes = (SWEEP_MIN_AVAILABLE_GIB * 1024.0 * 1024.0 * 1024.0) as u64;
+    if avail_bytes < min_bytes {
+        let avail_gib = avail_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
+        Some(format!(
+            "available memory {avail_gib:.1} GiB < {SWEEP_MIN_AVAILABLE_GIB:.0} GiB — skipping step"
+        ))
+    } else {
+        None
+    }
+}
+
+fn sweep_skip_for_low_memory() -> Option<String> {
+    sweep_skip_reason_for_available(crate::sys_memory::system_available_bytes())
+}
+
 pub async fn run_context_sweep(
     db: &Database,
     profile: ModelProfile,
@@ -849,6 +899,15 @@ pub async fn run_context_sweep(
     let mut skipped_remaining = false;
 
     for (idx, &step) in steps.iter().enumerate() {
+        if let Some(reason) = sweep_skip_for_low_memory() {
+            emit_progress_msg(
+                &progress_tx,
+                &format!("sweep step {}/{}: context={step} skipped — {reason}", idx + 1, steps.len()),
+            )
+            .await;
+            continue;
+        }
+
         emit_progress_msg(
             &progress_tx,
             &format!("sweep step {}/{}: context={step}", idx + 1, steps.len()),
@@ -1123,6 +1182,21 @@ async fn emit_progress_msg(progress_tx: &Option<broadcast::Sender<CoreEvent>>, m
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sweep_memory_guard_skips_below_8gib() {
+        let min = (SWEEP_MIN_AVAILABLE_GIB * 1024.0 * 1024.0 * 1024.0) as u64;
+        assert!(sweep_skip_reason_for_available(min - 1).is_some());
+        assert!(sweep_skip_reason_for_available(min).is_none());
+    }
+
+    #[test]
+    fn measure_timeout_scales_with_context() {
+        assert_eq!(measure_timeout_secs(4096), 101);
+        assert_eq!(measure_timeout_secs(32768), 388);
+        assert_eq!(measure_timeout_secs(262144), 2682);
+        assert!(http_timeout_secs(4096) > measure_timeout_secs(4096));
+    }
 
     #[test]
     fn parse_step_tokens() {

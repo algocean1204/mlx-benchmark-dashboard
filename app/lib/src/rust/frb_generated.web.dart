@@ -231,6 +231,9 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
 
   @protected
+  Uint32List? dco_decode_opt_list_prim_u_32_strict(dynamic raw);
+
+  @protected
   (BigInt, BigInt, BigInt, double) dco_decode_record_u_64_u_64_u_64_f_64(
     dynamic raw,
   );
@@ -507,6 +510,11 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
 
   @protected
   BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  Uint32List? sse_decode_opt_list_prim_u_32_strict(
+    SseDeserializer deserializer,
+  );
 
   @protected
   (BigInt, BigInt, BigInt, double) sse_decode_record_u_64_u_64_u_64_f_64(
@@ -851,6 +859,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_f_64(raw.ttftAvgMs),
       cst_encode_i_64(raw.runCount),
       cst_encode_i_64(raw.peakPhysFootprintBytes),
+      cst_encode_i_64(raw.peakPhysAvgBytes),
     ].jsify()!;
   }
 
@@ -1005,6 +1014,7 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
       cst_encode_opt_box_autoadd_f_64(raw.decodeTps),
       cst_encode_opt_box_autoadd_i_64(raw.peakPhysFootprintBytes),
       cst_encode_opt_box_autoadd_frb_tier_info(raw.tier),
+      cst_encode_opt_String(raw.endedAt),
     ].jsify()!;
   }
 
@@ -1160,6 +1170,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   JSAny? cst_encode_opt_box_autoadd_u_64(BigInt? raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw == null ? null : cst_encode_box_autoadd_u_64(raw);
+  }
+
+  @protected
+  JSAny? cst_encode_opt_list_prim_u_32_strict(Uint32List? raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw == null ? null : cst_encode_list_prim_u_32_strict(raw);
   }
 
   @protected
@@ -1539,6 +1555,12 @@ abstract class AidashFrbApiImplPlatform extends BaseApiImpl<AidashFrbWire> {
   void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_list_prim_u_32_strict(
+    Uint32List? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_record_u_64_u_64_u_64_f_64(
     (BigInt, BigInt, BigInt, double) self,
     SseSerializer serializer,
@@ -1597,6 +1619,7 @@ class AidashFrbWire implements BaseWire {
     String? image_path,
     String? audio_path,
     String? bench_task,
+    JSAny? sweep_steps,
   ) => wasmModule.wire__crate__api__bench_start(
     port_,
     profile_id,
@@ -1606,6 +1629,7 @@ class AidashFrbWire implements BaseWire {
     image_path,
     audio_path,
     bench_task,
+    sweep_steps,
   );
 
   void wire__crate__api__cache_delete(NativePortType port_, String repo_id) =>
@@ -1778,6 +1802,7 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
     String? image_path,
     String? audio_path,
     String? bench_task,
+    JSAny? sweep_steps,
   );
 
   external void wire__crate__api__cache_delete(

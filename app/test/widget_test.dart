@@ -128,6 +128,21 @@ void main() {
     expect(find.text('런 삭제'), findsNothing);
   });
 
+  testWidgets('비교 화면에서 모델 1개 선택 시 컨텍스트별 비교가 표시된다', (tester) async {
+    await tester.pumpWidget(_wrap(const CompareScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Qwen2.5 7B 4bit'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('같은 모델의 컨텍스트별 측정 비교입니다.'),
+      findsOneWidget,
+    );
+    expect(find.text('4096'), findsWidgets);
+    expect(find.text('8192'), findsWidgets);
+  });
+
   testWidgets('비교 화면에서 모델 2개 선택 시 자동으로 비교 결과가 표시된다', (tester) async {
     await tester.pumpWidget(_wrap(const CompareScreen()));
     await tester.pumpAndSettle();
@@ -169,6 +184,38 @@ void main() {
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
     expect(find.text('모델 캐시 삭제'), findsNothing);
+  });
+
+  testWidgets('벤치 스윕 모드에서 단계 체크박스와 대형 컨텍스트 경고가 표시된다', (tester) async {
+    final api = MockAidashApi(
+      profiles: [
+        FrbProfileRow(
+          id: 'mlx-community/Qwen3.6-35B-A3B-OptiQ-4bit',
+          backend: 'vllm_mlx',
+          modelType: 'llm',
+          contextDefault: 4096,
+          contextMin: 1024,
+          contextMax: 262144,
+          sweepSteps: Uint32List.fromList(<int>[
+            1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
+          ]),
+          filename: 'mlx-community-qwen3.6-35b-a3b-optiq-4bit.json',
+          isMultimodal: false,
+        ),
+      ],
+    );
+    await tester.pumpWidget(_wrap(const BenchScreen(), api: api));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('스윕'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('스윕 단계'), findsOneWidget);
+    expect(find.text('65536'), findsWidgets);
+    expect(
+      find.textContaining('대형 컨텍스트'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('벤치 화면이 ASR 프로파일에서 오디오 입력 UI로 전환된다', (tester) async {

@@ -41,6 +41,7 @@ abstract class AidashApi {
     String? imagePath,
     String? audioPath,
     String? benchTask,
+    List<int>? sweepSteps,
   });
 
   void profileSetTask({
@@ -197,6 +198,7 @@ class MockAidashApi implements AidashApi {
             ttftAvgMs: 180,
             runCount: 8,
             peakPhysFootprintBytes: 6 * 1024 * 1024 * 1024,
+            peakPhysAvgBytes: 5 * 1024 * 1024 * 1024 + 512 * 1024 * 1024,
           ),
           FrbContextStatsRow(
             contextSize: 8192,
@@ -206,6 +208,7 @@ class MockAidashApi implements AidashApi {
             ttftAvgMs: 220,
             runCount: 4,
             peakPhysFootprintBytes: 7 * 1024 * 1024 * 1024,
+            peakPhysAvgBytes: 6 * 1024 * 1024 * 1024 + 256 * 1024 * 1024,
           ),
         ],
       );
@@ -221,6 +224,19 @@ class MockAidashApi implements AidashApi {
           decodeTps: 52.3,
           peakPhysFootprintBytes: 6 * 1024 * 1024 * 1024,
           tier: _tier(52.3),
+          endedAt: '1717920000000',
+        ),
+        FrbRunListRow(
+          runId: 102,
+          profileId: 'mlx-community/Qwen2.5-7B-Instruct-4bit',
+          displayName: 'Qwen2.5 7B 4bit',
+          kind: 'bench',
+          contextSize: 8192,
+          status: 'completed',
+          decodeTps: 44.5,
+          peakPhysFootprintBytes: 7 * 1024 * 1024 * 1024,
+          tier: _tier(44.5),
+          endedAt: '1718006400000',
         ),
       ];
 
@@ -359,6 +375,7 @@ class MockAidashApi implements AidashApi {
     String? imagePath,
     String? audioPath,
     String? benchTask,
+    List<int>? sweepSteps,
   }) async =>
       201;
 

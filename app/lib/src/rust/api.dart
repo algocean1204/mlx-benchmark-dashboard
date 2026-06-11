@@ -67,6 +67,7 @@ Future<PlatformInt64> benchStart({
   String? imagePath,
   String? audioPath,
   String? benchTask,
+  Uint32List? sweepSteps,
 }) => AidashFrb.instance.api.crateApiBenchStart(
   profileId: profileId,
   ctx: ctx,
@@ -75,6 +76,7 @@ Future<PlatformInt64> benchStart({
   imagePath: imagePath,
   audioPath: audioPath,
   benchTask: benchTask,
+  sweepSteps: sweepSteps,
 );
 
 Stream<FrbBenchEvent> benchEvents() =>
@@ -510,6 +512,7 @@ class FrbContextStatsRow {
   final double ttftAvgMs;
   final PlatformInt64 runCount;
   final PlatformInt64 peakPhysFootprintBytes;
+  final PlatformInt64 peakPhysAvgBytes;
 
   const FrbContextStatsRow({
     required this.contextSize,
@@ -519,6 +522,7 @@ class FrbContextStatsRow {
     required this.ttftAvgMs,
     required this.runCount,
     required this.peakPhysFootprintBytes,
+    required this.peakPhysAvgBytes,
   });
 
   @override
@@ -529,7 +533,8 @@ class FrbContextStatsRow {
       decodeTpsMax.hashCode ^
       ttftAvgMs.hashCode ^
       runCount.hashCode ^
-      peakPhysFootprintBytes.hashCode;
+      peakPhysFootprintBytes.hashCode ^
+      peakPhysAvgBytes.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -542,7 +547,8 @@ class FrbContextStatsRow {
           decodeTpsMax == other.decodeTpsMax &&
           ttftAvgMs == other.ttftAvgMs &&
           runCount == other.runCount &&
-          peakPhysFootprintBytes == other.peakPhysFootprintBytes;
+          peakPhysFootprintBytes == other.peakPhysFootprintBytes &&
+          peakPhysAvgBytes == other.peakPhysAvgBytes;
 }
 
 class FrbDeleteSummary {
@@ -960,6 +966,7 @@ class FrbRunListRow {
   final double? decodeTps;
   final PlatformInt64? peakPhysFootprintBytes;
   final FrbTierInfo? tier;
+  final String? endedAt;
 
   const FrbRunListRow({
     required this.runId,
@@ -971,6 +978,7 @@ class FrbRunListRow {
     this.decodeTps,
     this.peakPhysFootprintBytes,
     this.tier,
+    this.endedAt,
   });
 
   @override
@@ -983,7 +991,8 @@ class FrbRunListRow {
       status.hashCode ^
       decodeTps.hashCode ^
       peakPhysFootprintBytes.hashCode ^
-      tier.hashCode;
+      tier.hashCode ^
+      endedAt.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -998,7 +1007,8 @@ class FrbRunListRow {
           status == other.status &&
           decodeTps == other.decodeTps &&
           peakPhysFootprintBytes == other.peakPhysFootprintBytes &&
-          tier == other.tier;
+          tier == other.tier &&
+          endedAt == other.endedAt;
 }
 
 class FrbTierInfo {

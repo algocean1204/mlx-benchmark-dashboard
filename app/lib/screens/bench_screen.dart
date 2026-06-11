@@ -28,6 +28,7 @@ class _BenchScreenState extends State<BenchScreen> {
   String _benchTask = 'llm';
   int _ctx = 4096;
   FrbBenchMode _mode = FrbBenchMode.single;
+  final Set<int> _selectedSweepSteps = {};
   String _state = 'Idle';
   final List<FrbResourceSample> _samples = [];
   FrbBenchResult? _result;
@@ -46,6 +47,8 @@ class _BenchScreenState extends State<BenchScreen> {
   static const _defaultMultimodalPrompt = 'Describe this image briefly.';
   static const _defaultImageFixture = 'tests/fixtures/test_image.png';
   static const _defaultAudioFixture = 'tests/fixtures/test_audio.wav';
+  static const _largeContextThreshold = 65536;
+  static const _defaultSweepMaxSelected = 32768;
 
   @override
   void initState() {
@@ -70,9 +73,24 @@ class _BenchScreenState extends State<BenchScreen> {
         _ctx = profiles.first.contextDefault;
         _benchTask = TaskLabels.benchTasksForProfile(profiles.first.modelType).first;
         _applyTaskDefaults(api);
+        _resetSweepStepSelection();
       }
     });
   }
+
+  void _resetSweepStepSelection() {
+    _selectedSweepSteps
+      ..clear()
+      ..addAll(
+        _ctxOptions.where((s) => s <= _defaultSweepMaxSelected),
+      );
+  }
+
+  bool get _hasLargeSweepSteps =>
+      _ctxOptions.any((s) => s >= _largeContextThreshold);
+
+  List<int> get _orderedSelectedSweepSteps =>
+      _selectedSweepSteps.toList()..sort();
 
   FrbProfileRow? get _profile {
     if (_profileId == null) return null;
@@ -192,6 +210,14 @@ class _BenchScreenState extends State<BenchScreen> {
       benchTask = _benchTask;
     }
 
+    if (_mode == FrbBenchMode.sweep && _selectedSweepSteps.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('스윕할 컨텍스트 단계를 1개 이상 선택하세요')),
+      );
+      setState(() => _running = false);
+      return;
+    }
+
     try {
       await api.benchStart(
         profileId: _profileId!,
@@ -201,6 +227,9 @@ class _BenchScreenState extends State<BenchScreen> {
         imagePath: imagePath,
         audioPath: audioPath,
         benchTask: benchTask,
+        sweepSteps: _mode == FrbBenchMode.sweep
+            ? _orderedSelectedSweepSteps
+            : null,
       );
     } catch (e) {
       if (mounted) {
@@ -479,6 +508,7 @@ class _BenchScreenState extends State<BenchScreen> {
                       _ctx = p.contextDefault;
                       _benchTask = tasks.first;
                       _applyTaskDefaults(api);
+                      _resetSweepStepSelection();
                     });
                   },
                 ),
@@ -550,8 +580,49 @@ class _BenchScreenState extends State<BenchScreen> {
                     selected: {_mode},
                     onSelectionChanged: _running
                         ? null
-                        : (s) => setState(() => _mode = s.first),
+                        : (s) => setState(() {
+                              _mode = s.first;
+                              if (_mode == FrbBenchMode.sweep) {
+                                _resetSweepStepSelection();
+                              }
+                            }),
                   ),
+                  if (_mode == FrbBenchMode.sweep) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      '스윕 단계',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 0,
+                      children: _ctxOptions.map((step) {
+                        return FilterChip(
+                          label: Text('$step'),
+                          selected: _selectedSweepSteps.contains(step),
+                          onSelected: _running
+                              ? null
+                              : (v) => setState(() {
+                                    if (v) {
+                                      _selectedSweepSteps.add(step);
+                                    } else {
+                                      _selectedSweepSteps.remove(step);
+                                    }
+                                  }),
+                        );
+                      }).toList(),
+                    ),
+                    if (_hasLargeSweepSteps) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '대형 컨텍스트(65536+)는 메모리를 많이 사용합니다. 필요 시에만 선택하세요.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.warning,
+                            ),
+                      ),
+                    ],
+                  ],
                 ],
                 const SizedBox(height: 20),
                 Row(

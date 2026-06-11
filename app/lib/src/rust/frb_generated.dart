@@ -99,6 +99,7 @@ abstract class AidashFrbApi extends BaseApi {
     String? imagePath,
     String? audioPath,
     String? benchTask,
+    Uint32List? sweepSteps,
   });
 
   Future<FrbCacheDeleteResult> crateApiCacheDelete({required String repoId});
@@ -349,6 +350,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     String? imagePath,
     String? audioPath,
     String? benchTask,
+    Uint32List? sweepSteps,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -360,6 +362,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
           var arg4 = cst_encode_opt_String(imagePath);
           var arg5 = cst_encode_opt_String(audioPath);
           var arg6 = cst_encode_opt_String(benchTask);
+          var arg7 = cst_encode_opt_list_prim_u_32_strict(sweepSteps);
           return wire.wire__crate__api__bench_start(
             port_,
             arg0,
@@ -369,6 +372,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
             arg4,
             arg5,
             arg6,
+            arg7,
           );
         },
         codec: DcoCodec(
@@ -384,6 +388,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
           imagePath,
           audioPath,
           benchTask,
+          sweepSteps,
         ],
         apiImpl: this,
       ),
@@ -400,6 +405,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       "imagePath",
       "audioPath",
       "benchTask",
+      "sweepSteps",
     ],
   );
 
@@ -1433,8 +1439,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbContextStatsRow dco_decode_frb_context_stats_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return FrbContextStatsRow(
       contextSize: dco_decode_i_64(arr[0]),
       decodeTpsMin: dco_decode_f_64(arr[1]),
@@ -1443,6 +1449,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       ttftAvgMs: dco_decode_f_64(arr[4]),
       runCount: dco_decode_i_64(arr[5]),
       peakPhysFootprintBytes: dco_decode_i_64(arr[6]),
+      peakPhysAvgBytes: dco_decode_i_64(arr[7]),
     );
   }
 
@@ -1621,8 +1628,8 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   FrbRunListRow dco_decode_frb_run_list_row(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return FrbRunListRow(
       runId: dco_decode_i_64(arr[0]),
       profileId: dco_decode_String(arr[1]),
@@ -1633,6 +1640,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       decodeTps: dco_decode_opt_box_autoadd_f_64(arr[6]),
       peakPhysFootprintBytes: dco_decode_opt_box_autoadd_i_64(arr[7]),
       tier: dco_decode_opt_box_autoadd_frb_tier_info(arr[8]),
+      endedAt: dco_decode_opt_String(arr[9]),
     );
   }
 
@@ -1804,6 +1812,12 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
   BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_u_64(raw);
+  }
+
+  @protected
+  Uint32List? dco_decode_opt_list_prim_u_32_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_list_prim_u_32_strict(raw);
   }
 
   @protected
@@ -2215,6 +2229,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     var var_ttftAvgMs = sse_decode_f_64(deserializer);
     var var_runCount = sse_decode_i_64(deserializer);
     var var_peakPhysFootprintBytes = sse_decode_i_64(deserializer);
+    var var_peakPhysAvgBytes = sse_decode_i_64(deserializer);
     return FrbContextStatsRow(
       contextSize: var_contextSize,
       decodeTpsMin: var_decodeTpsMin,
@@ -2223,6 +2238,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       ttftAvgMs: var_ttftAvgMs,
       runCount: var_runCount,
       peakPhysFootprintBytes: var_peakPhysFootprintBytes,
+      peakPhysAvgBytes: var_peakPhysAvgBytes,
     );
   }
 
@@ -2449,6 +2465,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       deserializer,
     );
     var var_tier = sse_decode_opt_box_autoadd_frb_tier_info(deserializer);
+    var var_endedAt = sse_decode_opt_String(deserializer);
     return FrbRunListRow(
       runId: var_runId,
       profileId: var_profileId,
@@ -2459,6 +2476,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
       decodeTps: var_decodeTps,
       peakPhysFootprintBytes: var_peakPhysFootprintBytes,
       tier: var_tier,
+      endedAt: var_endedAt,
     );
   }
 
@@ -2751,6 +2769,19 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_u_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  Uint32List? sse_decode_opt_list_prim_u_32_strict(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_list_prim_u_32_strict(deserializer));
     } else {
       return null;
     }
@@ -3210,6 +3241,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_f_64(self.ttftAvgMs, serializer);
     sse_encode_i_64(self.runCount, serializer);
     sse_encode_i_64(self.peakPhysFootprintBytes, serializer);
+    sse_encode_i_64(self.peakPhysAvgBytes, serializer);
   }
 
   @protected
@@ -3375,6 +3407,7 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_opt_box_autoadd_f_64(self.decodeTps, serializer);
     sse_encode_opt_box_autoadd_i_64(self.peakPhysFootprintBytes, serializer);
     sse_encode_opt_box_autoadd_frb_tier_info(self.tier, serializer);
+    sse_encode_opt_String(self.endedAt, serializer);
   }
 
   @protected
@@ -3643,6 +3676,19 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_u_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_list_prim_u_32_strict(
+    Uint32List? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_list_prim_u_32_strict(self, serializer);
     }
   }
 

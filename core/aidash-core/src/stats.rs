@@ -37,6 +37,7 @@ pub struct ContextStatsRow {
     pub ttft_avg_ms: f64,
     pub run_count: i64,
     pub peak_phys_footprint_bytes: i64,
+    pub peak_phys_avg_bytes: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -382,6 +383,11 @@ impl Database {
                 };
                 let ttft_avg = runs.iter().map(|r| r.ttft_ms).sum::<f64>() / count as f64;
                 let peak_phys = runs.iter().map(|r| r.peak_phys).max().unwrap_or(0);
+                let peak_phys_avg = if count > 0 {
+                    runs.iter().map(|r| r.peak_phys).sum::<i64>() / count
+                } else {
+                    0
+                };
                 ContextStatsRow {
                     context_size: ctx,
                     decode_tps_min: decode_min,
@@ -390,6 +396,7 @@ impl Database {
                     ttft_avg_ms: ttft_avg,
                     run_count: count,
                     peak_phys_footprint_bytes: peak_phys,
+                    peak_phys_avg_bytes: peak_phys_avg,
                 }
             })
             .collect();
