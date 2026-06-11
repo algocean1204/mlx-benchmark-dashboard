@@ -1,0 +1,3 @@
+[workspace]
+members = ["aidash-core", "aidash-cli", "aidash-frb"]
+resolver = "2"

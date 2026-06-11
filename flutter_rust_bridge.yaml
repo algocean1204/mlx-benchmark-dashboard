@@ -1,0 +1,7 @@
+rust_input: crate::api
+rust_root: core/aidash-frb/
+dart_output: app/lib/src/rust
+dart_entrypoint_class_name: AidashFrb
+rust_output: core/aidash-frb/src/frb_generated.rs
+c_output: app/macos/Runner/bridge_generated.h
+full_dep: true

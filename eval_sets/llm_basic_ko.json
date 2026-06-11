@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "name": "llm_basic_ko",
+  "items": [
+    {"id": "q1", "prompt": "2 + 3 = ?", "answer": "5", "match": "exact"},
+    {"id": "q2", "prompt": "7 × 8 = ?", "answer": "56", "match": "exact"},
+    {"id": "q3", "prompt": "100 - 37 = ?", "answer": "63", "match": "exact"},
+    {"id": "q4", "prompt": "144 ÷ 12 = ?", "answer": "12", "match": "exact"},
+    {"id": "q5", "prompt": "15 + 27 = ?", "answer": "42", "match": "exact"},
+    {"id": "q6", "prompt": "What is the capital of France? Answer with one word.", "answer": "Paris", "match": "contains"},
+    {"id": "q7", "prompt": "What is the capital of Japan? One word only.", "answer": "Tokyo", "match": "contains"},
+    {"id": "q8", "prompt": "What is the capital of South Korea? One word.", "answer": "Seoul", "match": "contains"},
+    {"id": "q9", "prompt": "What color is the sky on a clear day? One word.", "answer": "blue", "match": "contains"},
+    {"id": "q10", "prompt": "How many days are in a week? Answer with a number.", "answer": "7", "match": "exact"},
+    {"id": "q11", "prompt": "한국의 수도는? 한 단어로 답하세요.", "answer": "서울", "match": "contains"},
+    {"id": "q12", "prompt": "1년은 몇 개월? 숫자만 답하세요.", "answer": "12", "match": "exact"},
+    {"id": "q13", "prompt": "지구에서 가장 큰 대양은? 한 단어.", "answer": "태평양", "match": "contains"},
+    {"id": "q14", "prompt": "삼각형의 내각의 합은 몇 도? 숫자만.", "answer": "180", "match": "exact"},
+    {"id": "q15", "prompt": "물의 화학식은? (예: H2O)", "answer": "H2O", "match": "contains"},
+    {"id": "q16", "prompt": "If Tom has 3 apples and gets 4 more, how many apples? Number only.", "answer": "7", "match": "exact"},
+    {"id": "q17", "prompt": "What is 9 squared? Number only.", "answer": "81", "match": "exact"},
+    {"id": "q18", "prompt": "태양계에서 가장 큰 행성은? 한 단어.", "answer": "목성", "match": "contains"},
+    {"id": "q19", "prompt": "What animal says 'meow'? One word in English.", "answer": "cat", "match": "contains"},
+    {"id": "q20", "prompt": "5 × 5 = ? 숫자만 답하세요.", "answer": "25", "match": "exact"}
+  ]
+}

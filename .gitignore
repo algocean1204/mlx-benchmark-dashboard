@@ -1,0 +1,23 @@
+# Rust
+core/target/
+
+# Python
+python/.venv/
+__pycache__/
+*.pyc
+
+# 빌드 산출물·배포물
+dist/
+
+# 로컬 상태 (머신 종속 — 앱이 자동 생성)
+profiles/*.json
+profiles/_archive/
+*.db
+*.log
+
+# 세션·에이전트 로컬 설정
+.claude/
+.grok-briefs/
+
+# macOS
+.DS_Store

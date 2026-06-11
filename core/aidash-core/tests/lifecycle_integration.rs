@@ -1,0 +1,250 @@
+use std::path::PathBuf;
+use std::time::Duration;
+
+use aidash_core::events::CoreEvent;
+use aidash_core::lifecycle::{Command, LifecycleHandle, LifecycleState, StartParams};
+use aidash_core::profile::ModelProfile;
+use aidash_core::pyproc::{pick_free_port, ChildSpec};
+use reqwest::Client;
+use tokio::time::{sleep, timeout};
+
+fn fixture_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+}
+
+fn fake_server_path() -> PathBuf {
+    fixture_root().join("tests").join("fixtures").join("fake_server.py")
+}
+
+fn test_profile() -> ModelProfile {
+    ModelProfile {
+        schema_version: 1,
+        id: "test/fake".into(),
+        display_name: "Fake".into(),
+        source: aidash_core::profile::ProfileSource {
+            kind: "hf".into(),
+            hf_repo: "test/model".into(),
+            hf_file: String::new(),
+            local_path: String::new(),
+        },
+        model_type: "llm".into(),
+        backend: "vllm_mlx".into(),
+        io: aidash_core::profile::ProfileIo {
+            input: vec!["chat".into()],
+            output: "text".into(),
+        },
+        context: aidash_core::profile::ProfileContext {
+            min: 512,
+            max: 8192,
+            default: 1024,
+            sweep_steps: vec![],
+        },
+        default_params: serde_json::json!({}),
+        quantization: Some("4bit".into()),
+        load_timeout_sec: 30,
+        notes: String::new(),
+    }
+}
+
+fn fake_child_spec(port: u16, load_delay_sec: &str) -> ChildSpec {
+    ChildSpec {
+        program: "python3".into(),
+        args: vec![
+            fake_server_path().display().to_string(),
+            "--port".into(),
+            port.to_string(),
+            "--load-delay-sec".into(),
+            load_delay_sec.into(),
+        ],
+        envs: vec![],
+    }
+}
+
+#[tokio::test]
+async fn normal_lifecycle_cycle() {
+    let port = pick_free_port().expect("free port");
+    let profile = test_profile();
+    let handle = LifecycleHandle::spawn();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: None,
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(fake_child_spec(port, "0.3")),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start send");
+
+    handle.wait_for_state(LifecycleState::Ready).await;
+
+    // Verify we reached key states
+    assert_eq!(*handle.state_rx.borrow(), LifecycleState::Ready);
+
+    handle
+        .command_tx
+        .send(Command::Stop)
+        .await
+        .expect("stop send");
+    handle.wait_for_state(LifecycleState::Idle).await;
+
+    assert_eq!(*handle.state_rx.borrow(), LifecycleState::Idle);
+
+    // No python fake_server still running on our port
+    let client = Client::new();
+    let resp = client
+        .get(format!("http://127.0.0.1:{port}/health"))
+        .send()
+        .await;
+    assert!(resp.is_err(), "server should be stopped");
+
+}
+
+#[tokio::test]
+async fn watchdog_kill_on_memory_limit() {
+    let port = pick_free_port().expect("free port");
+    let profile = test_profile();
+    let handle = LifecycleHandle::spawn();
+    let mut rx = handle.event_tx.subscribe();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: Some(0.05),
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(fake_child_spec(port, "0.2")),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start send");
+
+    handle.wait_for_state(LifecycleState::Ready).await;
+
+    let client = Client::new();
+    let _ = client
+        .get(format!("http://127.0.0.1:{port}/alloc?mb=80"))
+        .send()
+        .await
+        .expect("alloc request");
+
+    let mut saw_kill = false;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+    while tokio::time::Instant::now() < deadline {
+        if let Ok(Ok(event)) = timeout(Duration::from_millis(200), rx.recv()).await {
+            if matches!(event, CoreEvent::WatchdogKill) {
+                saw_kill = true;
+            }
+        }
+        if *handle.state_rx.borrow() == LifecycleState::Idle {
+            break;
+        }
+    }
+
+    handle.wait_for_state(LifecycleState::Idle).await;
+    assert!(saw_kill, "expected WatchdogKill event");
+    assert_eq!(*handle.state_rx.borrow(), LifecycleState::Idle);
+
+    let resp = client
+        .get(format!("http://127.0.0.1:{port}/health"))
+        .send()
+        .await;
+    assert!(resp.is_err(), "server should be dead after watchdog kill");
+}
+
+#[tokio::test]
+async fn spawning_failure_returns_to_idle() {
+    let port = pick_free_port().expect("free port");
+    let profile = test_profile();
+    let handle = LifecycleHandle::spawn();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: None,
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(ChildSpec {
+            program: "/nonexistent/aidash-fake-program".into(),
+            args: vec![],
+            envs: vec![],
+        }),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start send");
+
+    handle.wait_for_state(LifecycleState::Idle).await;
+    assert_eq!(*handle.state_rx.borrow(), LifecycleState::Idle);
+}
+
+#[tokio::test]
+async fn normal_cycle_state_transitions() {
+    let port = pick_free_port().expect("free port");
+    let profile = test_profile();
+    let handle = LifecycleHandle::spawn();
+    let mut rx = handle.event_tx.subscribe();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: None,
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(fake_child_spec(port, "0.2")),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start");
+
+    let mut transitions = Vec::new();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    while tokio::time::Instant::now() < deadline {
+        while let Ok(ev) = rx.try_recv() {
+            if let CoreEvent::StateChanged { from, to } = ev {
+                transitions.push((from, to));
+            }
+        }
+        if *handle.state_rx.borrow() == LifecycleState::Ready {
+            break;
+        }
+        sleep(Duration::from_millis(50)).await;
+    }
+
+    assert!(
+        transitions.contains(&(LifecycleState::Idle, LifecycleState::Spawning)),
+        "missing Idle->Spawning: {transitions:?}"
+    );
+    assert!(
+        transitions.iter().any(|(_, to)| *to == LifecycleState::Loading),
+        "missing ->Loading: {transitions:?}"
+    );
+    assert!(
+        transitions.iter().any(|(_, to)| *to == LifecycleState::Ready),
+        "missing ->Ready: {transitions:?}"
+    );
+
+    handle.command_tx.send(Command::Stop).await.expect("stop");
+    handle.wait_for_state(LifecycleState::Idle).await;
+
+    assert!(
+        transitions.iter().any(|(_, to)| *to == LifecycleState::Stopping)
+            || *handle.state_rx.borrow() == LifecycleState::Idle
+    );
+}

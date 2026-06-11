@@ -1,0 +1,21 @@
+[project]
+name = "aidash-adapters"
+version = "0.1.0"
+description = "AI Dashboard Python backend adapters"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+vllm = ["vllm-mlx==0.3.0"]
+mlx-lm = ["mlx-lm"]
+vlm = ["mlx-vlm"]
+whisper = ["mlx-whisper"]
+audio = ["mlx-audio"]
+imagegen = ["mflux"]
+cpu = ["llama-cpp-python", "transformers"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["adapters"]
