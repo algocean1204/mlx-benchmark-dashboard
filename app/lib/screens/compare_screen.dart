@@ -41,10 +41,9 @@ class _CompareScreenState extends State<CompareScreen> {
   List<FrbCompareRow> _rows = [];
   List<_ContextCompareRow> _contextRows = [];
   String? _contextCompareModel;
+  List<int> _contextOptions = [];
   bool _loading = false;
   String? _error;
-
-  static const _contextOptions = [2048, 4096, 8192, 16384, 32768];
 
   bool get _isContextCompareMode => _selected.length == 1;
 
@@ -54,13 +53,23 @@ class _CompareScreenState extends State<CompareScreen> {
     _loadModels();
   }
 
+  void _syncContextSelection(List<int> options) {
+    if (options.isEmpty) return;
+    if (!options.contains(_context)) {
+      _context = options.contains(4096) ? 4096 : options.first;
+    }
+  }
+
   Future<void> _loadModels() async {
     final api = context.read<AidashApi>();
     try {
       final rows = api.statsOverview();
+      final contexts = api.measuredContexts();
       if (!mounted) return;
       setState(() {
         _models = rows;
+        _contextOptions = contexts;
+        _syncContextSelection(contexts);
         _error = null;
       });
       _refreshCompare();
@@ -203,20 +212,23 @@ class _CompareScreenState extends State<CompareScreen> {
             color: AppTheme.inkMuted,
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _contextOptions
-              .map(
-                (c) => ChoiceChip(
-                  label: Text(formatContext(c)),
-                  selected: _context == c,
-                  onSelected: _isContextCompareMode ? null : (_) => _setContext(c),
-                ),
-              )
-              .toList(),
-        ),
+        if (_contextOptions.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _contextOptions
+                .map(
+                  (c) => ChoiceChip(
+                    label: Text(formatContext(c)),
+                    selected: _context == c,
+                    onSelected:
+                        _isContextCompareMode ? null : (_) => _setContext(c),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
         const SizedBox(height: 16),
         Card(
           child: Padding(

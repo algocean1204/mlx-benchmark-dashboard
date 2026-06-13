@@ -618,6 +618,14 @@ pub fn stats_model(id: String) -> Result<FrbModelStats, String> {
     })
 }
 
+#[flutter_rust_bridge::frb(sync)]
+pub fn measured_contexts() -> Result<Vec<u32>, String> {
+    with_state(|s| {
+        let rows = s.db.measured_contexts().map_err(|e| e.to_string())?;
+        Ok(rows.into_iter().map(|c| c as u32).collect())
+    })
+}
+
 fn map_model_stats(s: ModelStats) -> FrbModelStats {
     FrbModelStats {
         profile_id: s.profile_id,
@@ -644,6 +652,15 @@ fn map_model_stats(s: ModelStats) -> FrbModelStats {
                 peak_phys_avg_bytes: c.peak_phys_avg_bytes,
             })
             .collect(),
+    }
+}
+
+fn profile_load_error(profile_id: &str, err: profile::ProfileError) -> String {
+    match err {
+        profile::ProfileError::NotFound { .. } => {
+            format!("프로파일이 없습니다 — 모델 관리에서 재설치 ({profile_id})")
+        }
+        other => other.to_string(),
     }
 }
 
@@ -914,7 +931,7 @@ pub async fn bench_start(
         let root = s.project_root.clone();
         let db = s.db.clone();
         let mut model_profile = profile::load_profile_by_id(&profiles_dir(&root), &profile_id)
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| profile_load_error(&profile_id, e))?;
         profile::ensure_runnable_profile(&model_profile).map_err(|e| e.to_string())?;
         let use_draft = use_draft.unwrap_or(model_profile.draft_model.is_some());
         if let Some(ref task) = bench_task {
@@ -1063,7 +1080,7 @@ pub async fn serve_start(profile_id: String, ctx: u32) -> Result<(), String> {
         }
         let model_profile =
             profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| profile_load_error(&profile_id, e))?;
         profile::ensure_runnable_profile(&model_profile).map_err(|e| e.to_string())?;
         let handle = LifecycleHandle::spawn();
         let events_tx = handle.event_tx.clone();
@@ -1267,7 +1284,7 @@ pub async fn chat_send(
             .ok_or_else(|| "serve profile not set".to_string())?;
         let profile =
             profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| profile_load_error(&profile_id, e))?;
         Ok((
             s.project_root.clone(),
             handle.command_tx.clone(),
@@ -1674,11 +1691,12 @@ pub fn eval_template_list() -> Result<Vec<FrbEvalTemplateInfo>, String> {
 #[flutter_rust_bridge::frb(sync)]
 pub fn eval_template_measurable_contexts(profile_id: String) -> Result<Vec<u32>, String> {
     with_state(|s| {
-        let profile =
-            profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
-                .map_err(|e| e.to_string())?;
         let set = load_template_set_from_state(s)?;
-        Ok(eval_templates::measurable_context_sizes(&profile, &set))
+        eval_templates::measurable_context_sizes_for_profile_id(
+            &profiles_dir(&s.project_root),
+            &profile_id,
+            &set,
+        )
     })
 }
 
@@ -1710,7 +1728,7 @@ pub async fn eval_template_run(
     let (root, db, model_profile, template_set) = with_state(|s| {
         let model_profile =
             profile::load_profile_by_id(&profiles_dir(&s.project_root), &profile_id)
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| profile_load_error(&profile_id, e))?;
         let set = load_template_set_from_state(s)?;
         Ok((
             s.project_root.clone(),

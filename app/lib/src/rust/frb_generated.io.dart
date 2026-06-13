@@ -2988,6 +2988,18 @@ class AidashFrbWire implements BaseWire {
         )
       >();
 
+  WireSyncRust2DartDco wire__crate__api__measured_contexts() {
+    return _wire__crate__api__measured_contexts();
+  }
+
+  late final _wire__crate__api__measured_contextsPtr =
+      _lookup<ffi.NativeFunction<WireSyncRust2DartDco Function()>>(
+        'frbgen_app_wire__crate__api__measured_contexts',
+      );
+  late final _wire__crate__api__measured_contexts =
+      _wire__crate__api__measured_contextsPtr
+          .asFunction<WireSyncRust2DartDco Function()>();
+
   WireSyncRust2DartDco wire__crate__api__profile_generate(
     ffi.Pointer<wire_cst_list_prim_u_8_strict> repo_id,
   ) {

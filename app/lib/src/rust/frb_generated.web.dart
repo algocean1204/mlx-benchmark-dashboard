@@ -2183,6 +2183,10 @@ class AidashFrbWire implements BaseWire {
       wasmModule.wire__crate__api__list_runs(model);
 
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__measured_contexts() =>
+      wasmModule.wire__crate__api__measured_contexts();
+
+  JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_generate(String repo_id) =>
       wasmModule.wire__crate__api__profile_generate(repo_id);
 
@@ -2408,6 +2412,9 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__list_runs(String? model);
+
+  external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
+  wire__crate__api__measured_contexts();
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__profile_generate(String repo_id);

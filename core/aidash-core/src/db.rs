@@ -646,6 +646,23 @@ impl Database {
         Ok(())
     }
 
+    /// 완료된 런에 존재하는 컨텍스트 크기의 합집합(오름차순).
+    pub fn measured_contexts(&self) -> Result<Vec<i64>, DbError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT r.context_size
+             FROM runs r
+             WHERE r.status = 'completed' AND r.context_size IS NOT NULL
+             ORDER BY r.context_size ASC",
+        )?;
+        let mapped = stmt.query_map([], |row| row.get(0))?;
+        let mut out = Vec::new();
+        for row in mapped {
+            out.push(row?);
+        }
+        Ok(out)
+    }
+
     pub fn list_runs(&self, model_profile_id: Option<&str>) -> Result<Vec<RunListRow>, DbError> {
         let conn = self.conn.lock().unwrap();
         let sql = if model_profile_id.is_some() {
@@ -1395,6 +1412,79 @@ mod tests {
         assert_eq!(messages[0].role, "user");
         db.delete_chat_session(sid).expect("delete");
         assert!(db.list_chat_sessions().unwrap().is_empty());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn measured_contexts_distinct_completed_only() {
+        let dir = std::env::temp_dir().join(format!("aidash_ctx_test_{}", std::process::id()));
+        let path = dir.join("test.db");
+        let db = Database::open(Some(&path)).expect("open");
+        let profile = ModelProfile {
+            schema_version: 1,
+            id: "test/model".into(),
+            display_name: "Test".into(),
+            source: crate::profile::ProfileSource {
+                kind: "hf".into(),
+                hf_repo: "test/model".into(),
+                hf_file: String::new(),
+                local_path: String::new(),
+            },
+            model_type: "llm".into(),
+            backend: "vllm_mlx".into(),
+            io: crate::profile::ProfileIo {
+                input: vec!["chat".into()],
+                output: "text".into(),
+            },
+            context: crate::profile::ProfileContext {
+                min: 512,
+                max: 8192,
+                default: 1024,
+                sweep_steps: vec![],
+            },
+            default_params: serde_json::json!({}),
+            quantization: None,
+            load_timeout_sec: 60,
+            notes: String::new(),
+            draft_model: None,
+            generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
+        };
+        let model_id = db.upsert_model(&profile).expect("upsert");
+        let run_a = db
+            .insert_run(model_id, "single", None, Some(4096), "{}")
+            .expect("insert 4k");
+        db.finish_run(run_a, "completed", None).expect("finish 4k");
+        let run_b = db
+            .insert_run(model_id, "single", None, Some(262144), "{}")
+            .expect("insert 256k");
+        db.finish_run(run_b, "completed", None).expect("finish 256k");
+        let run_c = db
+            .insert_run(model_id, "single", None, Some(8192), "{}")
+            .expect("insert 8k pending");
+        db.finish_run(run_c, "failed", None).expect("fail 8k");
+
+        let contexts = db.measured_contexts().expect("contexts");
+        assert_eq!(contexts, vec![4096, 262144]);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn eval_template_history_without_profile_file() {
+        let dir = std::env::temp_dir().join(format!("aidash_eval_hist_{}", std::process::id()));
+        let path = dir.join("test.db");
+        let db = Database::open(Some(&path)).expect("open");
+        db.insert_eval_template_result("archived/model", 4096, "ctx4k-1", 80, "ok", 1000)
+            .expect("insert");
+
+        let rows = db
+            .list_eval_template_results("archived/model", None)
+            .expect("list");
+        assert_eq!(rows.len(), 1);
+
+        let missing = db
+            .list_eval_template_results("no/such-model", None)
+            .expect("missing");
+        assert!(missing.is_empty());
         let _ = std::fs::remove_dir_all(dir);
     }
 

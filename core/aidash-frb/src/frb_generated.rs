@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -705172980;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 896131375;
 
 // Section: executor
 
@@ -919,6 +919,22 @@ fn wire__crate__api__list_runs_impl(
             let api_model = model.cst_decode();
             transform_result_dco::<_, _, String>((move || {
                 let output_ok = crate::api::list_runs(api_model)?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__measured_contexts_impl(
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::DcoCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "measured_contexts",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            transform_result_dco::<_, _, String>((move || {
+                let output_ok = crate::api::measured_contexts()?;
                 Ok(output_ok)
             })())
         },
@@ -5872,6 +5888,12 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__measured_contexts(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__measured_contexts_impl()
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__profile_generate(
         repo_id: *mut wire_cst_list_prim_u_8_strict,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
@@ -8418,6 +8440,12 @@ mod web {
         model: Option<String>,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
         wire__crate__api__list_runs_impl(model)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__measured_contexts(
+    ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
+        wire__crate__api__measured_contexts_impl()
     }
 
     #[wasm_bindgen]

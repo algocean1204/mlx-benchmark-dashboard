@@ -30,6 +30,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
   String? _profileTask;
   String? _linkedDraftModel;
   List<String> _drafterProfiles = [];
+  bool _hasProfile = true;
   bool _loading = true;
   String? _error;
 
@@ -42,6 +43,8 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
   List<FrbEvalTemplateItemResult> _evalItems = [];
   List<FrbEvalTemplateHistoryEntry> _evalHistory = [];
   String? _evalError;
+
+  static const _recordOnlyTooltip = '모델을 다시 설치하면 측정·평가가 가능합니다';
 
   @override
   void initState() {
@@ -78,7 +81,10 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
             (p) => p?.id == id,
             orElse: () => null,
           );
-      final measurable = api.evalTemplateMeasurableContexts(profileId: id);
+      final hasProfile = profile != null;
+      final measurable = hasProfile
+          ? api.evalTemplateMeasurableContexts(profileId: id)
+          : <int>[];
       final history = api.evalTemplateHistory(profileId: id);
       if (!mounted) return;
       setState(() {
@@ -86,7 +92,15 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
         _selectedId = id;
         _stats = stats;
         _runs = runs;
-        _profileTask = profile?.modelType;
+        _hasProfile = hasProfile;
+        _profileTask = profile?.modelType ??
+            overview
+                .cast<FrbOverviewRow?>()
+                .firstWhere(
+                  (m) => m?.profileId == id,
+                  orElse: () => null,
+                )
+                ?.modelType;
         _linkedDraftModel = profile?.draftModel;
         _drafterProfiles = drafters;
         _measurableContexts = measurable;
@@ -244,6 +258,20 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
     return task == 'llm' || task == 'multimodal';
   }
 
+  bool get _showEvalSection =>
+      _supportsEval &&
+      (_hasProfile ? _measurableContexts.isNotEmpty : true);
+
+  Widget _profileGated(Widget child) {
+    if (_hasProfile) return child;
+    return Tooltip(
+      message: _recordOnlyTooltip,
+      child: AbsorbPointer(
+        child: Opacity(opacity: 0.55, child: child),
+      ),
+    );
+  }
+
   Future<void> _runEval() async {
     final id = _selectedId;
     final ctx = _selectedEvalContext;
@@ -398,49 +426,68 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
                 color: AppTheme.inkMuted,
               ),
         ),
+        if (!_hasProfile) ...[
+          const SizedBox(height: 8),
+          Tooltip(
+            message: _recordOnlyTooltip,
+            child: Chip(
+              avatar: Icon(
+                Icons.history,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              label: const Text('기록 전용 (로컬 모델 없음)'),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
         if (_profileTask != null) ...[
           const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('태스크'),
-              const SizedBox(width: 16),
-              DropdownMenu<String>(
-                initialSelection: _profileTask,
-                dropdownMenuEntries: TaskLabels.allTasks
-                    .map(
-                      (t) => DropdownMenuEntry(
-                        value: t,
-                        label: TaskLabels.label(t),
-                      ),
-                    )
-                    .toList(),
-                onSelected: _onTaskChanged,
-              ),
-            ],
+          _profileGated(
+            Row(
+              children: [
+                const Text('태스크'),
+                const SizedBox(width: 16),
+                DropdownMenu<String>(
+                  initialSelection: _profileTask,
+                  dropdownMenuEntries: TaskLabels.allTasks
+                      .map(
+                        (t) => DropdownMenuEntry(
+                          value: t,
+                          label: TaskLabels.label(t),
+                        ),
+                      )
+                      .toList(),
+                  onSelected: _hasProfile ? _onTaskChanged : null,
+                ),
+              ],
+            ),
           ),
         ],
         if (_profileTask != null && _profileTask != 'drafter') ...[
           const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('보조 모델(drafter)'),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownMenu<String>(
-                  initialSelection: _linkedDraftModel ?? '__none__',
-                  dropdownMenuEntries: [
-                    const DropdownMenuEntry(
-                      value: '__none__',
-                      label: '없음',
-                    ),
-                    ..._drafterProfiles.map(
-                      (id) => DropdownMenuEntry(value: id, label: id),
-                    ),
-                  ],
-                  onSelected: _onDraftModelChanged,
+          _profileGated(
+            Row(
+              children: [
+                const Text('보조 모델(drafter)'),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownMenu<String>(
+                    initialSelection: _linkedDraftModel ?? '__none__',
+                    dropdownMenuEntries: [
+                      const DropdownMenuEntry(
+                        value: '__none__',
+                        label: '없음',
+                      ),
+                      ..._drafterProfiles.map(
+                        (id) => DropdownMenuEntry(value: id, label: id),
+                      ),
+                    ],
+                    onSelected: _hasProfile ? _onDraftModelChanged : null,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
         const SizedBox(height: 16),
@@ -498,7 +545,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
             ),
           ),
         ),
-        if (_supportsEval && _measurableContexts.isNotEmpty) ...[
+        if (_showEvalSection) ...[
           const SizedBox(height: 16),
           Text('성능 평가', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -512,6 +559,8 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
             items: _evalItems,
             history: _evalHistory,
             error: _evalError,
+            actionsEnabled: _hasProfile,
+            disabledTooltip: _recordOnlyTooltip,
             onContextSelected: (ctx) => setState(() => _selectedEvalContext = ctx),
             onRun: _runEval,
           ),
@@ -642,6 +691,8 @@ class _EvalSection extends StatelessWidget {
   final List<FrbEvalTemplateItemResult> items;
   final List<FrbEvalTemplateHistoryEntry> history;
   final String? error;
+  final bool actionsEnabled;
+  final String disabledTooltip;
   final ValueChanged<int> onContextSelected;
   final VoidCallback onRun;
 
@@ -655,6 +706,8 @@ class _EvalSection extends StatelessWidget {
     required this.items,
     required this.history,
     required this.error,
+    required this.actionsEnabled,
+    required this.disabledTooltip,
     required this.onContextSelected,
     required this.onRun,
   });
@@ -667,33 +720,42 @@ class _EvalSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: contexts.map((ctx) {
-                final selected = ctx == selectedContext;
-                return ChoiceChip(
-                  label: Text(formatContext(ctx)),
-                  selected: selected,
-                  onSelected: running
-                      ? null
-                      : (_) => onContextSelected(ctx),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
+            if (contexts.isNotEmpty) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: contexts.map((ctx) {
+                  final selected = ctx == selectedContext;
+                  return ChoiceChip(
+                    label: Text(formatContext(ctx)),
+                    selected: selected,
+                    onSelected: !actionsEnabled || running
+                        ? null
+                        : (_) => onContextSelected(ctx),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
-                FilledButton.icon(
-                  onPressed: running || selectedContext == null ? null : onRun,
-                  icon: running
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.play_arrow, size: 18),
-                  label: Text(running ? '평가 중…' : '평가 실행'),
+                Tooltip(
+                  message: actionsEnabled ? '' : disabledTooltip,
+                  child: FilledButton.icon(
+                    onPressed: !actionsEnabled ||
+                            running ||
+                            selectedContext == null
+                        ? null
+                        : onRun,
+                    icon: running
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.play_arrow, size: 18),
+                    label: Text(running ? '평가 중…' : '평가 실행'),
+                  ),
                 ),
                 if (running) ...[
                   const SizedBox(width: 16),

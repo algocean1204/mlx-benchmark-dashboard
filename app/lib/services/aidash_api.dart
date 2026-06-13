@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/src/rust/api.dart';
+import 'package:app/utils/formatters.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Converts a Dart int to FRB [PlatformInt64] (plain int on macOS/io).
@@ -30,6 +31,8 @@ abstract class AidashApi {
     required List<String> models,
     int? ctx,
   });
+
+  List<int> measuredContexts();
 
   List<FrbProfileRow> listProfiles();
 
@@ -158,6 +161,7 @@ class MockAidashApi implements AidashApi {
   final FrbModelStats modelStats;
   final List<FrbRunListRow> runRows;
   final List<FrbProfileRow> profiles;
+  final List<int>? measuredContextSizes;
   final FrbDoctorReport report;
   final FrbAuthStatus auth;
   final List<FrbChatSessionRow> chatSessions;
@@ -170,6 +174,7 @@ class MockAidashApi implements AidashApi {
     FrbModelStats? modelStats,
     List<FrbRunListRow>? runRows,
     List<FrbProfileRow>? profiles,
+    this.measuredContextSizes,
     FrbDoctorReport? report,
     FrbAuthStatus? auth,
     List<FrbChatSessionRow>? chatSessions,
@@ -442,6 +447,20 @@ class MockAidashApi implements AidashApi {
             ),
           )
           .toList();
+
+  @override
+  List<int> measuredContexts() {
+    if (measuredContextSizes != null) {
+      return List<int>.from(measuredContextSizes!)..sort();
+    }
+    final contexts = <int>{};
+    for (final run in runRows) {
+      if (run.status == 'completed' && run.contextSize != null) {
+        contexts.add(platformIntToInt(run.contextSize!));
+      }
+    }
+    return contexts.toList()..sort();
+  }
 
   @override
   List<FrbProfileRow> listProfiles() => profiles;
@@ -764,7 +783,10 @@ class MockAidashApi implements AidashApi {
           (p) => p?.id == profileId,
           orElse: () => null,
         );
-    if (profile != null && profile.contextMax >= 1048576) {
+    if (profile == null) {
+      return const [];
+    }
+    if (profile.contextMax >= 1048576) {
       return const [
         1024,
         4096,
@@ -777,7 +799,7 @@ class MockAidashApi implements AidashApi {
         1048576,
       ];
     }
-    if (profile != null && profile.contextMax >= 262144) {
+    if (profile.contextMax >= 262144) {
       return const [
         1024,
         4096,

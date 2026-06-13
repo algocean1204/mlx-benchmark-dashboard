@@ -49,6 +49,10 @@ class FrbAidashApi implements AidashApi {
       );
 
   @override
+  List<int> measuredContexts() =>
+      frb.measuredContexts().map((c) => c.toInt()).toList();
+
+  @override
   List<frb.FrbProfileRow> listProfiles() => frb.listProfiles();
 
   @override

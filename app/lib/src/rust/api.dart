@@ -8,7 +8,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `frb_messages_to_client`, `lifecycle_state_str`, `load_template_set_from_state`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_eval_history`, `map_eval_item_result`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
+// These functions are ignored because they are not marked as `pub`: `bench_result_to_frb`, `core_event_to_frb`, `ctx_pick`, `doctor_status_str`, `frb_messages_to_client`, `lifecycle_state_str`, `load_template_set_from_state`, `map_auth_status`, `map_bootstrap_event`, `map_cache_delete`, `map_cache_repo`, `map_cache_scan`, `map_compare_row`, `map_delete_summary`, `map_disk_usage`, `map_doctor_item`, `map_doctor_report`, `map_eval_history`, `map_eval_item_result`, `map_hf_search`, `map_model_stats`, `map_overview_row`, `map_profile_row`, `map_run_row`, `profile_ids_for_root`, `profile_load_error`, `profile_max_tokens`, `repo_in_active_use`, `resolve_effective_project_root`, `sample_to_frb`, `tier_info`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `FrbChatSendResult`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
@@ -29,6 +29,9 @@ List<FrbOverviewRow> statsOverview({PlatformInt64? ctx}) =>
 
 FrbModelStats statsModel({required String id}) =>
     AidashFrb.instance.api.crateApiStatsModel(id: id);
+
+Uint32List measuredContexts() =>
+    AidashFrb.instance.api.crateApiMeasuredContexts();
 
 List<FrbRunListRow> listRuns({String? model}) =>
     AidashFrb.instance.api.crateApiListRuns(model: model);

@@ -422,6 +422,98 @@ void main() {
     expect(find.text('1M'), findsWidgets);
   });
 
+  testWidgets('기록 전용 모델 상세가 통계를 표시하고 평가 실행은 비활성이다', (tester) async {
+    const recordOnlyId = 'mlx-community/Qwen3-4B-Instruct-2507-4bit';
+    final api = MockAidashApi(
+      overviewRows: [
+        ...MockAidashApi().overviewRows,
+        FrbOverviewRow(
+          profileId: recordOnlyId,
+          displayName: 'Qwen3 4B (기록만)',
+          modelType: 'llm',
+          generationKind: 'autoregressive',
+          decodeTps: 41.2,
+          tier: const FrbTierInfo(badge: '🟢', label: '이상적', key: 'ideal'),
+          ttftMs: 195,
+          context: const FrbContextPick(
+            requested: 4096,
+            actual: 4096,
+            substituted: false,
+          ),
+          hfUrl: 'https://huggingface.co/$recordOnlyId',
+          measuredAt: '2026-06-10T12:00:00Z',
+        ),
+      ],
+      profiles: MockAidashApi().profiles,
+      modelStats: FrbModelStats(
+        profileId: recordOnlyId,
+        displayName: 'Qwen3 4B (기록만)',
+        generationKind: 'autoregressive',
+        totalRuns: 3,
+        latestMeasuredAt: '2026-06-10T12:00:00Z',
+        currentTier: const FrbTierInfo(badge: '🟢', label: '이상적', key: 'ideal'),
+        currentDecodeTps: 41.2,
+        peakPhysFootprintBytes: 4 * 1024 * 1024 * 1024,
+        peakMlxActiveBytes: 3 * 1024 * 1024 * 1024,
+        hfUrl: 'https://huggingface.co/$recordOnlyId',
+        byContext: const [
+          FrbContextStatsRow(
+            contextSize: 4096,
+            decodeTpsMin: 38.0,
+            decodeTpsAvg: 41.2,
+            decodeTpsMax: 44.0,
+            ttftAvgMs: 195,
+            runCount: 2,
+            peakPhysFootprintBytes: 4 * 1024 * 1024 * 1024,
+            peakPhysAvgBytes: 3 * 1024 * 1024 * 1024 + 256 * 1024 * 1024,
+          ),
+        ],
+      ),
+      runRows: [
+        FrbRunListRow(
+          runId: 201,
+          profileId: recordOnlyId,
+          displayName: 'Qwen3 4B (기록만)',
+          generationKind: 'autoregressive',
+          kind: 'bench',
+          contextSize: 4096,
+          status: 'completed',
+          decodeTps: 41.2,
+          peakPhysFootprintBytes: 4 * 1024 * 1024 * 1024,
+          tier: const FrbTierInfo(badge: '🟢', label: '이상적', key: 'ideal'),
+          endedAt: '1717920000000',
+          useDraft: false,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _wrap(ModelDetailScreen(modelId: recordOnlyId), api: api),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('기록 전용 (로컬 모델 없음)'), findsOneWidget);
+    expect(find.text('총 런'), findsOneWidget);
+    expect(find.text('3'), findsWidgets);
+    expect(find.text('평가 실행'), findsOneWidget);
+    await tester.tap(find.text('평가 실행'));
+    await tester.pump();
+    expect(find.text('평가 중…'), findsNothing);
+    expect(find.textContaining('profile'), findsNothing);
+  });
+
+  testWidgets('비교 화면 컨텍스트 칩이 측정 기록 합집합으로 생성된다', (tester) async {
+    final api = MockAidashApi(
+      measuredContextSizes: [2048, 4096, 8192, 16384, 32768, 262144],
+    );
+    await tester.pumpWidget(_wrap(const CompareScreen(), api: api));
+    await tester.pumpAndSettle();
+
+    expect(find.text('256K'), findsOneWidget);
+    expect(find.text('32K'), findsOneWidget);
+    expect(find.text('4K'), findsWidgets);
+  });
+
   testWidgets('DoctorBadge가 3가지 상태를 올바르게 표시한다', (tester) async {
     await tester.pumpWidget(
       _wrap(

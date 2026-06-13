@@ -65,7 +65,7 @@ class AidashFrb
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -705172980;
+  int get rustContentHash => 896131375;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -200,6 +200,8 @@ abstract class AidashFrbApi extends BaseApi {
   List<FrbProfileRow> crateApiListProfiles();
 
   List<FrbRunListRow> crateApiListRuns({String? model});
+
+  Uint32List crateApiMeasuredContexts();
 
   String crateApiProfileGenerate({required String repoId});
 
@@ -1289,6 +1291,27 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
 
   TaskConstMeta get kCrateApiListRunsConstMeta =>
       const TaskConstMeta(debugName: "list_runs", argNames: ["model"]);
+
+  @override
+  Uint32List crateApiMeasuredContexts() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          return wire.wire__crate__api__measured_contexts();
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_list_prim_u_32_strict,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiMeasuredContextsConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiMeasuredContextsConstMeta =>
+      const TaskConstMeta(debugName: "measured_contexts", argNames: []);
 
   @override
   String crateApiProfileGenerate({required String repoId}) {

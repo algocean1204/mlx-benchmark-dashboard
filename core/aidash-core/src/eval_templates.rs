@@ -397,6 +397,20 @@ pub fn measurable_context_sizes(profile: &ModelProfile, set: &EvalTemplateSet) -
         .collect()
 }
 
+/// 프로파일이 없으면 빈 목록(기록 전용 모델 폴백).
+pub fn measurable_context_sizes_for_profile_id(
+    profiles_dir: &std::path::Path,
+    profile_id: &str,
+    set: &EvalTemplateSet,
+) -> Result<Vec<u32>, String> {
+    let profile = match crate::profile::load_profile_by_id(profiles_dir, profile_id) {
+        Ok(p) => p,
+        Err(crate::profile::ProfileError::NotFound { .. }) => return Ok(Vec::new()),
+        Err(e) => return Err(e.to_string()),
+    };
+    Ok(measurable_context_sizes(&profile, set))
+}
+
 fn chat_timeout_for_context(context_size: u32) -> Duration {
     if context_size >= 131072 {
         Duration::from_secs(1800)
@@ -739,5 +753,36 @@ mod tests {
             },
         };
         assert_eq!(build_prompt_for_template(&tpl).unwrap(), "hello");
+    }
+
+    #[test]
+    fn measurable_contexts_missing_profile_returns_empty() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let profiles = dir.path().join("profiles");
+        std::fs::create_dir_all(&profiles).expect("profiles dir");
+        let set = EvalTemplateSet {
+            schema_version: 1,
+            templates: vec![EvalTemplate {
+                id: "ctx4k-1".into(),
+                context_size: 4096,
+                kind: "direct".into(),
+                description: String::new(),
+                prompt: Some("q".into()),
+                needles: None,
+                question: None,
+                scoring: KeywordScoring {
+                    r#type: "keyword".into(),
+                    keywords: vec!["a".into()],
+                    weights: vec![100],
+                },
+            }],
+        };
+        let out = measurable_context_sizes_for_profile_id(
+            &profiles,
+            "mlx-community/missing-model",
+            &set,
+        )
+        .expect("no error for missing profile");
+        assert!(out.is_empty());
     }
 }

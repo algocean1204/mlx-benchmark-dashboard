@@ -567,6 +567,8 @@ WireSyncRust2DartDco frbgen_app_wire__crate__api__list_profiles(void);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__list_runs(struct wire_cst_list_prim_u_8_strict *model);
 
+WireSyncRust2DartDco frbgen_app_wire__crate__api__measured_contexts(void);
+
 WireSyncRust2DartDco frbgen_app_wire__crate__api__profile_generate(struct wire_cst_list_prim_u_8_strict *repo_id);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__profile_set_draft_model(struct wire_cst_list_prim_u_8_strict *profile_id,
@@ -724,6 +726,7 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_drafter_profiles);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_profiles);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__list_runs);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__measured_contexts);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_generate);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_set_draft_model);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__profile_set_task);
