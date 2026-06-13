@@ -590,6 +590,8 @@ void frbgen_app_wire__crate__api__serve_start(int64_t port_,
 
 void frbgen_app_wire__crate__api__serve_stop(int64_t port_);
 
+void frbgen_app_wire__crate__api__serve_wait_ready(int64_t port_, uint32_t timeout_sec);
+
 WireSyncRust2DartDco frbgen_app_wire__crate__api__set_project_root(struct wire_cst_list_prim_u_8_strict *path);
 
 WireSyncRust2DartDco frbgen_app_wire__crate__api__stats_model(struct wire_cst_list_prim_u_8_strict *id);
@@ -734,6 +736,7 @@ static int64_t dummy_method_to_enforce_bundling(void) {
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__run_fix_action);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__serve_start);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__serve_stop);
+    dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__serve_wait_ready);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__set_project_root);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__stats_model);
     dummy_var ^= ((int64_t) (void*) frbgen_app_wire__crate__api__stats_overview);

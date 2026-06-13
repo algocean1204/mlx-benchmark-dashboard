@@ -6,6 +6,7 @@ import 'package:app/utils/formatters.dart';
 import 'package:app/theme/app_theme.dart';
 import 'package:app/widgets/draft_badge.dart';
 import 'package:app/widgets/error_card.dart';
+import 'package:app/widgets/eval_template_widgets.dart';
 import 'package:app/widgets/metric_label.dart';
 import 'package:app/widgets/tier_badge.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -278,28 +279,7 @@ class _ModelDetailScreenState extends State<ModelDetailScreen> {
     if (id == null || ctx == null || _evalRunning) return;
 
     if (ctx >= 65536) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (dialogCtx) => AlertDialog(
-          title: const Text('대형 컨텍스트 평가'),
-          content: Text(
-            '${formatContext(ctx)} 컨텍스트 평가는 수 분~수십 분이 걸릴 수 있으며 '
-            '메모리 사용량이 큽니다.'
-            '${ctx >= 524288 ? ' 512K는 수십 분, 1M은 1시간 이상 걸릴 수 있습니다.' : ''} '
-            '계속할까요?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx, false),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogCtx, true),
-              child: const Text('실행'),
-            ),
-          ],
-        ),
-      );
+      final proceed = await showLargeContextEvalDialog(context, ctx);
       if (proceed != true || !mounted) return;
     }
 
@@ -777,51 +757,7 @@ class _EvalSection extends StatelessWidget {
             ],
             if (totalScore != null) ...[
               const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$totalScore',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: evalScoreColor(totalScore!),
-                        ),
-                  ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      '/ 100',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppTheme.inkMuted,
-                          ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${item.description} (${item.templateId})',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      Text(
-                        '${item.score}점',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: evalScoreColor(item.score),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              EvalScoreCard(totalScore: totalScore!, items: items),
             ],
             if (history.isNotEmpty) ...[
               const SizedBox(height: 16),

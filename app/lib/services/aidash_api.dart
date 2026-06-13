@@ -69,6 +69,8 @@ abstract class AidashApi {
 
   Future<void> serveStart({required String profileId, required int ctx});
 
+  Future<void> serveWaitReady({int timeoutSec = 0});
+
   Future<void> serveStop();
 
   bool chatShouldCompress({
@@ -524,6 +526,9 @@ class MockAidashApi implements AidashApi {
   }) async {}
 
   @override
+  Future<void> serveWaitReady({int timeoutSec = 0}) async {}
+
+  @override
   Future<void> serveStop() async {}
 
   @override
@@ -775,7 +780,62 @@ class MockAidashApi implements AidashApi {
   }
 
   @override
-  List<FrbEvalTemplateInfo> evalTemplateList() => const [];
+  List<FrbEvalTemplateInfo> evalTemplateList() => const [
+        FrbEvalTemplateInfo(
+          id: 'ctx1k-1',
+          contextSize: 1024,
+          kind: 'direct',
+          description: '지식 QA — 한국 수도',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx1k-2',
+          contextSize: 1024,
+          kind: 'direct',
+          description: '추론 — 역산',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx1k-3',
+          contextSize: 1024,
+          kind: 'direct',
+          description: '지시 이행 — 목록 형식',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx4k-1',
+          contextSize: 4096,
+          kind: 'direct',
+          description: '지식 QA — 화학식',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx4k-2',
+          contextSize: 4096,
+          kind: 'direct',
+          description: '추론 — 일수 계산',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx4k-3',
+          contextSize: 4096,
+          kind: 'direct',
+          description: '지시 이행 — 3색 나열',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx16k-1',
+          contextSize: 16384,
+          kind: 'needle',
+          description: '단일 needle — 비밀 코드',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx16k-2',
+          contextSize: 16384,
+          kind: 'needle',
+          description: '이중 needle — 담당자',
+        ),
+        FrbEvalTemplateInfo(
+          id: 'ctx16k-3',
+          contextSize: 16384,
+          kind: 'needle',
+          description: '구조 이해 — 이야기 인물',
+        ),
+      ];
 
   @override
   List<int> evalTemplateMeasurableContexts({required String profileId}) {

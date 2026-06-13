@@ -9,7 +9,9 @@ use aidash_core::client;
 use aidash_core::db::{CompareRow, DeleteSummary, RunListRow};
 use aidash_core::env_detect::{self, DoctorItem, DoctorReport, DoctorStatus};
 use aidash_core::events::CoreEvent;
-use aidash_core::lifecycle::{Command, LifecycleHandle, LifecycleState, StartParams};
+use aidash_core::lifecycle::{
+    wait_model_ready, Command, LifecycleHandle, LifecycleState, StartParams,
+};
 use aidash_core::hf_cache::{
     self, CacheDeleteResult, CacheRepoEntry, CacheScanResult, DiskUsage, DownloadProgress,
     HfSearchResult,
@@ -1103,18 +1105,51 @@ pub async fn serve_start(profile_id: String, ctx: u32) -> Result<(), String> {
 }
 
 #[flutter_rust_bridge::frb]
+pub async fn serve_wait_ready(timeout_sec: u32) -> Result<(), String> {
+    let (mut state_rx, port, load_timeout_sec) = with_state(|s| {
+        let handle = s
+            .serve_handle
+            .as_ref()
+            .ok_or_else(|| "서버가 실행 중이 아닙니다 — serve_start를 먼저 호출하세요".to_string())?;
+        let port = (*handle.port_rx.borrow())
+            .ok_or_else(|| "서버 포트가 아직 준비되지 않았습니다".to_string())?;
+        let profile_id = s
+            .serve_profile_id
+            .as_ref()
+            .ok_or_else(|| "serve profile not set".to_string())?;
+        let profile =
+            profile::load_profile_by_id(&profiles_dir(&s.project_root), profile_id)
+                .map_err(|e| profile_load_error(profile_id, e))?;
+        Ok((
+            handle.state_rx.clone(),
+            port,
+            profile.load_timeout_sec,
+        ))
+    })?;
+
+    let timeout = Duration::from_secs(if timeout_sec == 0 {
+        load_timeout_sec
+    } else {
+        timeout_sec as u64
+    });
+
+    wait_model_ready(&mut state_rx, port, timeout).await
+}
+
+#[flutter_rust_bridge::frb]
 pub async fn serve_stop() -> Result<(), String> {
-    with_state(|s| {
-        if let Some(handle) = s.serve_handle.take() {
-            let cmd_tx = handle.command_tx.clone();
-            tokio::spawn(async move {
-                let _ = cmd_tx.send(Command::Stop).await;
-                handle.wait_for_state(LifecycleState::Idle).await;
-            });
-        }
+    let handle = with_state(|s| {
+        let handle = s.serve_handle.take();
         s.serve_events_tx = None;
-        Ok(())
-    })
+        s.serve_profile_id = None;
+        Ok(handle)
+    })?;
+
+    if let Some(handle) = handle {
+        let _ = handle.command_tx.send(Command::Stop).await;
+        handle.wait_for_state(LifecycleState::Idle).await;
+    }
+    Ok(())
 }
 
 fn frb_messages_to_client(messages: &[FrbChatMessage]) -> Vec<client::ChatMessage> {
@@ -1276,6 +1311,10 @@ pub async fn chat_send(
             .serve_handle
             .as_ref()
             .ok_or_else(|| "server not running — call serve_start first".to_string())?;
+        let state = *handle.state_rx.borrow();
+        if state != LifecycleState::Ready && state != LifecycleState::Busy {
+            return Err("모델 로드 중입니다 — 잠시 후 다시 시도해 주세요".into());
+        }
         let port = (*handle.port_rx.borrow())
             .ok_or_else(|| "server port not ready".to_string())?;
         let profile_id = s

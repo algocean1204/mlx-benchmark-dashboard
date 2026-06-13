@@ -125,6 +125,10 @@ class FrbAidashApi implements AidashApi {
       frb.serveStart(profileId: profileId, ctx: ctx);
 
   @override
+  Future<void> serveWaitReady({int timeoutSec = 0}) =>
+      frb.serveWaitReady(timeoutSec: timeoutSec);
+
+  @override
   Future<void> serveStop() => frb.serveStop();
 
   @override

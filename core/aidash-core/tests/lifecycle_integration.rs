@@ -2,7 +2,9 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use aidash_core::events::CoreEvent;
-use aidash_core::lifecycle::{Command, LifecycleHandle, LifecycleState, StartParams};
+use aidash_core::lifecycle::{
+    wait_model_ready, Command, LifecycleHandle, LifecycleState, StartParams,
+};
 use aidash_core::profile::ModelProfile;
 use aidash_core::pyproc::{pick_free_port, ChildSpec};
 use reqwest::Client;
@@ -249,4 +251,82 @@ async fn normal_cycle_state_transitions() {
         transitions.iter().any(|(_, to)| *to == LifecycleState::Stopping)
             || *handle.state_rx.borrow() == LifecycleState::Idle
     );
+}
+
+#[tokio::test]
+async fn wait_model_ready_succeeds_after_delayed_health() {
+    let port = pick_free_port().expect("free port");
+    let profile = test_profile();
+    let handle = LifecycleHandle::spawn();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: None,
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(fake_child_spec(port, "1.0")),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start send");
+
+    let mut state_rx = handle.state_rx.clone();
+    let result = wait_model_ready(
+        &mut state_rx,
+        port,
+        Duration::from_secs(5),
+    )
+    .await;
+
+    assert!(result.is_ok(), "expected ready: {result:?}");
+
+    handle.command_tx.send(Command::Stop).await.expect("stop");
+    handle.wait_for_state(LifecycleState::Idle).await;
+}
+
+#[tokio::test]
+async fn wait_model_ready_times_out_when_never_ready() {
+    let port = pick_free_port().expect("free port");
+    let mut profile = test_profile();
+    profile.load_timeout_sec = 60;
+    let handle = LifecycleHandle::spawn();
+
+    let start = StartParams {
+        profile,
+        context: 1024,
+        mem_limit_gb: None,
+        port: Some(port),
+        python_dir: fixture_root().join("python"),
+        child_spec: Some(fake_child_spec(port, "120")),
+    };
+
+    handle
+        .command_tx
+        .send(Command::Start(start))
+        .await
+        .expect("start send");
+
+    let mut state_rx = handle.state_rx.clone();
+    let result = wait_model_ready(
+        &mut state_rx,
+        port,
+        Duration::from_secs(1),
+    )
+    .await;
+
+    assert!(result.is_err(), "expected timeout error");
+    let err = result.err().expect("error message");
+    assert!(
+        err.contains("모델 로드 시간 초과"),
+        "unexpected error: {err}"
+    );
+
+    let _ = handle.command_tx.send(Command::Abort {
+        reason: "test cleanup".into(),
+    }).await;
+    handle.wait_for_state(LifecycleState::Idle).await;
 }

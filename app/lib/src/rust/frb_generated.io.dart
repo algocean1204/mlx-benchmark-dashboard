@@ -3163,6 +3163,18 @@ class AidashFrbWire implements BaseWire {
   late final _wire__crate__api__serve_stop = _wire__crate__api__serve_stopPtr
       .asFunction<void Function(int)>();
 
+  void wire__crate__api__serve_wait_ready(int port_, int timeout_sec) {
+    return _wire__crate__api__serve_wait_ready(port_, timeout_sec);
+  }
+
+  late final _wire__crate__api__serve_wait_readyPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint32)>>(
+        'frbgen_app_wire__crate__api__serve_wait_ready',
+      );
+  late final _wire__crate__api__serve_wait_ready =
+      _wire__crate__api__serve_wait_readyPtr
+          .asFunction<void Function(int, int)>();
+
   WireSyncRust2DartDco wire__crate__api__set_project_root(
     ffi.Pointer<wire_cst_list_prim_u_8_strict> path,
   ) {

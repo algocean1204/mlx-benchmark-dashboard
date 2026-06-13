@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 896131375;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 160798524;
 
 // Section: executor
 
@@ -1086,6 +1086,30 @@ fn wire__crate__api__serve_stop_impl(port_: flutter_rust_bridge::for_generated::
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok = crate::api::serve_stop().await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__serve_wait_ready_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    timeout_sec: impl CstDecode<u32>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "serve_wait_ready",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_timeout_sec = timeout_sec.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::serve_wait_ready(api_timeout_sec).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -5948,6 +5972,11 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_app_wire__crate__api__serve_wait_ready(port_: i64, timeout_sec: u32) {
+        wire__crate__api__serve_wait_ready_impl(port_, timeout_sec)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_app_wire__crate__api__set_project_root(
         path: *mut wire_cst_list_prim_u_8_strict,
     ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartDco {
@@ -8500,6 +8529,14 @@ mod web {
     #[wasm_bindgen]
     pub fn wire__crate__api__serve_stop(port_: flutter_rust_bridge::for_generated::MessagePort) {
         wire__crate__api__serve_stop_impl(port_)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__serve_wait_ready(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        timeout_sec: u32,
+    ) {
+        wire__crate__api__serve_wait_ready_impl(port_, timeout_sec)
     }
 
     #[wasm_bindgen]

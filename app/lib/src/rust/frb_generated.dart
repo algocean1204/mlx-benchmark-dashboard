@@ -65,7 +65,7 @@ class AidashFrb
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 896131375;
+  int get rustContentHash => 160798524;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -226,6 +226,8 @@ abstract class AidashFrbApi extends BaseApi {
   });
 
   Future<void> crateApiServeStop();
+
+  Future<void> crateApiServeWaitReady({required int timeoutSec});
 
   void crateApiSetProjectRoot({required String path});
 
@@ -1493,6 +1495,30 @@ class AidashFrbApiImpl extends AidashFrbApiImplPlatform
 
   TaskConstMeta get kCrateApiServeStopConstMeta =>
       const TaskConstMeta(debugName: "serve_stop", argNames: []);
+
+  @override
+  Future<void> crateApiServeWaitReady({required int timeoutSec}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          var arg0 = cst_encode_u_32(timeoutSec);
+          return wire.wire__crate__api__serve_wait_ready(port_, arg0);
+        },
+        codec: DcoCodec(
+          decodeSuccessData: dco_decode_unit,
+          decodeErrorData: dco_decode_String,
+        ),
+        constMeta: kCrateApiServeWaitReadyConstMeta,
+        argValues: [timeoutSec],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiServeWaitReadyConstMeta => const TaskConstMeta(
+    debugName: "serve_wait_ready",
+    argNames: ["timeoutSec"],
+  );
 
   @override
   void crateApiSetProjectRoot({required String path}) {

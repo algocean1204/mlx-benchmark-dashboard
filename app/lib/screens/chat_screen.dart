@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 
 const _compressKeepRecentTurns = 4;
 
+enum _ServeStatus { off, loading, ready, error }
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
@@ -33,8 +35,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<FrbChatMessage> _sendHistory = [];
   final List<FrbResourceSample> _samples = [];
   String? _imagePath;
-  bool _serving = false;
+  _ServeStatus _serveStatus = _ServeStatus.off;
+  String? _servingProfileId;
+  int? _servingCtx;
+  String? _serveError;
+  bool _ensureServeInProgress = false;
   bool _streaming = false;
+  String? _lastSendText;
   StreamSubscription<FrbResourceSample>? _resourceSub;
   StreamSubscription<FrbChatStreamEvent>? _chatSub;
 
@@ -98,20 +105,88 @@ class _ChatScreenState extends State<ChatScreen> {
   double get _contextUsagePct =>
       _ctx > 0 ? (_promptTokens / _ctx * 100).clamp(0, 100) : 0;
 
-  Future<void> _ensureServe() async {
-    if (_serving || _profileId == null) return;
+  bool get _inputEnabled =>
+      _chatEnabled &&
+      !_compressing &&
+      _serveStatus != _ServeStatus.loading &&
+      !_ensureServeInProgress;
+
+  Future<void> _stopServeInternal() async {
     final api = context.read<AidashApi>();
-    await api.serveStart(profileId: _profileId!, ctx: _ctx);
+    await api.serveStop();
     _resourceSub?.cancel();
-    _resourceSub = api.systemResources().listen((s) {
+    if (!mounted) return;
+    setState(() {
+      _serveStatus = _ServeStatus.off;
+      _servingProfileId = null;
+      _servingCtx = null;
+      _serveError = null;
+      _samples.clear();
+    });
+  }
+
+  Future<void> _restartServe() async {
+    await _stopServeInternal();
+    await _ensureServe();
+  }
+
+  Future<void> _ensureServe() async {
+    if (_profileId == null) return;
+    if (_serveStatus == _ServeStatus.ready &&
+        _servingProfileId == _profileId &&
+        _servingCtx == _ctx) {
+      return;
+    }
+    if (_ensureServeInProgress) return;
+
+    final api = context.read<AidashApi>();
+
+    if (_serveStatus != _ServeStatus.off) {
+      await _stopServeInternal();
+    }
+
+    setState(() {
+      _ensureServeInProgress = true;
+      _serveStatus = _ServeStatus.loading;
+      _serveError = null;
+    });
+
+    try {
+      await api.serveStart(profileId: _profileId!, ctx: _ctx);
+      _resourceSub?.cancel();
+      _resourceSub = api.systemResources().listen((s) {
+        if (mounted) {
+          setState(() {
+            _samples.add(s);
+            if (_samples.length > 60) _samples.removeAt(0);
+          });
+        }
+      });
       if (mounted) {
         setState(() {
-          _samples.add(s);
-          if (_samples.length > 60) _samples.removeAt(0);
+          _servingProfileId = _profileId;
+          _servingCtx = _ctx;
         });
       }
-    });
-    setState(() => _serving = true);
+      await api.serveWaitReady();
+      if (mounted) {
+        setState(() {
+          _serveStatus = _ServeStatus.ready;
+          _ensureServeInProgress = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _serveStatus = _ServeStatus.error;
+          _serveError = e.toString();
+          _ensureServeInProgress = false;
+          _servingProfileId = null;
+          _servingCtx = null;
+        });
+      }
+      rethrow;
+    }
   }
 
   Future<void> _newSession() async {
@@ -236,14 +311,59 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _send() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty || _streaming || _compressing || _profileId == null) {
+  bool _isLoadError(Object e) {
+    final msg = e.toString();
+    return msg.contains('모델 로드 중') ||
+        msg.contains('model not loaded') ||
+        msg.contains('503');
+  }
+
+  bool _isConnectionError(Object e) {
+    final msg = e.toString().toLowerCase();
+    return msg.contains('connection') ||
+        msg.contains('connect') ||
+        msg.contains('network') ||
+        msg.contains('timed out') ||
+        msg.contains('timeout');
+  }
+
+  String _formatChatError(Object e) {
+    if (_isLoadError(e)) {
+      return '모델 로드 중… 잠시 후 다시 시도해 주세요.';
+    }
+    if (_isConnectionError(e)) {
+      return '서버 연결에 실패했습니다. 아래 재시도를 눌러 주세요.';
+    }
+    return '오류: $e';
+  }
+
+  Future<void> _send({String? retryText}) async {
+    final text = (retryText ?? _controller.text).trim();
+    if (text.isEmpty ||
+        _streaming ||
+        _compressing ||
+        _profileId == null ||
+        _ensureServeInProgress) {
       return;
     }
 
     final api = context.read<AidashApi>();
-    await _ensureServe();
+    try {
+      await _ensureServe();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_ChatBubble(role: 'user', content: text));
+        _messages.add(
+          _ChatBubble(
+            role: 'assistant',
+            content: _formatChatError(e),
+            showRetry: true,
+          ),
+        );
+      });
+      return;
+    }
 
     if (_sessionId == null) {
       final title = text.length > 30 ? text.substring(0, 30) : text;
@@ -256,8 +376,9 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages.add(_ChatBubble(role: 'user', content: text));
       _messages.add(_ChatBubble(role: 'assistant', content: '', streaming: true));
-      _controller.clear();
+      if (retryText == null) _controller.clear();
       _streaming = true;
+      _lastSendText = text;
     });
 
     api.chatAppendMessage(
@@ -314,7 +435,8 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages.last = _ChatBubble(
             role: 'assistant',
-            content: '오류: $e',
+            content: _formatChatError(e),
+            showRetry: _isConnectionError(e) || _isLoadError(e),
           );
           _streaming = false;
         });
@@ -323,9 +445,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _stopServe() async {
-    await context.read<AidashApi>().serveStop();
-    _resourceSub?.cancel();
-    setState(() => _serving = false);
+    await _stopServeInternal();
   }
 
   String _sessionDate(String ts) {
@@ -422,12 +542,21 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ),
                     Expanded(
-                      child: Text(
-                        '채팅',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      child: Row(
+                        children: [
+                          Text(
+                            '채팅',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          _ServeStatusBadge(
+                            status: _serveStatus,
+                            errorDetail: _serveError,
+                          ),
+                        ],
                       ),
                     ),
                     if (_profiles.isNotEmpty)
@@ -442,14 +571,19 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                               )
                               .toList(),
-                          onSelected: (v) {
-                            if (v == null) return;
+                          onSelected: (v) async {
+                            if (v == null || v == _profileId) return;
                             final p =
                                 _profiles.firstWhere((x) => x.id == v);
+                            final wasServing =
+                                _serveStatus != _ServeStatus.off;
                             setState(() {
                               _profileId = v;
                               _ctx = p.contextDefault;
                             });
+                            if (wasServing) {
+                              await _restartServe();
+                            }
                           },
                         ),
                       ),
@@ -464,11 +598,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     IconButton(
-                      tooltip: _serving ? '서버 중지' : '서버 시작',
-                      onPressed: _serving ? _stopServe : _ensureServe,
-                      icon: Icon(_serving
-                          ? Icons.stop_circle_outlined
-                          : Icons.play_circle_outline),
+                      tooltip: _serveStatus != _ServeStatus.off
+                          ? '서버 중지'
+                          : '서버 시작',
+                      onPressed: _serveStatus != _ServeStatus.off
+                          ? _stopServe
+                          : _ensureServe,
+                      icon: Icon(
+                        _serveStatus != _ServeStatus.off
+                            ? Icons.stop_circle_outlined
+                            : Icons.play_circle_outline,
+                      ),
                     ),
                   ],
                 ),
@@ -488,9 +628,19 @@ class _ChatScreenState extends State<ChatScreen> {
                                 (c) => ChoiceChip(
                                   label: Text(formatContext(c)),
                                   selected: _ctx == c,
-                                  onSelected: _streaming || _compressing
+                                  onSelected: _streaming ||
+                                          _compressing ||
+                                          _ensureServeInProgress
                                       ? null
-                                      : (_) => setState(() => _ctx = c),
+                                      : (_) async {
+                                          if (c == _ctx) return;
+                                          final wasServing = _serveStatus !=
+                                              _ServeStatus.off;
+                                          setState(() => _ctx = c);
+                                          if (wasServing) {
+                                            await _restartServe();
+                                          }
+                                        },
                                 ),
                               )
                               .toList(),
@@ -602,11 +752,39 @@ class _ChatScreenState extends State<ChatScreen> {
                               : AppTheme.surface,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          m.content.isEmpty && m.streaming
-                              ? '▌'
-                              : m.content,
-                          style: const TextStyle(height: 1.4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              m.content.isEmpty && m.streaming
+                                  ? '▌'
+                                  : m.content,
+                              style: const TextStyle(height: 1.4),
+                            ),
+                            if (m.showRetry && !m.streaming) ...[
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: _streaming || _lastSendText == null
+                                    ? null
+                                    : () {
+                                        if (_messages.isNotEmpty &&
+                                            _messages.last.showRetry) {
+                                          setState(() {
+                                            _messages.removeLast();
+                                            if (_messages.isNotEmpty &&
+                                                _messages.last.role ==
+                                                    'user') {
+                                              _messages.removeLast();
+                                            }
+                                          });
+                                        }
+                                        _send(retryText: _lastSendText);
+                                      },
+                                icon: const Icon(Icons.refresh, size: 16),
+                                label: const Text('재시도'),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     );
@@ -635,23 +813,20 @@ class _ChatScreenState extends State<ChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        enabled: chatEnabled && !_compressing,
+                        enabled: _inputEnabled,
                         decoration: InputDecoration(
-                          hintText: chatEnabled
-                              ? '메시지를 입력하세요…'
-                              : '채팅 불가 모델',
+                          hintText: !chatEnabled
+                              ? '채팅 불가 모델'
+                              : _serveStatus == _ServeStatus.loading
+                                  ? '모델 로드 중 — 곧 사용 가능합니다'
+                                  : '메시지를 입력하세요…',
                         ),
-                        onSubmitted:
-                            chatEnabled ? (_) => _send() : null,
+                        onSubmitted: _inputEnabled ? (_) => _send() : null,
                       ),
                     ),
                     const SizedBox(width: 12),
                     FilledButton(
-                      onPressed: chatEnabled &&
-                              !_streaming &&
-                              !_compressing
-                          ? _send
-                          : null,
+                      onPressed: _inputEnabled && !_streaming ? _send : null,
                       child: const Text('전송'),
                     ),
                   ],
@@ -670,13 +845,55 @@ class _ChatBubble {
   final String content;
   final bool streaming;
   final bool compressionNotice;
+  final bool showRetry;
 
   const _ChatBubble({
     this.role = '',
     this.content = '',
     this.streaming = false,
     this.compressionNotice = false,
+    this.showRetry = false,
   });
+}
+
+class _ServeStatusBadge extends StatelessWidget {
+  final _ServeStatus status;
+  final String? errorDetail;
+
+  const _ServeStatusBadge({
+    required this.status,
+    this.errorDetail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (status) {
+      _ServeStatus.loading => (
+          '모델 로드 중…',
+          AppTheme.warning,
+          const SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      _ServeStatus.ready => ('준비됨', AppTheme.primary, const Icon(Icons.check_circle, size: 14)),
+      _ServeStatus.error => ('오류', AppTheme.warning, const Icon(Icons.error_outline, size: 14)),
+      _ServeStatus.off => ('꺼짐', AppTheme.inkMuted, const Icon(Icons.power_settings_new, size: 14)),
+    };
+
+    final chip = Chip(
+      visualDensity: VisualDensity.compact,
+      label: Text(label, style: const TextStyle(fontSize: 11)),
+      avatar: icon,
+      backgroundColor: color.withValues(alpha: 0.1),
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
+    );
+    if (status == _ServeStatus.error && errorDetail != null) {
+      return Tooltip(message: errorDetail!, child: chip);
+    }
+    return chip;
+  }
 }
 
 class _LiveMetricChart extends StatelessWidget {

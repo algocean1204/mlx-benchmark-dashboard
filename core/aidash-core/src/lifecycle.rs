@@ -205,7 +205,7 @@ pub async fn run_lifecycle_actor(
                 if let Some(port) = ctx.port {
                     match poll_health(&ctx.http, port).await {
                         HealthPoll::Unreachable => {}
-                        HealthPoll::Responding { model_loaded } => {
+                        HealthPoll::Responding { model_loaded, .. } => {
                             if ctx.state == LifecycleState::Spawning {
                                 ctx.transition(LifecycleState::Loading);
                                 ctx.spawning_deadline = None;
@@ -239,11 +239,16 @@ pub async fn run_lifecycle_actor(
 
 enum HealthPoll {
     Unreachable,
-    Responding { model_loaded: bool },
+    Responding {
+        model_loaded: bool,
+        status: Option<String>,
+    },
 }
 
 #[derive(serde::Deserialize)]
 struct HealthResponse {
+    #[serde(default)]
+    status: Option<String>,
     model_loaded: bool,
 }
 
@@ -254,14 +259,85 @@ async fn poll_health(client: &Client, port: u16) -> HealthPoll {
             if let Ok(body) = resp.json::<HealthResponse>().await {
                 HealthPoll::Responding {
                     model_loaded: body.model_loaded,
+                    status: body.status,
                 }
             } else {
                 HealthPoll::Responding {
                     model_loaded: false,
+                    status: None,
                 }
             }
         }
         Err(_) => HealthPoll::Unreachable,
+    }
+}
+
+const WAIT_READY_POLL_MS: u64 = 500;
+
+/// `/health`를 0.5초 간격으로 폴링해 `model_loaded=true` 또는 `Ready` 상태까지 대기한다.
+pub async fn wait_model_ready(
+    state_rx: &mut watch::Receiver<LifecycleState>,
+    port: u16,
+    timeout: Duration,
+) -> Result<(), String> {
+    let http = Client::builder()
+        .timeout(Duration::from_secs(2))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let deadline = Instant::now() + timeout;
+    let poll_interval = Duration::from_millis(WAIT_READY_POLL_MS);
+    let mut saw_active = false;
+
+    loop {
+        let state = *state_rx.borrow();
+        if state == LifecycleState::Ready {
+            return Ok(());
+        }
+        if matches!(
+            state,
+            LifecycleState::Spawning | LifecycleState::Loading | LifecycleState::Busy
+        ) {
+            saw_active = true;
+        }
+        if saw_active
+            && matches!(
+                state,
+                LifecycleState::Idle | LifecycleState::Cleanup | LifecycleState::Killing
+            )
+        {
+            return Err("모델 서버가 예기치 않게 종료되었습니다".into());
+        }
+
+        match poll_health(&http, port).await {
+            HealthPoll::Responding {
+                model_loaded: true,
+                ..
+            } => return Ok(()),
+            HealthPoll::Responding {
+                model_loaded: false,
+                status: Some(s),
+            } if s == "error" => {
+                return Err("모델 로드 중 오류가 발생했습니다".into());
+            }
+            HealthPoll::Unreachable | HealthPoll::Responding { .. } => {}
+        }
+
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "모델 로드 시간 초과 ({}초) — 다시 시도하거나 다른 모델을 선택하세요",
+                timeout.as_secs()
+            ));
+        }
+
+        tokio::select! {
+            _ = tokio::time::sleep(poll_interval) => {}
+            changed = state_rx.changed() => {
+                if changed.is_err() {
+                    return Err("모델 서버 상태 채널이 닫혔습니다".into());
+                }
+            }
+        }
     }
 }
 

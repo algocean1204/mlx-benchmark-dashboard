@@ -102,6 +102,9 @@ bool benchAbort() => AidashFrb.instance.api.crateApiBenchAbort();
 Future<void> serveStart({required String profileId, required int ctx}) =>
     AidashFrb.instance.api.crateApiServeStart(profileId: profileId, ctx: ctx);
 
+Future<void> serveWaitReady({required int timeoutSec}) =>
+    AidashFrb.instance.api.crateApiServeWaitReady(timeoutSec: timeoutSec);
+
 Future<void> serveStop() => AidashFrb.instance.api.crateApiServeStop();
 
 bool chatShouldCompress({

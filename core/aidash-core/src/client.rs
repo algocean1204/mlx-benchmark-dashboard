@@ -205,6 +205,12 @@ pub async fn stream_chat_completion_messages(
     if !response.status().is_success() {
         let status = response.status();
         let text = response.text().await.unwrap_or_default();
+        if status.as_u16() == 503
+            || text.contains("model not loaded")
+            || text.contains("not ready")
+        {
+            return Err("모델 로드 중입니다 — 잠시 후 다시 시도해 주세요".into());
+        }
         return Err(format!("chat request failed ({status}): {text}"));
     }
 
@@ -521,6 +527,12 @@ pub async fn chat_completion_messages(
     if !response.status().is_success() {
         let status = response.status();
         let text = response.text().await.unwrap_or_default();
+        if status.as_u16() == 503
+            || text.contains("model not loaded")
+            || text.contains("not ready")
+        {
+            return Err("모델 로드 중입니다 — 잠시 후 다시 시도해 주세요".into());
+        }
         return Err(format!("chat request failed ({status}): {text}"));
     }
 

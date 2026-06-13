@@ -2229,6 +2229,11 @@ class AidashFrbWire implements BaseWire {
   void wire__crate__api__serve_stop(NativePortType port_) =>
       wasmModule.wire__crate__api__serve_stop(port_);
 
+  void wire__crate__api__serve_wait_ready(
+    NativePortType port_,
+    int timeout_sec,
+  ) => wasmModule.wire__crate__api__serve_wait_ready(port_, timeout_sec);
+
   JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__set_project_root(String path) =>
       wasmModule.wire__crate__api__set_project_root(path);
@@ -2448,6 +2453,11 @@ extension type AidashFrbWasmModule._(JSObject _) implements JSObject {
   );
 
   external void wire__crate__api__serve_stop(NativePortType port_);
+
+  external void wire__crate__api__serve_wait_ready(
+    NativePortType port_,
+    int timeout_sec,
+  );
 
   external JSAny? /* flutter_rust_bridge::for_generated::WireSyncRust2DartDco */
   wire__crate__api__set_project_root(String path);
