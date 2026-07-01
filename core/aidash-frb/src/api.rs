@@ -1119,13 +1119,11 @@ pub async fn serve_start(profile_id: String, ctx: u32) -> Result<(), String> {
 
 #[flutter_rust_bridge::frb]
 pub async fn serve_wait_ready(timeout_sec: u32) -> Result<(), String> {
-    let (mut state_rx, port, load_timeout_sec) = with_state(|s| {
+    let (mut state_rx, mut port_rx, load_timeout_sec) = with_state(|s| {
         let handle = s
             .serve_handle
             .as_ref()
             .ok_or_else(|| "서버가 실행 중이 아닙니다 — serve_start를 먼저 호출하세요".to_string())?;
-        let port = (*handle.port_rx.borrow())
-            .ok_or_else(|| "서버 포트가 아직 준비되지 않았습니다".to_string())?;
         let profile_id = s
             .serve_profile_id
             .as_ref()
@@ -1135,7 +1133,7 @@ pub async fn serve_wait_ready(timeout_sec: u32) -> Result<(), String> {
                 .map_err(|e| profile_load_error(profile_id, e))?;
         Ok((
             handle.state_rx.clone(),
-            port,
+            handle.port_rx.clone(),
             profile.load_timeout_sec,
         ))
     })?;
@@ -1145,6 +1143,26 @@ pub async fn serve_wait_ready(timeout_sec: u32) -> Result<(), String> {
     } else {
         timeout_sec as u64
     });
+
+    // serve_start()는 커맨드를 채널에 넣고 바로 반환하므로, lifecycle 태스크가
+    // 아직 포트를 할당하기 전에 여기 도달할 수 있다 — 예전엔 그 순간의 port_rx
+    // 값을 한 번만 확인해 없으면 즉시 실패했다(레이스에 걸리면 채팅 시작이
+    // 랜덤하게 실패). 포트가 세팅될 때까지 watch 채널 변화를 기다리도록 수정.
+    let port = loop {
+        if let Some(port) = *port_rx.borrow() {
+            break port;
+        }
+        tokio::select! {
+            _ = sleep(timeout) => {
+                return Err("서버 포트 할당이 시간 내에 완료되지 않았습니다".into());
+            }
+            changed = port_rx.changed() => {
+                if changed.is_err() {
+                    return Err("모델 서버가 시작되지 못했습니다".into());
+                }
+            }
+        }
+    };
 
     wait_model_ready(&mut state_rx, port, timeout).await
 }

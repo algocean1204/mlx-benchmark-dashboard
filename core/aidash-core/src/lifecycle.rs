@@ -401,18 +401,28 @@ impl LifecycleContext {
     }
 
     async fn handle_stop(&mut self) {
-        if matches!(self.state, LifecycleState::Ready | LifecycleState::Busy) {
-            self.transition(LifecycleState::Stopping);
-            if let Some(active) = self.active.as_ref() {
-                let pgid = active.spawned.handle.pgid;
-                tokio::spawn(async move {
-                    terminate_graceful(pgid).await;
-                });
-                self.stopping_deadline =
-                    Some(Instant::now() + Duration::from_secs(STOPPING_GRACE_SECS));
-            } else {
-                let _ = self.enter_cleanup().await;
+        match self.state {
+            LifecycleState::Ready | LifecycleState::Busy => {
+                self.transition(LifecycleState::Stopping);
+                if let Some(active) = self.active.as_ref() {
+                    let pgid = active.spawned.handle.pgid;
+                    tokio::spawn(async move {
+                        terminate_graceful(pgid).await;
+                    });
+                    self.stopping_deadline =
+                        Some(Instant::now() + Duration::from_secs(STOPPING_GRACE_SECS));
+                } else {
+                    let _ = self.enter_cleanup().await;
+                }
             }
+            LifecycleState::Spawning | LifecycleState::Loading => {
+                // 예전엔 이 단계에서 Stop이 조용히 무시되어, serve_wait_ready()가
+                // 포트 레이스로 실패한 뒤 재시도해도 이전 python 서버가 좀비로
+                // 남았다 — 아직 요청을 처리 중이 아니므로 graceful 유예 없이
+                // 즉시 강제 종료한다.
+                let _ = self.enter_killing().await;
+            }
+            _ => {}
         }
     }
 

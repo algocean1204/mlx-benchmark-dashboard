@@ -270,7 +270,6 @@ class _BenchScreenState extends State<BenchScreen> {
     });
 
     _eventSub?.cancel();
-    _eventSub = api.benchEvents().listen(_onEvent);
 
     String? prompt;
     String? imagePath;
@@ -317,6 +316,12 @@ class _BenchScreenState extends State<BenchScreen> {
             : null,
         useDraft: profile?.draftModel != null ? _useDraft : null,
       );
+      // benchStart는 자신의 이벤트 채널을 만든 *후에* 반환을 보장한다 — 구독을
+      // 먼저 걸면(이전 코드) 채널이 아직 없거나 직전 실행의 죽은 채널을 잡아,
+      // "측정 완료" 신호를 영영 못 받고 화면이 무한로딩에 빠지는 경합이 있었다.
+      if (mounted) {
+        _eventSub = api.benchEvents().listen(_onEvent);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -1026,17 +1031,41 @@ class _BenchScreenState extends State<BenchScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 200,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: _samples.isEmpty
-                  ? const Center(child: Text('RAM/CPU 그래프 (측정 대기)'))
-                  : _ResourceLineChart(samples: _samples),
-            ),
-          ),
-        ),
+        _samples.isEmpty
+            ? const SizedBox(
+                height: 200,
+                child: Card(
+                  child: Center(child: Text('RAM/CPU 그래프 (측정 대기)')),
+                ),
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _MetricLineChart(
+                      title: 'RAM 사용량 (GB)',
+                      color: AppTheme.primary,
+                      spots: _samples.asMap().entries.map((e) {
+                        return FlSpot(
+                          e.key.toDouble(),
+                          e.value.physFootprintBytes.toDouble() /
+                              (1024 * 1024 * 1024),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MetricLineChart(
+                      title: 'CPU 사용률 (%)',
+                      color: AppTheme.tierSluggish,
+                      spots: _samples.asMap().entries.map((e) {
+                        return FlSpot(e.key.toDouble(), e.value.cpuPct);
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
         if (_result != null) ...[
           const SizedBox(height: 16),
           KeyedSubtree(
@@ -1114,54 +1143,59 @@ class _ResultMetric extends StatelessWidget {
   }
 }
 
-class _ResourceLineChart extends StatelessWidget {
-  final List<FrbResourceSample> samples;
+class _MetricLineChart extends StatelessWidget {
+  final String title;
+  final Color color;
+  final List<FlSpot> spots;
 
-  const _ResourceLineChart({required this.samples});
+  const _MetricLineChart({
+    required this.title,
+    required this.color,
+    required this.spots,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final ramSpots = samples.asMap().entries.map((e) {
-      return FlSpot(
-        e.key.toDouble(),
-        e.value.physFootprintBytes.toDouble() / (1024 * 1024 * 1024),
-      );
-    }).toList();
-    final cpuSpots = samples.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), e.value.cpuPct);
-    }).toList();
-
-    final maxRam = ramSpots.isEmpty
+    final maxY = spots.isEmpty
         ? 1.0
-        : ramSpots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.1;
+        : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.1;
 
-    return LineChart(
-      LineChartData(
-        minY: 0,
-        maxY: maxRam,
-        gridData: const FlGridData(show: true, drawVerticalLine: false),
-        titlesData: const FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: true, reservedSize: 40),
-          ),
-          bottomTitles: AxisTitles(),
-          topTitles: AxisTitles(),
-          rightTitles: AxisTitles(),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 140,
+              child: LineChart(
+                LineChartData(
+                  minY: 0,
+                  maxY: maxY <= 0 ? 1.0 : maxY,
+                  gridData: const FlGridData(show: true, drawVerticalLine: false),
+                  titlesData: const FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                    ),
+                    bottomTitles: AxisTitles(),
+                    topTitles: AxisTitles(),
+                    rightTitles: AxisTitles(),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      color: color,
+                      barWidth: 2,
+                      dotData: const FlDotData(show: false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: ramSpots,
-            color: AppTheme.primary,
-            barWidth: 2,
-            dotData: const FlDotData(show: false),
-          ),
-          LineChartBarData(
-            spots: cpuSpots,
-            color: AppTheme.tierSluggish,
-            barWidth: 2,
-            dotData: const FlDotData(show: false),
-          ),
-        ],
       ),
     );
   }
