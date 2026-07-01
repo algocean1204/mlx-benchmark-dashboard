@@ -74,6 +74,15 @@ def _zero_metrics_payload() -> dict[str, int]:
     }
 
 
+_WEIGHT_EXTENSIONS = (".safetensors", ".bin", ".gguf", ".pt")
+
+
+def _snapshot_has_weights(path: str) -> bool:
+    # any(glob(...) for ...) is always True — an unconsumed generator is truthy regardless
+    # of matches. Each glob must be evaluated (inner any()) before the outer any() combines them.
+    return any(any(Path(path).glob(f"*{ext}")) for ext in _WEIGHT_EXTENSIONS)
+
+
 def _resolve_model_path(model_path: str) -> str:
     local = Path(model_path).expanduser()
     if local.is_dir():
@@ -84,6 +93,11 @@ def _resolve_model_path(model_path: str) -> str:
 
     try:
         resolved = snapshot_download(repo_id=model_path, local_files_only=True)
+        # local_files_only=True resolves refs/main to the newest known revision even if
+        # only its config was ever synced (weights still missing) — treat that as a cache
+        # miss so we fetch instead of handing PeftModel/AutoModel a half-empty directory.
+        if not _snapshot_has_weights(resolved):
+            raise FileNotFoundError(f"cached snapshot has no weight files: {resolved}")
         _log_json("model_resolve_cache", repo_id=model_path, path=resolved)
         return resolved
     except Exception as exc:
@@ -248,13 +262,17 @@ def _messages_to_dicts(messages: list[ChatMessage]) -> list[dict[str, Any]]:
 
 
 def _generation_kwargs(body: ChatCompletionRequest) -> dict[str, Any]:
-    kwargs: dict[str, Any] = {"do_sample": body.temperature is not None}
+    # temperature<=0 means greedy (do_sample=False) — transformers rejects do_sample=True
+    # with temperature=0.0 (ValueError: temperature has to be a strictly positive float).
+    # Callers like eval_templates.rs pass temperature=0.0 explicitly for greedy scoring.
+    do_sample = body.temperature is not None and body.temperature > 0.0
+    kwargs: dict[str, Any] = {"do_sample": do_sample}
     if body.max_tokens is not None:
         kwargs["max_new_tokens"] = body.max_tokens
-    if body.temperature is not None:
+    if do_sample:
         kwargs["temperature"] = body.temperature
-    if body.top_p is not None:
-        kwargs["top_p"] = body.top_p
+        if body.top_p is not None:
+            kwargs["top_p"] = body.top_p
     return kwargs
 
 
