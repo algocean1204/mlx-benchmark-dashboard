@@ -220,7 +220,9 @@ where
     }
 
     let mut sync = TokioCommand::new(&uv);
-    sync.arg("sync")
+    // 플레인 `uv sync`는 base 의존성만 남기고 옵션 extras(백엔드별 패키지)를 전부 제거한다 —
+    // 모든 백엔드가 즉시 동작하도록 전체 extras를 동기화한다.
+    sync.args(["sync", "--all-extras"])
         .current_dir(&py_dir)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

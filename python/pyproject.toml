@@ -11,7 +11,8 @@ vlm = ["mlx-vlm"]
 whisper = ["mlx-whisper"]
 audio = ["mlx-audio"]
 imagegen = ["mflux"]
-cpu = ["llama-cpp-python", "transformers"]
+# "cpu" 이름은 레거시 — 실제로는 torch(MPS 자동 감지)+peft(LoRA)로 일반 safetensors 모델을 서빙한다.
+cpu = ["llama-cpp-python", "transformers", "torch", "peft", "langgraph"]
 
 [build-system]
 requires = ["hatchling"]

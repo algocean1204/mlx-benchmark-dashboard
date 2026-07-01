@@ -69,6 +69,9 @@ pub struct ModelProfile {
     /// `"autoregressive"` (default) or `"diffusion"` for block/masked diffusion LMs.
     #[serde(default = "default_generation_kind")]
     pub generation_kind: String,
+    /// HF repo id of the base model this profile's LoRA adapter is trained on, if any.
+    #[serde(default)]
+    pub base_model: Option<String>,
 }
 
 fn default_generation_kind() -> String {
@@ -371,6 +374,28 @@ pub fn find_config_json_in_cache(repo_id: &str) -> Result<PathBuf, ProfileError>
     )))
 }
 
+/// `config.json` 없이 `adapter_config.json`(PEFT LoRA)만 있는 캐시 항목을 찾는다.
+pub fn find_adapter_config_json_in_cache(repo_id: &str) -> Result<PathBuf, ProfileError> {
+    let dir_name = format!("models--{}", repo_id.replace('/', "--"));
+    let model_dir = hf_cache_dir().join(dir_name);
+    let snapshots = model_dir.join("snapshots");
+    if !snapshots.is_dir() {
+        return Err(ProfileError::Validation(format!(
+            "모델이 캐시에 없음: {repo_id}"
+        )));
+    }
+    for entry in std::fs::read_dir(&snapshots)? {
+        let entry = entry?;
+        let adapter_config = entry.path().join("adapter_config.json");
+        if adapter_config.is_file() {
+            return Ok(adapter_config);
+        }
+    }
+    Err(ProfileError::Validation(format!(
+        "adapter_config.json 없음: {repo_id}"
+    )))
+}
+
 pub fn find_config_json_local(path: &Path) -> Result<PathBuf, ProfileError> {
     let config = path.join("config.json");
     if config.is_file() {
@@ -522,6 +547,13 @@ pub fn ensure_runnable_profile(profile: &ModelProfile) -> Result<(), ProfileErro
     if is_drafter_profile(profile) {
         return Err(ProfileError::Validation(DRAFTER_STANDALONE_ERROR.into()));
     }
+    if let Some(ref base) = profile.base_model {
+        if !repo_cached(base) {
+            return Err(ProfileError::Validation(format!(
+                "베이스 모델이 캐시에 없습니다: {base}. 먼저 다운로드하세요."
+            )));
+        }
+    }
     Ok(())
 }
 
@@ -640,7 +672,7 @@ pub fn find_matching_assistant_drafter(main_repo_id: &str) -> Option<String> {
     matches.into_iter().next()
 }
 
-pub fn infer_backend(model_type: &str, repo_id: &str) -> String {
+pub fn infer_backend(model_type: &str, repo_id: &str, is_mlx: bool) -> String {
     let repo_lower = repo_id.to_lowercase();
     match model_type {
         "asr" => "mlx_whisper".into(),
@@ -648,8 +680,19 @@ pub fn infer_backend(model_type: &str, repo_id: &str) -> String {
         "image_gen" => "mflux".into(),
         "multimodal" => "mlx_vlm".into(),
         _ if repo_lower.contains("gguf") => "llama_cpp".into(),
+        _ if !is_mlx => "transformers".into(),
         _ => "vllm_mlx".into(),
     }
+}
+
+/// MLX 커뮤니티 변환본(양자화 export)인지 판별한다. 아니면 일반 PyTorch/safetensors
+/// 체크포인트로 보고 `transformers`(MPS) 백엔드로 라우팅한다.
+fn is_mlx_checkpoint(config: &serde_json::Value, repo_id: &str) -> bool {
+    if config.get("quantization").is_some() {
+        return true;
+    }
+    let repo_lower = repo_id.to_lowercase();
+    repo_lower.contains("mlx-community") || repo_lower.contains("-mlx-") || repo_lower.ends_with("-mlx")
 }
 
 fn infer_quantization(config: &serde_json::Value, repo_id: &str) -> Option<String> {
@@ -800,6 +843,7 @@ pub fn draft_from_config(
             model_type.as_str()
         },
         id,
+        is_mlx_checkpoint(&config, id),
     );
     let (context_max, rope_note) = infer_context_max_with_notes(&config);
     let context_default = context_max.min(4096).max(512);
@@ -870,6 +914,7 @@ pub fn draft_from_config(
         },
         draft_model: None,
         generation_kind,
+        base_model: None,
     };
 
     if !is_drafter {
@@ -879,15 +924,107 @@ pub fn draft_from_config(
     Ok(profile)
 }
 
+/// `config.json`이 없고 `adapter_config.json`(PEFT LoRA)만 있는 저장소용 프로파일 초안.
+/// 베이스 모델은 `transformers`(MPS) 백엔드로 로드 후 LoRA 가중치를 합쳐 추론한다.
+pub fn draft_from_lora_adapter(
+    adapter_config_path: &Path,
+    id: &str,
+) -> Result<ModelProfile, ProfileError> {
+    let contents = std::fs::read_to_string(adapter_config_path)?;
+    let adapter_config: serde_json::Value = serde_json::from_str(&contents)?;
+
+    let base_model = adapter_config
+        .get("base_model_name_or_path")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            ProfileError::Validation(
+                "adapter_config.json에 base_model_name_or_path가 없습니다".into(),
+            )
+        })?
+        .to_string();
+
+    let task_type = adapter_config
+        .get("task_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if task_type != "CAUSAL_LM" {
+        return Err(ProfileError::Validation(format!(
+            "지원하지 않는 LoRA task_type: {task_type} (CAUSAL_LM만 지원)"
+        )));
+    }
+
+    let (context_max, rope_note) = find_config_json_in_cache(&base_model)
+        .ok()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .and_then(|c| serde_json::from_str::<serde_json::Value>(&c).ok())
+        .map(|c| infer_context_max_with_notes(&c))
+        .unwrap_or((4096, None));
+    let context_default = context_max.min(4096).max(512);
+
+    let mut notes = format!("auto-generated draft — LoRA adapter, base: {base_model}");
+    if let Some(r) = adapter_config.get("r").and_then(|v| v.as_u64()) {
+        notes.push_str(&format!("; r={r}"));
+    }
+    if let Some(note) = rope_note {
+        notes.push_str("; ");
+        notes.push_str(&note);
+    }
+
+    Ok(ModelProfile {
+        schema_version: 1,
+        id: id.into(),
+        display_name: format!("{} (LoRA)", infer_display_name(id)),
+        source: ProfileSource {
+            kind: "hf".into(),
+            hf_repo: id.into(),
+            hf_file: String::new(),
+            local_path: String::new(),
+        },
+        model_type: TASK_LLM.into(),
+        backend: "transformers".into(),
+        io: ProfileIo {
+            input: vec!["chat".into()],
+            output: "text".into(),
+        },
+        context: ProfileContext {
+            min: 512,
+            max: context_max,
+            default: context_default,
+            sweep_steps: generate_sweep_steps(context_max),
+        },
+        default_params: serde_json::json!({
+            "max_tokens": 512,
+            "temperature": 0.7,
+            "top_p": 0.95
+        }),
+        quantization: None,
+        load_timeout_sec: 600,
+        notes,
+        draft_model: None,
+        generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
+        base_model: Some(base_model),
+    })
+}
+
 pub fn generate_profile_hf(profiles_dir: &Path, repo_id: &str) -> Result<PathBuf, ProfileError> {
     if !is_valid_hf_repo_id(repo_id) {
         return Err(ProfileError::Validation(format!(
             "invalid HF repo id format: {repo_id}"
         )));
     }
-    let config_path = find_config_json_in_cache(repo_id)?;
-    let profile = draft_from_config(&config_path, repo_id, "hf", None)?;
-    write_profile_draft(profiles_dir, &profile)
+    match find_config_json_in_cache(repo_id) {
+        Ok(config_path) => {
+            let profile = draft_from_config(&config_path, repo_id, "hf", None)?;
+            write_profile_draft(profiles_dir, &profile)
+        }
+        Err(config_err) => match find_adapter_config_json_in_cache(repo_id) {
+            Ok(adapter_path) => {
+                let profile = draft_from_lora_adapter(&adapter_path, repo_id)?;
+                write_profile_draft(profiles_dir, &profile)
+            }
+            Err(_) => Err(config_err),
+        },
+    }
 }
 
 pub fn generate_profile_local(
@@ -1027,7 +1164,9 @@ pub fn set_profile_task(
     let mut profile = load_profile_by_id(profiles_dir, profile_id)?;
     profile.model_type = task.to_string();
     if adjust_backend {
-        profile.backend = infer_backend(task, &profile.id);
+        // 재조회 없이 현재 backend로 mlx 여부를 근사(non-transformers는 mlx로 취급).
+        let is_mlx = profile.backend != "transformers";
+        profile.backend = infer_backend(task, &profile.id, is_mlx);
     }
     let (input, output) = io_for_task(task);
     profile.io = ProfileIo { input, output };
@@ -1177,6 +1316,83 @@ mod tests {
     }
 
     #[test]
+    fn infer_backend_routes_non_mlx_llm_to_transformers() {
+        // 일반 PyTorch/safetensors 체크포인트 (quantization 키 없음, mlx-community 아님)
+        assert_eq!(
+            infer_backend("llm", "kakaocorp/kanana-nano-2.1b-instruct", false),
+            "transformers"
+        );
+        // MLX 변환본은 기존과 동일하게 vllm_mlx
+        assert_eq!(
+            infer_backend("llm", "mlx-community/Qwen3-4B-Instruct-2507-4bit", true),
+            "vllm_mlx"
+        );
+        // gguf는 mlx 여부와 무관하게 llama_cpp
+        assert_eq!(infer_backend("llm", "org/model-GGUF", false), "llama_cpp");
+    }
+
+    #[test]
+    fn is_mlx_checkpoint_detection() {
+        let mlx_quantized = serde_json::json!({"quantization": {"bits": 4}});
+        assert!(is_mlx_checkpoint(&mlx_quantized, "org/repo"));
+
+        let by_name = serde_json::json!({});
+        assert!(is_mlx_checkpoint(&by_name, "mlx-community/Qwen3-4B"));
+
+        let regular = serde_json::json!({"model_type": "llama"});
+        assert!(!is_mlx_checkpoint(&regular, "kakaocorp/kanana-nano-2.1b-instruct"));
+    }
+
+    #[test]
+    fn draft_from_lora_adapter_captures_base_model() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let adapter_config_path = dir.path().join("adapter_config.json");
+        std::fs::write(
+            &adapter_config_path,
+            serde_json::json!({
+                "base_model_name_or_path": "kakaocorp/kanana-nano-2.1b-instruct",
+                "peft_type": "LORA",
+                "task_type": "CAUSAL_LM",
+                "r": 128
+            })
+            .to_string(),
+        )
+        .expect("write adapter_config.json");
+
+        let profile = draft_from_lora_adapter(&adapter_config_path, "test-org/test-lora-adapter")
+            .expect("draft from lora");
+
+        assert_eq!(
+            profile.base_model.as_deref(),
+            Some("kakaocorp/kanana-nano-2.1b-instruct")
+        );
+        assert_eq!(profile.backend, "transformers");
+        assert_eq!(profile.model_type, TASK_LLM);
+        assert!(profile.notes.contains("r=128"));
+        // 베이스 모델이 로컬 캐시에 있으면 그 config에서, 없으면 기본값(4096)에서 컨텍스트를 얻는다 —
+        // 머신마다 캐시 상태가 다르므로 정확한 값이 아니라 유효 범위만 검증한다.
+        assert!(profile.context.max >= 512);
+    }
+
+    #[test]
+    fn draft_from_lora_adapter_rejects_non_causal_lm() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let adapter_config_path = dir.path().join("adapter_config.json");
+        std::fs::write(
+            &adapter_config_path,
+            serde_json::json!({
+                "base_model_name_or_path": "org/base",
+                "task_type": "SEQ_CLS"
+            })
+            .to_string(),
+        )
+        .expect("write adapter_config.json");
+
+        let result = draft_from_lora_adapter(&adapter_config_path, "org/adapter");
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn profile_filename_from_repo() {
         assert_eq!(
             profile_filename_from_id("mlx-community/Qwen3-4B-Instruct"),
@@ -1215,6 +1431,7 @@ mod tests {
             notes: String::new(),
             draft_model: None,
             generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: None,
         };
         write_profile_draft(dir.path(), &profile).expect("write draft");
 
@@ -1428,6 +1645,7 @@ mod tests {
             notes: String::new(),
             draft_model: Some("org/assistant".into()),
             generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: None,
         };
         let spawned = profile_for_spawn(&profile, false);
         assert!(spawned.draft_model.is_none());
@@ -1465,8 +1683,46 @@ mod tests {
             notes: String::new(),
             draft_model: None,
             generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: None,
         };
         assert!(ensure_runnable_profile(&drafter).is_err());
+    }
+
+    #[test]
+    fn ensure_runnable_profile_rejects_missing_base_model() {
+        let lora = ModelProfile {
+            schema_version: 1,
+            id: "org/lora-adapter".into(),
+            display_name: "LoRA".into(),
+            source: ProfileSource {
+                kind: "hf".into(),
+                hf_repo: "org/lora-adapter".into(),
+                hf_file: String::new(),
+                local_path: String::new(),
+            },
+            model_type: TASK_LLM.into(),
+            backend: "transformers".into(),
+            io: ProfileIo {
+                input: vec!["chat".into()],
+                output: "text".into(),
+            },
+            context: ProfileContext {
+                min: 512,
+                max: 4096,
+                default: 4096,
+                sweep_steps: vec![4096],
+            },
+            default_params: serde_json::json!({}),
+            quantization: None,
+            load_timeout_sec: 600,
+            notes: String::new(),
+            draft_model: None,
+            generation_kind: GENERATION_KIND_AUTOREGRESSIVE.into(),
+            // 테스트 환경 캐시에 존재하지 않을 저장소 id — 실측 캐시를 건드리지 않는다.
+            base_model: Some("org/definitely-not-cached-base-model-xyz".into()),
+        };
+        let err = ensure_runnable_profile(&lora).expect_err("missing base model must error");
+        assert!(matches!(err, ProfileError::Validation(_)));
     }
 
     #[test]

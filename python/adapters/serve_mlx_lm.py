@@ -24,8 +24,11 @@ from pydantic import BaseModel
 
 from mlx_lm import load, stream_generate
 
+from adapters.chat_graph import build_chat_graph, build_summary_prompt, run_chat_graph
+
 _UVICORN_SERVER: uvicorn.Server | None = None
 _SHUTDOWN = threading.Event()
+_CONTEXT_SIZE = 4096
 
 _MODEL = None
 _TOKENIZER = None
@@ -204,10 +207,25 @@ def _messages_to_dicts(messages: list[ChatMessage]) -> list[dict[str, Any]]:
     return out
 
 
+def _summarize_history(model: Any, tokenizer: Any, old_messages: list[dict[str, Any]]) -> str:
+    """LangGraph summarize 노드용 — 같은 로컬 모델로 동기(비스트리밍) 요약 생성."""
+    prompt = _apply_chat_template(
+        tokenizer, [{"role": "user", "content": build_summary_prompt(old_messages)}]
+    )
+    text_parts: list[str] = []
+    for response in stream_generate(model, tokenizer, prompt, max_tokens=256, temp=0.0):
+        text_parts.append(response.text)
+    return "".join(text_parts).strip()
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(body: ChatCompletionRequest) -> Any:
     model, tokenizer, draft_model = _require_model()
     messages = _messages_to_dicts(body.messages)
+    graph = build_chat_graph(lambda old: _summarize_history(model, tokenizer, old))
+    messages, compressed = run_chat_graph(graph, messages, _CONTEXT_SIZE)
+    if compressed:
+        _log_json("chat_history_compressed", kept_messages=len(messages))
     prompt = _apply_chat_template(tokenizer, messages)
     max_tokens = body.max_tokens if body.max_tokens is not None else 256
     gen_kwargs = _generation_kwargs(body)
@@ -299,7 +317,7 @@ def _handle_sigterm(_signum: int, _frame: Any) -> None:
 
 
 def main() -> None:
-    global _UVICORN_SERVER, _SERVED_MODEL_NAME, _MODEL, _TOKENIZER
+    global _UVICORN_SERVER, _SERVED_MODEL_NAME, _MODEL, _TOKENIZER, _CONTEXT_SIZE
 
     parser = argparse.ArgumentParser(description="aidash mlx-lm adapter")
     parser.add_argument("--model-path", required=True)
@@ -319,6 +337,7 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
     _SERVED_MODEL_NAME = args.model_path
+    _CONTEXT_SIZE = args.context_size
 
     try:
         resolved_model_path = _resolve_model_path(args.model_path)

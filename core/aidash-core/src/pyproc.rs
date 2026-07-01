@@ -70,6 +70,13 @@ pub fn build_child_spec(
 
     let uv = tools::resolve_uv().ok_or_else(|| UV_NOT_FOUND_MSG.to_string())?;
 
+    // LoRA 프로파일은 베이스 모델을 `--model-path`로 로드하고, 어댑터 저장소 자체를
+    // `--adapter-path`로 전달해 어댑터가 베이스+LoRA를 합쳐 서빙한다.
+    let model_path_arg = profile
+        .base_model
+        .clone()
+        .unwrap_or_else(|| profile.model_path().to_string());
+
     let mut args = vec![
         "run".into(),
         "--project".into(),
@@ -78,7 +85,7 @@ pub fn build_child_spec(
         "-m".into(),
         adapter,
         "--model-path".into(),
-        profile.model_path().into(),
+        model_path_arg,
         "--context-size".into(),
         context.to_string(),
         "--port".into(),
@@ -89,6 +96,10 @@ pub fn build_child_spec(
     if let Some(ref draft_model) = profile.draft_model {
         args.push("--draft-model-path".into());
         args.push(draft_model.clone());
+    }
+    if profile.base_model.is_some() {
+        args.push("--adapter-path".into());
+        args.push(profile.model_path().to_string());
     }
 
     Ok(ChildSpec {
@@ -104,6 +115,10 @@ mod tests {
     use crate::profile::{ModelProfile, ProfileContext, ProfileIo, ProfileSource, TASK_LLM};
 
     fn fixture_profile(draft_model: Option<&str>) -> ModelProfile {
+        fixture_profile_full(draft_model, None)
+    }
+
+    fn fixture_profile_full(draft_model: Option<&str>, base_model: Option<&str>) -> ModelProfile {
         ModelProfile {
             schema_version: 1,
             id: "org/main".into(),
@@ -132,6 +147,7 @@ mod tests {
             notes: String::new(),
             draft_model: draft_model.map(str::to_string),
             generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: base_model.map(str::to_string),
         }
     }
 
@@ -162,6 +178,30 @@ mod tests {
             .position(|a| a == "--draft-model-path")
             .expect("draft arg");
         assert_eq!(spec.args.get(draft_idx + 1).map(String::as_str), Some("org/assistant"));
+    }
+
+    #[test]
+    fn build_child_spec_lora_uses_base_model_path_and_adapter_arg() {
+        let spec = build_child_spec(
+            std::path::Path::new("/tmp/python"),
+            &fixture_profile_full(None, Some("org/base")),
+            4096,
+            18080,
+        )
+        .expect("child spec");
+        let model_idx = spec
+            .args
+            .iter()
+            .position(|a| a == "--model-path")
+            .expect("model-path arg");
+        assert_eq!(spec.args.get(model_idx + 1).map(String::as_str), Some("org/base"));
+
+        let adapter_idx = spec
+            .args
+            .iter()
+            .position(|a| a == "--adapter-path")
+            .expect("adapter-path arg");
+        assert_eq!(spec.args.get(adapter_idx + 1).map(String::as_str), Some("org/main"));
     }
 }
 

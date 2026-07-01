@@ -47,6 +47,7 @@ fn test_profile() -> ModelProfile {
         notes: String::new(),
         draft_model: None,
         generation_kind: aidash_core::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
+        base_model: None,
     }
 }
 

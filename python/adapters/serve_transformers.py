@@ -1,4 +1,9 @@
-"""transformers backend adapter — CPU mode — /v1/chat/completions."""
+"""transformers backend adapter — 일반 PyTorch/safetensors 모델 — /v1/chat/completions.
+
+Apple Silicon에서 MPS(Metal Performance Shaders)를 자동 감지해 사용하고, 없으면 CPU로
+폴백한다. LoRA 어댑터(`--adapter-path`)가 주어지면 베이스 모델에 병합해 서빙한다.
+멀티턴 히스토리는 chat_graph(LangGraph)를 거쳐 필요 시 자동 압축된다.
+"""
 
 from __future__ import annotations
 
@@ -19,15 +24,19 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+from adapters.chat_graph import build_chat_graph, build_summary_prompt, run_chat_graph
+
 _UVICORN_SERVER: uvicorn.Server | None = None
 _SHUTDOWN = threading.Event()
 
 _MODEL = None
 _TOKENIZER = None
+_DEVICE: "torch.device | None" = None
 _LOAD_ERROR: str | None = None
 _MODEL_LOADED = False
 _LOAD_LOCK = threading.Lock()
 _SERVED_MODEL_NAME = ""
+_CONTEXT_SIZE = 4096
 
 
 def _log_json(event: str, **fields: Any) -> None:
@@ -92,32 +101,94 @@ def _apply_chat_template(tokenizer: Any, messages: list[dict[str, Any]]) -> str:
     raise RuntimeError("tokenizer does not support apply_chat_template")
 
 
-def _background_model_load(model_path: str) -> None:
-    global _MODEL, _TOKENIZER, _LOAD_ERROR, _MODEL_LOADED
+def _select_device() -> "torch.device":
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def _patch_llama_head_dim_validation() -> None:
+    # ponytail: transformers>=5's LlamaConfig.validate_architecture() unconditionally requires
+    # hidden_size % num_attention_heads == 0, ignoring an explicit head_dim override (valid HF
+    # config pattern, e.g. kanana-nano: hidden_size=1792, heads=24, head_dim=128 explicit).
+    # __class_validators__ caches the function at @strict decoration time, so a plain attribute
+    # reassignment doesn't take effect — patch the list entry too. Drop once upstream respects
+    # explicit head_dim (https://github.com/huggingface/transformers issue for validate_architecture).
+    try:
+        from transformers.models.llama.configuration_llama import LlamaConfig
+
+        original = LlamaConfig.validate_architecture
+
+        def patched(self: Any) -> None:
+            if (
+                getattr(self, "head_dim", None)
+                and self.head_dim * self.num_attention_heads != self.hidden_size
+            ):
+                return
+            original(self)
+
+        LlamaConfig.validate_architecture = patched
+        validators = getattr(LlamaConfig, "__class_validators__", None)
+        if validators is not None:
+            for i, v in enumerate(validators):
+                if getattr(v, "__name__", "") == "validate_architecture":
+                    validators[i] = patched
+    except Exception:
+        pass
+
+
+def _background_model_load(model_path: str, adapter_path: str | None = None) -> None:
+    global _MODEL, _TOKENIZER, _DEVICE, _LOAD_ERROR, _MODEL_LOADED
 
     try:
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        _log_json("model_load_start", model_path=model_path)
+        _patch_llama_head_dim_validation()
+
+        device = _select_device()
+        dtype = torch.float16 if device.type == "mps" else torch.float32
+        _log_json("model_load_start", model_path=model_path, device=device.type)
+
         tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
-            device_map="cpu",
-            torch_dtype=torch.float32,
+            dtype=dtype,
             local_files_only=True,
         )
+
+        if adapter_path:
+            from peft import PeftModel
+
+            resolved_adapter = _resolve_model_path(adapter_path)
+            _log_json("adapter_load_start", adapter_path=adapter_path)
+            model = PeftModel.from_pretrained(model, resolved_adapter)
+            model = model.merge_and_unload()
+            _log_json("adapter_loaded", adapter_path=adapter_path)
+
+        model = model.to(device)
         model.eval()
         with _LOAD_LOCK:
             _MODEL = model
             _TOKENIZER = tokenizer
+            _DEVICE = device
             _LOAD_ERROR = None
             _MODEL_LOADED = True
-        _log_json("model_loaded", model_path=model_path)
+        _log_json("model_loaded", model_path=model_path, device=device.type)
     except Exception as exc:
         with _LOAD_LOCK:
             _LOAD_ERROR = str(exc)
             _MODEL_LOADED = False
         _log_json("model_load_failed", error=str(exc))
+
+
+def _generate_once(model: Any, tokenizer: Any, prompt_text: str, max_new_tokens: int) -> str:
+    """요약 등 내부 용도의 동기(비스트리밍) 생성 — LangGraph summarize 노드에서 사용."""
+    input_ids = tokenizer(prompt_text, return_tensors="pt").input_ids.to(model.device)
+    output_ids = model.generate(
+        input_ids, max_new_tokens=max_new_tokens, do_sample=False
+    )
+    generated = output_ids[0, input_ids.shape[-1] :]
+    return tokenizer.decode(generated, skip_special_tokens=True).strip()
 
 
 class ChatMessage(BaseModel):
@@ -195,7 +266,7 @@ def _stream_chat(model: Any, tokenizer: Any, prompt: str, kwargs: dict[str, Any]
     streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
     gen_kwargs = {
         **kwargs,
-        "input_ids": tokenizer(prompt, return_tensors="pt").input_ids,
+        "input_ids": tokenizer(prompt, return_tensors="pt").input_ids.to(model.device),
         "streamer": streamer,
     }
     thread = Thread(target=model.generate, kwargs=gen_kwargs, daemon=True)
@@ -211,10 +282,21 @@ def _stream_chat(model: Any, tokenizer: Any, prompt: str, kwargs: dict[str, Any]
     yield {"__usage__": {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}}
 
 
+def _summarize_history(model: Any, tokenizer: Any, old_messages: list[dict[str, Any]]) -> str:
+    summary_prompt = _apply_chat_template(
+        tokenizer, [{"role": "user", "content": build_summary_prompt(old_messages)}]
+    )
+    return _generate_once(model, tokenizer, summary_prompt, max_new_tokens=256)
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(body: ChatCompletionRequest) -> Any:
     model, tokenizer = _require_model()
     messages = _messages_to_dicts(body.messages)
+    graph = build_chat_graph(lambda old: _summarize_history(model, tokenizer, old))
+    messages, compressed = run_chat_graph(graph, messages, _CONTEXT_SIZE)
+    if compressed:
+        _log_json("chat_history_compressed", kept_messages=len(messages))
     prompt = _apply_chat_template(tokenizer, messages)
     max_tokens = body.max_tokens if body.max_tokens is not None else 256
     gen_kwargs = _generation_kwargs(body)
@@ -258,7 +340,7 @@ async def chat_completions(body: ChatCompletionRequest) -> Any:
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
     output_ids = model.generate(input_ids, **gen_kwargs)
     generated = output_ids[0, input_ids.shape[-1] :]
     text = tokenizer.decode(generated, skip_special_tokens=True)
@@ -295,13 +377,14 @@ def _handle_sigterm(_signum: int, _frame: Any) -> None:
 
 
 def main() -> None:
-    global _UVICORN_SERVER, _SERVED_MODEL_NAME, _MODEL, _TOKENIZER
+    global _UVICORN_SERVER, _SERVED_MODEL_NAME, _MODEL, _TOKENIZER, _DEVICE, _CONTEXT_SIZE
 
     parser = argparse.ArgumentParser(description="aidash transformers adapter")
     parser.add_argument("--model-path", required=True)
     parser.add_argument("--context-size", type=int, required=True)
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--profile-json", required=True)
+    parser.add_argument("--adapter-path", default=None)
     args = parser.parse_args()
 
     _configure_logging()
@@ -314,6 +397,7 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
     _SERVED_MODEL_NAME = args.model_path
+    _CONTEXT_SIZE = args.context_size
 
     try:
         resolved_model_path = _resolve_model_path(args.model_path)
@@ -323,7 +407,7 @@ def main() -> None:
 
     load_thread = threading.Thread(
         target=_background_model_load,
-        args=(resolved_model_path,),
+        args=(resolved_model_path, args.adapter_path),
         daemon=True,
     )
     load_thread.start()
@@ -360,6 +444,7 @@ def main() -> None:
     with _LOAD_LOCK:
         _MODEL = None
         _TOKENIZER = None
+        _DEVICE = None
 
     _log_json("exit", code=0)
     sys.exit(0)

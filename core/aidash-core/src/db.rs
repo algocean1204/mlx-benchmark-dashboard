@@ -1448,6 +1448,7 @@ mod tests {
             notes: String::new(),
             draft_model: None,
             generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: None,
         };
         let model_id = db.upsert_model(&profile).expect("upsert");
         let run_a = db
@@ -1521,6 +1522,7 @@ mod tests {
             notes: String::new(),
             draft_model: None,
             generation_kind: crate::profile::GENERATION_KIND_AUTOREGRESSIVE.into(),
+            base_model: None,
         };
         let model_id = db.upsert_model(&profile).expect("upsert");
         let run_id = db
