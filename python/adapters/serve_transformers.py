@@ -281,22 +281,32 @@ def _stream_chat(model: Any, tokenizer: Any, prompt: str, kwargs: dict[str, Any]
 
     from transformers import TextIteratorStreamer
 
-    streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True)
-    gen_kwargs = {
-        **kwargs,
-        "input_ids": tokenizer(prompt, return_tensors="pt").input_ids.to(model.device),
-        "streamer": streamer,
-    }
-    thread = Thread(target=model.generate, kwargs=gen_kwargs, daemon=True)
+    # skip_prompt=True: without it the streamer re-emits the prompt text itself as the
+    # first chunk(s), leaking the chat-template-wrapped prompt into the visible response.
+    streamer = TextIteratorStreamer(tokenizer, skip_special_tokens=True, skip_prompt=True)
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
+    gen_kwargs = {**kwargs, "input_ids": input_ids, "streamer": streamer}
+
+    # TextIteratorStreamer batches multiple BPE tokens per yielded chunk (needed to
+    # decode complete UTF-8 — Korean/CJK routinely need 2-3+ tokens per chunk), so
+    # counting yields as "tokens" undercounts completion_tokens by ~5-6x and makes
+    # decode_tps look far slower than the model actually runs. Capture generate()'s
+    # real output_ids length instead, same as the non-streaming path below.
+    result: dict[str, Any] = {}
+
+    def _run() -> None:
+        result["output_ids"] = model.generate(**gen_kwargs)
+
+    thread = Thread(target=_run, daemon=True)
     thread.start()
 
-    prompt_tokens = int(gen_kwargs["input_ids"].shape[-1])
-    completion_tokens = 0
+    prompt_tokens = int(input_ids.shape[-1])
     for text in streamer:
         if text:
-            completion_tokens += 1
             yield text
     thread.join()
+    output_ids = result.get("output_ids")
+    completion_tokens = int(output_ids.shape[-1] - prompt_tokens) if output_ids is not None else 0
     yield {"__usage__": {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}}
 
 
