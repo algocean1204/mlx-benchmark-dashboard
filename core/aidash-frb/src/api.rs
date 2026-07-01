@@ -486,6 +486,13 @@ fn profile_max_tokens(profile: &ModelProfile) -> u32 {
 
 #[flutter_rust_bridge::frb(sync)]
 pub fn init(root_path: String) -> Result<(), String> {
+    // Backtrace symbolication under concurrent panics has known hang potential on macOS
+    // (multiple threads queueing on the symbolication lock, one of which never resolves).
+    // A shipped GUI app has no console to read a backtrace from anyway — disable it so a
+    // panic fails fast (unwinds, releases its locks) instead of risking a pile-up hang.
+    if std::env::var_os("RUST_BACKTRACE").is_none() {
+        std::env::set_var("RUST_BACKTRACE", "0");
+    }
     let root = resolve_effective_project_root(&root_path)?;
     if !python_adapters_available(&root) {
         let py = python_dir(&root);
@@ -976,61 +983,67 @@ pub async fn bench_start(
     };
 
     let arc_task = arc.clone();
-    let task = tokio::spawn(async move {
-        let result = match mode {
-            FrbBenchMode::Single => run_single_with_id(&db, run_id, config, None)
-                .await
-                .map(Some),
-            FrbBenchMode::Sweep => {
-                let steps = match sweep_steps {
-                    Some(s) if !s.is_empty() => s,
-                    _ => {
-                        if model_profile.context.sweep_steps.is_empty() {
-                            vec![ctx]
-                        } else {
-                            model_profile.context.sweep_steps.clone()
-                        }
-                    }
-                };
-                run_context_sweep(
-                    &db,
-                    model_profile,
-                    steps,
-                    None,
-                    python_dir(&root),
-                    None,
-                    None,
-                    None,
-                    Some(progress_tx.clone()),
-                    use_draft,
-                )
-                .await
-                .map(|_| None)
-            }
-        };
 
-        match result {
-            Ok(Some(r)) => {
-                let _ = progress_tx.send(CoreEvent::RunFinished {
-                    run_id: r.run_id as u64,
-                    status: r.status.clone(),
-                });
-            }
-            Ok(None) => {}
-            Err(e) => {
-                let _ = progress_tx.send(CoreEvent::Log {
-                    level: "error".into(),
-                    message: e,
-                });
-            }
-        }
-        let mut s = arc_task.lock();
-        s.bench_task = None;
-        s.bench_profile_id = None;
-        s.bench_events_tx = None;
-    });
-
+    // Spawn AND register the handle under the same lock acquisition — spawning outside
+    // the lock left a window where a very fast task could finish and clear bench_task
+    // to None (in its own cleanup) *before* this function got to record Some(task),
+    // which then overwrote the correct None with a stale Some that nothing would ever
+    // clear again (every future bench_start would wrongly see "already running").
     with_state(|s| {
+        let task = tokio::spawn(async move {
+            let result = match mode {
+                FrbBenchMode::Single => run_single_with_id(&db, run_id, config, None)
+                    .await
+                    .map(Some),
+                FrbBenchMode::Sweep => {
+                    let steps = match sweep_steps {
+                        Some(s) if !s.is_empty() => s,
+                        _ => {
+                            if model_profile.context.sweep_steps.is_empty() {
+                                vec![ctx]
+                            } else {
+                                model_profile.context.sweep_steps.clone()
+                            }
+                        }
+                    };
+                    run_context_sweep(
+                        &db,
+                        model_profile,
+                        steps,
+                        None,
+                        python_dir(&root),
+                        None,
+                        None,
+                        None,
+                        Some(progress_tx.clone()),
+                        use_draft,
+                    )
+                    .await
+                    .map(|_| None)
+                }
+            };
+
+            match result {
+                Ok(Some(r)) => {
+                    let _ = progress_tx.send(CoreEvent::RunFinished {
+                        run_id: r.run_id as u64,
+                        status: r.status.clone(),
+                    });
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    let _ = progress_tx.send(CoreEvent::Log {
+                        level: "error".into(),
+                        message: e,
+                    });
+                }
+            }
+            let mut s = arc_task.lock();
+            s.bench_task = None;
+            s.bench_profile_id = None;
+            s.bench_events_tx = None;
+        });
+
         s.bench_task = Some(task);
         s.bench_profile_id = Some(profile_id);
         Ok(run_id)
